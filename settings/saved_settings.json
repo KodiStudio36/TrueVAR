@@ -1,0 +1,32 @@
+{
+    "is_scoreboard": true,
+    "cams": [
+        {
+            "fps": 30,
+            "resolution": [
+                640,
+                480
+            ],
+            "device": "v4l2src device=/dev/video0",
+            "format": "YUY2"
+        },
+        {
+            "fps": 30,
+            "resolution": [
+                1280,
+                720
+            ],
+            "device": "videotestsrc",
+            "format": "RGBA"
+        },
+        {
+            "fps": 30,
+            "resolution": [
+                1280,
+                720
+            ],
+            "device": "videotestsrc pattern=ball",
+            "format": "RGBA"
+        }
+    ]
+}
