@@ -15,7 +15,7 @@ class MainScreen(QWidget):
         # Recording status label
         status_label = QLabel()
         status_label.setAlignment(Qt.AlignCenter)
-        status_label.setStyleSheet("color: red; font-weight: bold; font-size: 14px;")  # Bold and larger text
+        status_label.setStyleSheet("color: red; font-weight: bold; font-size: 36px;")  # Bold and larger text
         status_label.setText(f"TrueVAR is not recording")  # Initial status
         self.layout.addWidget(status_label, 1, 1)
 
@@ -29,8 +29,8 @@ class MainScreen(QWidget):
     def update_status(self, label, is_recording):
         """Update the label color and blinking based on recording status."""
         if is_recording:
-            label.setStyleSheet("color: green; font-weight: bold; font-size: 14px;")
+            label.setStyleSheet("color: green; font-weight: bold; font-size: 36px;")
             label.setText(f"TrueVAR is recording")
         else:
-            label.setStyleSheet("color: red; font-weight: bold; font-size: 14px;")
+            label.setStyleSheet("color: red; font-weight: bold; font-size: 36px;")
             label.setText(f"TrueVAR is not recording")

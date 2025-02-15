@@ -1,0 +1,4 @@
+pyqt5
+pygobject
+opencv-python-headless
+cv2-enumerate-cameras

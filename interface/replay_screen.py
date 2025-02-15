@@ -2,7 +2,7 @@ import os
 from PyQt5.QtMultimediaWidgets import QGraphicsVideoItem, QVideoWidget
 from PyQt5.QtWidgets import QGraphicsView, QGraphicsScene, QVBoxLayout, QWidget, QPushButton, QShortcut, QSlider, QStyle, QHBoxLayout, QLabel, QStackedLayout, QStackedWidget, QGridLayout
 from PyQt5.QtMultimedia import QMediaPlayer, QMediaContent, QMediaPlaylist
-from PyQt5.QtCore import QUrl, Qt, QSizeF
+from PyQt5.QtCore import QUrl, Qt, QSizeF, QEvent
 from PyQt5.QtGui import QWheelEvent, QMouseEvent, QKeySequence, QFont
 
 from config import records_path
@@ -15,8 +15,6 @@ class ZoomableVideoWidget(QGraphicsView):
 
         self.camera_manager = camera_manager
         self.segments = segments
-
-        self.fps = 30
 
         # Create a scene and a video item
         self.scene = QGraphicsScene(self)
@@ -93,6 +91,8 @@ class ZoomableVideoWidget(QGraphicsView):
         if event.button() == Qt.LeftButton:
             self.dragging = True
             self.last_mouse_pos = event.pos()
+        elif event.button() == Qt.RightButton:
+            self.zoom_reset()
 
     def mouseMoveEvent(self, event: QMouseEvent):
         """ Handle mouse move event for dragging """
@@ -116,26 +116,29 @@ class ZoomableVideoWidget(QGraphicsView):
             self.load_video(self.filename, self.mediaPlayer.duration())
             self.mediaPlayer.play()
             self.mediaPlayer.pause()
+            print("mnau")
 
     def play_video(self):
         if self.mediaPlayer.position() == self.mediaPlayer.duration():
             self.mediaPlayer.setPosition(0)
+            print("llll")
         self.mediaPlayer.play()
 
     def pause_video(self):
         self.mediaPlayer.pause()
 
     def set_position(self, position):
+        print("position", position)
         self.mediaPlayer.setPosition(position)
 
     def frame_forward(self):
         current_position = self.mediaPlayer.position()
-        new_position = int(current_position + 1000 / self.fps)
+        new_position = int(current_position + 1000 / self.camera_manager.fps)
         self.mediaPlayer.setPosition(new_position)
 
     def frame_backward(self):
         current_position = self.mediaPlayer.position()
-        new_position = int(current_position - 1000 / self.fps)
+        new_position = int(current_position - 1000 / self.camera_manager.fps)
         self.mediaPlayer.setPosition(new_position)
 
     def sec_forward(self):
@@ -152,9 +155,10 @@ class ZoomableVideoWidget(QGraphicsView):
         self.filename = filename
         self.mediaPlayer.setMedia(QMediaContent(QUrl.fromLocalFile(self.camera_manager.get_filepath(filename, self.segments))))
         if position:
-            self.mediaPlayer.setPosition(position)
+            self.set_position(position)
 
         self.mediaPlayer.play()
+        print("eee")
         self.mediaPlayer.pause()
 
     def keyPressEvent(self, event):
@@ -255,10 +259,10 @@ class ReplayScreen(QWidget):
         self.videoWidget.mediaPlayer.stateChanged.connect(self.mediastate_changed)
         self.videoWidget.mediaPlayer.positionChanged.connect(self.position_changed)
         self.videoWidget.mediaPlayer.durationChanged.connect(self.duration_changed)
+        self.videoWidget.mediaPlayer.seekableChanged.connect(self.seekable_changed)
 
         self.isPlaying = False
         self.isFirstOpen = False
-
     # Method to play or pause the video
     def play_video(self):
         if self.videoWidget.mediaPlayer.state() == QMediaPlayer.PlayingState:
@@ -277,20 +281,24 @@ class ReplayScreen(QWidget):
 
     # Method to handle changes in video position
     def position_changed(self, position):
+        print(position, "wuuuuuuuuuuuuuuuuuu")
         self.slider.setValue(position)
 
     # Method to set the video position
     def set_position(self, position):
         self.videoWidget.set_position(position)
 
+    def seekable_changed(self):
+        print("vidavail")
+        if self.isFirstOpen:
+            self.isFirstOpen = False
+            self.set_position(self.videoWidget.mediaPlayer.duration()-2000)
+            self.position_changed(self.videoWidget.mediaPlayer.duration()-2000)
+
+
     # Method to handle changes in video duration
     def duration_changed(self, duration):
         self.slider.setRange(0, duration)
-
-        if self.isFirstOpen:
-            self.isFirstOpen = False
-            self.set_position(duration - 2 * 1000)
-            self.position_changed(duration - 2 * 1000)
 
     def sliderPressed(self):
         self.isPlayingOnSlide = False
@@ -302,6 +310,8 @@ class ReplayScreen(QWidget):
     def sliderReleased(self):
         if self.isPlayingOnSlide:
             self.videoWidget.play_video()
+
+        self.slider.setFocusPolicy(Qt.NoFocus)
 
     def frame_forward(self):
         self.videoWidget.frame_forward()
@@ -315,6 +325,7 @@ class ReplayScreen(QWidget):
     def sec_backward(self):
         self.videoWidget.sec_backward()
 
+    # Change camera angle
     def next_page(self):
         self.current_page += 1 
         if self.current_page == len(self.camera_manager.get_all_cameras()): self.current_page = 1
@@ -329,11 +340,11 @@ class ReplayScreen(QWidget):
     def seg_next(self):
         self.update_seg(self.videoWidget.segments + 1)
 
-    def update_seg(self, segments):
+    def update_seg(self, segments, position=None):
         self.segmentNext.setDisabled(self.camera_manager.segments <= segments)
         self.segmentBack.setDisabled(segments <= 0)
         self.videoWidget.set_segments(segments)
-        self.videoWidget.load_video(1)
+        self.videoWidget.load_video(1, position)
         self.current_page = 1
         self.update_label()
 

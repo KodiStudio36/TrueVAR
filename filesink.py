@@ -244,4 +244,20 @@ video/x-h264,profile=main ! flvmux streamable=true name=mux ! rtmpsink location=
 audiotestsrc wave=silence ! mux. \
 shmsrc socket-path=/tmp/gst_shm_socket do-timestamp=true is-live=true ! queue ! video/x-raw,format=YUY2,width=640,height=480,framerate=30/1 ! videoconvert ! queue ! comp1.
 
+gst-launch-1.0 \
+rtspsrc location=rtsp://admin:TaekwondoVAR@192.168.0.21:554 latency=800 ! rtph264depay ! h264parse ! vaapih264dec ! vaapipostproc ! video/x-raw,width=1280,height=720,framerate=30/1,format=RGBA,interlace-mode=progressive ! vaapipostproc ! \
+queue ! compositor name=comp1 ! queue ! videoconvert ! x264enc bitrate=2000 tune=zerolatency key-int-max=60 ! \
+video/x-h264,profile=main ! flvmux streamable=true name=mux ! rtmpsink location="rtmp://a.rtmp.youtube.com/live2/ze78-gupd-46hc-bseb-4hq4" \
+audiotestsrc wave=silence ! mux. \
+v4l2src device=/dev/video0 ! image/jpeg,width=640,height=480,framerate=30/1 ! jpegdec ! vaapipostproc ! video/x-raw,width=640,height=480,framerate=30/1,format=RGBA,interlace-mode=progressive ! vaapipostproc ! video/x-raw,width=320,height=200 ! comp1.
+
+gst-launch-1.0 -e \
+    videotestsrc ! video/x-raw,width=1280,height=720,framerate=30/1,format=RGBA,interlace-mode=progressive ! vaapipostproc ! \
+    queue ! compositor name=comp1 sink_0::xpos=0 sink_0::ypos=0 sink_1::xpos=10 sink_1::ypos=10 ! video/x-raw,width=1280,height=720 ! x264enc bitrate=2000 tune=zerolatency key-int-max=60 ! \
+    video/x-h264,profile=main ! flvmux streamable=true name=mux ! rtmpsink location="rtmp://a.rtmp.youtube.com/live2/ze78-gupd-46hc-bseb-4hq4" \
+    audiotestsrc wave=silence ! mux. \
+    videotestsrc ! video/x-raw,width=640,height=480,framerate=30/1,format=RGBA,interlace-mode=progressive ! vaapipostproc ! video/x-raw,width=320,height=200 ! comp1.
+
+gst-launch-1.0 rtspsrc location=rtsp://admin:TaekwondoVAR@192.168.0.21:554 latency=800 ! rtph264depay ! h264parse ! vaapih264dec ! vaapipostproc ! video/x-raw,format=RGBA,width=1280,height=720,framerate=30/1 ! timeoverlay ! queue ! shmsink socket-path=/tmp/gst_shm_socket wait-for-connection=false shm-size=200000000
+
 """

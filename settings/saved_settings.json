@@ -7,16 +7,7 @@
                 640,
                 480
             ],
-            "device": "v4l2src device=/dev/video0",
-            "format": "YUY2"
-        },
-        {
-            "fps": 30,
-            "resolution": [
-                1280,
-                720
-            ],
-            "device": "videotestsrc",
+            "device": "v4l2src device=/dev/video0 ! image/jpeg,width=640,height=480,framerate=30/1 ! jpegdec ! vaapipostproc",
             "format": "RGBA"
         },
         {
@@ -25,7 +16,25 @@
                 1280,
                 720
             ],
-            "device": "videotestsrc pattern=ball",
+            "device": "rtspsrc location=rtsp://admin:TaekwondoVAR@192.168.0.21:554 latency=800 ! rtph264depay ! h264parse ! vaapih264dec ! vaapipostproc",
+            "format": "RGBA"
+        },
+        {
+            "fps": 30,
+            "resolution": [
+                1280,
+                720
+            ],
+            "device": "rtspsrc location=rtsp://admin:TaekwondoVAR@192.168.0.22:554 latency=800 ! rtph264depay ! h264parse ! vaapih264dec ! vaapipostproc",
+            "format": "RGBA"
+        },
+        {
+            "fps": 30,
+            "resolution": [
+                1280,
+                720
+            ],
+            "device": "rtspsrc location=rtsp://admin:TaekwondoVAR@192.168.0.23:554 latency=800 ! rtph264depay ! h264parse ! vaapih264dec ! vaapipostproc",
             "format": "RGBA"
         }
     ]

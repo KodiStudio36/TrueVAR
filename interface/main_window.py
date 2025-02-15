@@ -7,9 +7,10 @@ from interface.settings_screen import SettingsScreen
 from interface.replay_screen import ReplayScreen
 
 class MainWindow(QMainWindow):
-    def __init__(self, key_bind_manager, camera_manager):
+    def __init__(self, controller_manager, key_bind_manager, camera_manager):
         super().__init__()
 
+        self.controller_manager = controller_manager
         self.key_bind_manager = key_bind_manager
         self.camera_manager = camera_manager
 
@@ -19,7 +20,7 @@ class MainWindow(QMainWindow):
         # Create instances of each screen
         self.main_screen = MainScreen(self.camera_manager)
 
-        self.settings_screen = SettingsScreen(self.key_bind_manager, self.camera_manager)
+        self.settings_screen = SettingsScreen(self.controller_manager, self.key_bind_manager, self.camera_manager)
         self.replay_screen = ReplayScreen(self.camera_manager)
         self.current_screen = 0
 
@@ -87,6 +88,10 @@ class MainWindow(QMainWindow):
                 self.current_screen = 0
 
         if key_sequence == QKeySequence(self.key_bind_manager.record_key) and self.current_screen == 0:
+            if self.camera_manager.error_while_shm:
+                self.show_toast_message("No video input selected")
+                return
+
             if not self.camera_manager.is_recording:
                 self.camera_manager.release_records()
                 self.camera_manager.reset_segments()
@@ -156,4 +161,5 @@ class MainWindow(QMainWindow):
         # Stop all video streams on exit
         self.camera_manager.stop()
         self.settings_screen.stop()
+        self.controller_manager.stop()
         super().closeEvent(event)
