@@ -2,22 +2,11 @@
     "is_scoreboard": true,
     "res": 720,
     "vaapi": true,
-    "debug": true,
+    "debug": false,
     "camera_idx": 0,
     "live_camera_idx": 1,
-    "live_key": "a679-y644-da7s-wm4k-dq5p",
-    "cams": [
-        {
-            "device": "v4l2src device=/dev/video0 ! video/x-raw,width=640,height=480,framerate=30/1"
-        },
-        {
-            "device": "rtspsrc location=rtsp://admin:TaekwondoVAR@192.168.0.21:554 latency=800 ! rtph264depay ! h264parse ! vaapih264dec"
-        },
-        {
-            "device": "rtspsrc location=rtsp://admin:TaekwondoVAR@192.168.0.22:554 latency=800 ! rtph264depay ! h264parse ! vaapih264dec"
-        },
-        {
-            "device": "rtspsrc location=rtsp://admin:TaekwondoVAR@192.168.0.23:554 latency=800 ! rtph264depay ! h264parse ! vaapih264dec"
-        }
-    ]
+    "live_key": "ze78-gupd-46hc-bseb-4hq4",
+    "delete_records": true,
+    "camera_count": 1,
+    "court": 1
 }

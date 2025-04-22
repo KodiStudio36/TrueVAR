@@ -328,7 +328,7 @@ class ReplayScreen(QWidget):
     # Change camera angle
     def next_page(self):
         self.current_page += 1 
-        if self.current_page == len(self.camera_manager.get_all_cameras()): self.current_page = 1
+        if self.current_page == self.camera_manager.camera_count +1: self.current_page = 1
         self.videoWidget.load_video(self.current_page, self.videoWidget.mediaPlayer.position())
         if self.isPlaying:
             self.videoWidget.play_video()

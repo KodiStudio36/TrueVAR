@@ -15,77 +15,6 @@ from PyQt5.QtWidgets import (
 )
 from cv2_enumerate_cameras import enumerate_cameras
 
-class AddCameraDialog(QDialog):
-    def __init__(self, camera_manager, parent=None):
-        super().__init__(parent)
-        self.camera_manager = camera_manager
-        self.init_ui()
-
-    def init_ui(self):
-        self.setWindowTitle("Add Camera")
-        layout = QVBoxLayout()
-
-        # Camera selection combo box
-        self.camera_selector = QComboBox(self)
-        self.camera_selector.addItem("Other")  # Option to add a custom camera
-        self.cameras = self.detect_cameras()
-        
-        # Populate combo box with detected cameras
-        for cam in self.cameras:
-            self.camera_selector.addItem(f"Camera {cam['index']}")
-        
-        self.camera_selector.currentIndexChanged.connect(self.populate_camera_info)
-
-        self.new_cam_gstreamer_src = QLineEdit(self)
-        self.new_cam_gstreamer_src.setPlaceholderText("GStreamer Source")
-
-        # Add Camera button
-        add_cam_button = QPushButton("Add Camera")
-        add_cam_button.clicked.connect(self.add_camera)
-
-        # Layout widgets
-        layout.addWidget(QLabel("Select Camera"))
-        layout.addWidget(self.camera_selector)
-        layout.addWidget(self.new_cam_gstreamer_src)
-        layout.addWidget(add_cam_button)
-        
-        self.setLayout(layout)
-
-    def detect_cameras(self):
-        cameras = []
-        for camera_info in enumerate_cameras(cv2.CAP_GSTREAMER):
-            camera = cv2.VideoCapture(camera_info.index)
-            if camera.isOpened():
-                width = int(camera.get(cv2.CAP_PROP_FRAME_WIDTH))
-                height = int(camera.get(cv2.CAP_PROP_FRAME_HEIGHT))
-                fourcc = int(camera.get(cv2.CAP_PROP_FOURCC))
-                print(fourcc)
-
-                cameras.append({
-                    "index": camera_info.index,
-                    "gstreamer_src": f"v4l2src device={camera_info.path}"
-                })
-            camera.release()
-        return cameras
-
-    def populate_camera_info(self):
-        selected_index = self.camera_selector.currentIndex() - 1
-        if selected_index >= 0:
-            # Populate with camera information
-            camera_info = self.cameras[selected_index]
-            self.new_cam_gstreamer_src.setText(str(camera_info['gstreamer_src']))
-        else:
-            # Clear fields for "Other" selection
-            self.new_cam_gstreamer_src.clear()
-
-    def add_camera(self):
-        gstreamer_src = self.new_cam_gstreamer_src.text()
-
-        # Add camera to camera manager with provided settings
-        self.camera_manager.add_camera(device=gstreamer_src)
-        self.accept()  # Close the dialog
-
-
 class VideoStreamWidget(QWidget):
     def __init__(self, pipeline_description, parent=None):
         super().__init__(parent)
@@ -161,6 +90,9 @@ class SettingsScreen(QWidget):
         main_layout.addWidget(self.tabs)
         self.setLayout(main_layout)
 
+        if (int(self.cam_combo.currentText()[-1]) != self.camera_manager.camera_idx):
+            self.set_camera_idx(int(self.cam_combo.currentText()[-1]))
+
     def init_tabs(self):
         print("ropop")
         self.camera_settings_tab = QWidget()
@@ -221,7 +153,7 @@ class SettingsScreen(QWidget):
         left_layout = QVBoxLayout()
 
         # Camera preview area (left side)
-        preview_label = VideoStreamWidget(f"{self.camera_manager.get_all_cameras()[1].get_source(1)} ! video/x-raw,width={self.camera_manager.res_width},height={self.camera_manager.res_height},framerate={self.camera_manager.fps}/1,format=RGBA ! videoconvert ! videoscale ! video/x-raw,format=RGB,width=272,height=153 ! queue ! appsink name=sink emit-signals=True sync=True drop=False")
+        preview_label = VideoStreamWidget(f"{self.camera_manager.get_shmsink(self.camera_manager.live_camera_idx)} ! video/x-raw,width={self.camera_manager.res_width},height={self.camera_manager.res_height},framerate={self.camera_manager.fps}/1,format=NV12 ! videoconvert ! videoscale ! video/x-raw,format=RGB,width=272,height=153 ! queue ! appsink name=sink emit-signals=True sync=True drop=False")
         self.video_widgets.append(preview_label)
         left_layout.addWidget(preview_label)
 
@@ -238,7 +170,7 @@ class SettingsScreen(QWidget):
         camera_id_label = QLabel("Camera ID:")
         camera_id_combo = QComboBox()
         camera_id_combo.setSizePolicy(QSizePolicy.Maximum, QSizePolicy.Maximum)
-        camera_id_combo.addItems([f"Camera {i+1}" for i in range(len(self.camera_manager.get_all_cameras()) -1)])  # Populate with actual cameras
+        camera_id_combo.addItems([f"Camera {i+1}" for i in range(self.camera_manager.camera_count)])  # Populate with actual cameras
         form_layout.addRow(camera_id_label, camera_id_combo)
 
         # Livestream key input
@@ -356,22 +288,38 @@ class SettingsScreen(QWidget):
         vaapi_toggle.setChecked(self.camera_manager.vaapi)
         vaapi_toggle.clicked.connect(lambda x: self.set_vaapi(x))
 
+        delete_toggle = QCheckBox()
+        delete_toggle.setChecked(self.camera_manager.delete_records)
+        delete_toggle.clicked.connect(lambda x: self.set_release_records(x))
+
         debug_toggle = QCheckBox()
         debug_toggle.setChecked(self.camera_manager.debug)
         debug_toggle.clicked.connect(lambda x: self.set_debug(x))
 
         res_combo = QComboBox()
         res_combo.addItems(["480", "720", "1080"])
+        res_combo.setCurrentText(str(self.camera_manager.res_height))
         res_combo.setSizePolicy(QSizePolicy.Maximum, QSizePolicy.Maximum)
+        res_combo.currentTextChanged.connect(lambda num: self.set_resolution(int(num)))
 
-        cam_combo = QComboBox()
-        cam_combo.addItems([f"/dev/video{i}" for i in self.get_connected_cameras()])
-        cam_combo.setSizePolicy(QSizePolicy.Maximum, QSizePolicy.Maximum)
+        self.cam_combo = QComboBox()
+        self.cam_combo.addItems([f"/dev/video{i}" for i in self.get_connected_cameras()])
+        self.cam_combo.setCurrentText(f"/dev/video{self.camera_manager.camera_idx}")
+        self.cam_combo.setSizePolicy(QSizePolicy.Maximum, QSizePolicy.Maximum)
+        self.cam_combo.currentTextChanged.connect(lambda device: self.set_camera_idx(int(device[-1])))
 
-        form_layout.addRow(QLabel("Select camera:"), cam_combo)
-        form_layout.addRow(QLabel("Debug mode:"), debug_toggle)
+        court_combo = QComboBox()
+        court_combo.addItems([f"{i}" for i in range(1, 26)])
+        court_combo.setCurrentText(str(self.camera_manager.court))
+        court_combo.setSizePolicy(QSizePolicy.Maximum, QSizePolicy.Maximum)
+        court_combo.currentTextChanged.connect(lambda num: self.set_court(int(num)))
+
+        form_layout.addRow(QLabel("Select Camera:"), self.cam_combo)
+        form_layout.addRow(QLabel("Select Court:"), court_combo)
+        form_layout.addRow(QLabel("Debug Mode:"), debug_toggle)
         form_layout.addRow(QLabel("Resolution:"), res_combo)
-        form_layout.addRow(QLabel("VA-API support:"), vaapi_toggle)
+        form_layout.addRow(QLabel("VA-API Support:"), vaapi_toggle)
+        form_layout.addRow(QLabel("Relese Records:"), delete_toggle)
 
         layout.addWidget(start_frame)
 
@@ -382,7 +330,7 @@ class SettingsScreen(QWidget):
         columns = 3  # Number of columns in the grid
 
         # Add each camera to the grid
-        for idx, cam in enumerate(self.camera_manager.get_all_cameras()):
+        for idx in range(self.camera_manager.camera_count+1):
             row = idx // columns
             col = idx % columns
 
@@ -406,7 +354,7 @@ class SettingsScreen(QWidget):
             if idx == 0:
                 header_layout.addWidget(self.toggle, alignment=Qt.AlignRight)
             
-            elif idx == len(self.camera_manager.get_all_cameras()) -1:
+            elif idx == self.camera_manager.camera_count:
                 remove_button = QPushButton()
                 remove_button.setIcon(self.style().standardIcon(QStyle.SP_TitleBarCloseButton))
                 remove_button.setFixedHeight(13)
@@ -418,7 +366,7 @@ class SettingsScreen(QWidget):
             cam_layout.addLayout(header_layout)
 
             # Camera preview
-            preview_label = VideoStreamWidget(f"{cam.get_source(idx)} ! video/x-raw,width={"640" if idx == 0 else self.camera_manager.res_width},height={"480" if idx == 0 else self.camera_manager.res_height},framerate={self.camera_manager.fps}/1,format=RGBA ! videoconvert ! videoscale ! video/x-raw,format=RGB,width=272,height=153 ! queue ! appsink name=sink emit-signals=True sync=True drop=False")
+            preview_label = VideoStreamWidget(f"{self.camera_manager.get_shmsink(idx)} ! video/x-raw,width={"640" if idx == 0 else self.camera_manager.res_width},height={"480" if idx == 0 else self.camera_manager.res_height},framerate={self.camera_manager.fps}/1,format=NV12 ! videoconvert ! videoscale ! video/x-raw,format=RGB,width=272,height=153 ! queue ! appsink name=sink emit-signals=True sync=True drop=False")
             self.video_widgets.append(preview_label)
 
             cam_layout.addWidget(preview_label)
@@ -431,7 +379,7 @@ class SettingsScreen(QWidget):
         add_button.setFixedHeight(200)
         add_button.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Maximum)
         add_button.clicked.connect(self.open_add_camera_dialog)
-        grid_layout.addWidget(add_button, len(self.camera_manager.get_all_cameras()) // columns, len(self.camera_manager.get_all_cameras()) % columns)
+        grid_layout.addWidget(add_button, (self.camera_manager.camera_count+1) // columns, (self.camera_manager.camera_count+1) % columns)
 
         layout.addLayout(grid_layout)
 
@@ -441,12 +389,11 @@ class SettingsScreen(QWidget):
 
         self.camera_settings_tab.setLayout(layout)
 
-
     def open_add_camera_dialog(self):
         #dialog = AddCameraDialog(self.camera_manager, self)
         #if dialog.exec_() == QDialog.Accepted:
         #    self.update_camera_list()
-        self.camera_manager.add_camera(device="videotestsrc pattern=ball")
+        self.camera_manager.add_camera()
         self.camera_manager.reload_shmsink()
         self.update_camera_list()
 
@@ -464,22 +411,9 @@ class SettingsScreen(QWidget):
 
         return all_camera_idx
 
-    def update_camera_settings(self, cam_id, gstreamer_src_input):
-        if self.is_update: # The Connectction triggers twice
-            return
-        self.is_update = True
-
-        gstreamer_src = gstreamer_src_input.text() if gstreamer_src_input.text() else None
-        
-        print("whaaaaaaaaaaaa")
-        self.camera_manager.update_camera(cam_id, gstreamer_src)
-        self.update_camera_list()
-
-        self.is_update = False
-
     def remove_camera(self, cam_id):
         #self.camera_manager.remove_camera(cam_id)
-        self.camera_manager.remove_camera(len(self.camera_manager.get_all_cameras()) - 1)
+        self.camera_manager.remove_camera()
         self.camera_manager.reload_shmsink()
         self.update_camera_list()
 
@@ -502,6 +436,10 @@ class SettingsScreen(QWidget):
         self.camera_manager.reload_shmsink()
         self.update_camera_list()
 
+    def set_release_records(self, delete_records):
+        self.camera_manager.delete_records = delete_records
+        self.camera_manager.save_cameras()
+
     def set_live(self, key):
         self.camera_manager.live_key = key
         self.camera_manager.save_cameras()
@@ -510,6 +448,26 @@ class SettingsScreen(QWidget):
         self.camera_manager.is_scoreboard = is_scoreboard
         self.camera_manager.save_cameras()
         print(is_scoreboard)
+
+    def set_resolution(self, resolution: int):
+        self.camera_manager.res_height = resolution
+        self.camera_manager.res_width = resolution // 9 * 16
+        self.camera_manager.save_cameras()
+        self.camera_manager.reload_shmsink()
+        self.update_camera_list()
+        print(f"{resolution // 9 * 16}:{resolution}")
+
+    def set_court(self, court: int):
+        self.camera_manager.court = court
+        self.camera_manager.save_cameras()
+        self.camera_manager.reload_shmsink()
+        self.update_camera_list()
+
+    def set_camera_idx(self, idx: int):
+        self.camera_manager.camera_idx = idx
+        self.camera_manager.save_cameras()
+        self.camera_manager.reload_shmsink()
+        self.update_camera_list()
 
     def clear_layout(self):
         while self.tabs.count() > 0:

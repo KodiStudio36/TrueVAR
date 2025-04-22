@@ -19,9 +19,9 @@ class CameraManager(QObject):
 
     def __init__(self):
         QObject.__init__(self)
-        self.cameras = []
         self.is_recording = False
         self.is_stream = False
+        self.fight_num = 0
 
         self.is_scoreboard = True
         self.fps = 30
@@ -29,7 +29,10 @@ class CameraManager(QObject):
         self.res_height = 720
         self.vaapi = True
         self.debug = True
+        self.court = 1
         self.camera_idx = 0
+        self.delete_records = True
+        self.camera_count = 3
 
         self.live_camera_idx = 1
         self.live_key = ""
@@ -50,31 +53,13 @@ class CameraManager(QObject):
         self.videoscale = "vaapipostproc" if self.vaapi else "videoconvert ! videoscale"
         self.h264enc = "vaapih264enc" if self.vaapi else "x264enc"
 
-    def add_camera(self, device="/dev/video0"):
-        """Add a new camera."""
-        cam = Cam(device)
-        self.cameras.append(cam)
-        print(self.cameras)
+    def add_camera(self):
+        self.camera_count += 1
         self.save_cameras()
 
-    def remove_camera(self, cam_id):
-        """Remove a camera by ID."""
-        self.cameras = [cam for idx, cam in enumerate(self.cameras) if idx != cam_id]
+    def remove_camera(self):
+        self.camera_count -= 1
         self.save_cameras()
-
-    def update_camera(self, cam_id, device=None):
-        """Update camera settings."""
-        for idx, cam in enumerate(self.cameras):
-            if idx == cam_id:
-                cam.update_settings(device)
-        self.save_cameras()
-        self.stop_shmsink()
-        self.start_shmsink()
-
-    def get_all_cameras(self):
-        """Return a list of all cameras."""
-        return self.cameras
-    
 
     def handle_message(self, bus, message):
         """Handle messages from the GStreamer bus."""
@@ -98,14 +83,12 @@ class CameraManager(QObject):
             print(f"Pipeline state changed from {old} to {new} {bus}")
     
     def start_cameras(self):
-        cams = self.get_all_cameras().copy()
+        self.fight_num = str(time())[6: 12]
 
-        pipe = f"{cams[0].get_source(0)} ! video/x-raw,width=640,height=480,framerate={self.fps}/1,format=RGBA,interlace-mode=progressive ! queue leaky=downstream ! {self.videoscale} ! video/x-raw,width={self.res_width // 4},height={self.res_height // 4} ! tee name=overlay_tee " if self.is_scoreboard else ""
-        
-        cams.pop(0) # Because index 1 is scoreboard that is already set
+        pipe = f"{self.get_shmsink(0)} ! video/x-raw,width=640,height=480,framerate={self.fps}/1,format=NV12,interlace-mode=progressive ! queue leaky=downstream ! {self.videoscale} ! video/x-raw,width={self.res_width // 4},height={self.res_height // 4} ! tee name=overlay_tee " if self.is_scoreboard else ""
 
-        for idx, cam in enumerate(cams):
-            pipe += f"{cam.get_source(idx+1)} ! video/x-raw,width={self.res_width},height={self.res_height},framerate={self.fps}/1,format=RGBA,interlace-mode=progressive ! queue leaky=downstream ! {self.videoconvert}{f" ! compositor name=comp{idx+1} sink_0::xpos=0 sink_0::ypos=0 sink_1::xpos=10 sink_1::ypos=10 ! video/x-raw,width={self.res_width},height={self.res_height}" if self.is_scoreboard else ""} ! {self.h264enc} bitrate=4000 ! avimux ! filesink location={self.get_filepath(idx+1, self.segments)} "
+        for idx in range(1, self.camera_count + 1):
+            pipe += f"{self.get_shmsink(idx)} ! video/x-raw,width={self.res_width},height={self.res_height},framerate={self.fps}/1,format=NV12,interlace-mode=progressive ! queue leaky=downstream ! {self.videoconvert}{f" ! compositor name=comp{idx+1} sink_0::xpos=0 sink_0::ypos=0 sink_1::xpos=10 sink_1::ypos=10 ! video/x-raw,width={self.res_width},height={self.res_height}" if self.is_scoreboard else ""} ! {self.h264enc} bitrate=4000 ! avimux ! filesink location={self.get_filepath(idx, self.segments)} "
             pipe += f"overlay_tee. ! queue ! comp{idx+1}. " if self.is_scoreboard else ""
 
         print(pipe)
@@ -131,16 +114,24 @@ class CameraManager(QObject):
 
     def start_shmsink(self, skip_cameras=None):
         try:
+            file_path = f"/tmp/camera{0}_shm_socket"
             pipe = ""
 
-            for idx, cam in enumerate(self.get_all_cameras()):
+            if os.path.exists(file_path):
+                os.remove(file_path)
+                print(f"Removed: {file_path}")
+
+            print("here", self.camera_idx)
+            pipe += f"{self.get_scoreboard()} ! {self.videoconvert} ! video/x-raw,width=640,height=480,framerate={self.fps}/1,format=NV12 ! capsfilter ! queue ! shmsink socket-path={file_path} wait-for-connection=false shm-size=200000000 "
+
+            for idx in range(1, self.camera_count +1):
                 file_path = f"/tmp/camera{idx}_shm_socket"
 
                 if os.path.exists(file_path):
                     os.remove(file_path)
                     print(f"Removed: {file_path}")
 
-                pipe += f"{"videotestsrc" if self.debug and idx != 0 else cam.device} ! {self.videoconvert} ! video/x-raw,width={"640" if idx == 0 else self.res_width},height={"480" if idx == 0 else self.res_height},framerate={self.fps}/1,format=RGBA ! queue ! shmsink socket-path={file_path} wait-for-connection=false shm-size=200000000 "
+                pipe += f"{"videotestsrc" if self.debug else self.get_camera(idx)} ! {self.videoconvert} ! video/x-raw,width={self.res_width},height={self.res_height},framerate={self.fps}/1,format=NV12 ! capsfilter ! queue ! shmsink socket-path={file_path} wait-for-connection=false shm-size=200000000 "
 
             print(pipe)
 
@@ -156,7 +147,6 @@ class CameraManager(QObject):
             self.error_while_shm = False
         except:
             self.error_while_shm = True
-    
 
     def stop_shmsink(self):
         if self.shm_pipeline:
@@ -167,14 +157,12 @@ class CameraManager(QObject):
         self.start_shmsink()
 
     def start_stream(self):
-        cams = self.get_all_cameras()
-
         self.stream_pipeline = Gst.parse_launch(
-            f"{cams[self.live_camera_idx].get_source(self.live_camera_idx)} ! video/x-raw,width=1280,height=720,framerate=30/1,format=RGBA,interlace-mode=progressive ! vaapipostproc ! "
+            f"{self.get_shmsink(self.live_camera_idx)} ! video/x-raw,width=1280,height=720,framerate=30/1,format=NV12,interlace-mode=progressive ! vaapipostproc ! "
             "queue ! compositor name=comp1 sink_0::xpos=0 sink_0::ypos=0 sink_1::xpos=10 sink_1::ypos=10 ! video/x-raw,width=1280,height=720 ! x264enc bitrate=2000 tune=zerolatency key-int-max=60 ! "
             f'video/x-h264,profile=main ! flvmux streamable=true name=mux ! rtmpsink location="rtmp://a.rtmp.youtube.com/live2/{self.live_key}" '
             "audiotestsrc wave=silence ! mux. "
-            f"{cams[0].get_source(0)} ! video/x-raw,width=640,height=480,framerate=30/1,format=RGBA,interlace-mode=progressive ! vaapipostproc ! video/x-raw,width=320,height=200 ! comp1."
+            f"{self.get_shmsink(0)} ! video/x-raw,width=640,height=480,framerate=30/1,format=NV12,interlace-mode=progressive ! vaapipostproc ! video/x-raw,width=320,height=200 ! comp1."
         )
         self.stream_pipeline.set_state(Gst.State.PLAYING)
         self.is_stream = True
@@ -197,11 +185,11 @@ class CameraManager(QObject):
             "camera_idx": self.camera_idx,
             "live_camera_idx": self.live_camera_idx,
             "live_key": self.live_key,
-            "cams": [
-                {"device": cam.device}
-                for cam in self.cameras
-            ]
+            "delete_records": self.delete_records,
+            "camera_count": self.camera_count,
+            "court": self.court,
         }
+
         with open(camera_settings_file, 'w') as f:
             json.dump(data, f, indent=4)
 
@@ -227,15 +215,12 @@ class CameraManager(QObject):
                 self.camera_idx = data["camera_idx"]
                 self.live_camera_idx = data["live_camera_idx"]
                 self.live_key = data["live_key"]
-
-                for cam_data in data["cams"]:
-                    cam = Cam(
-                        device=cam_data["device"],
-                    )
-                    self.cameras.append(cam)
+                self.delete_records = data["delete_records"]
+                self.camera_count = data["camera_count"]
+                self.court = data["court"]
 
     def get_filepath(self, idx, segment):
-        return f"{records_path}/camera{idx}_segment{segment}.avi"
+        return f"{records_path}/id{self.fight_num}_camera{idx}_segment{segment}.avi"
     
     def new_segment(self):
         self.segments += 1
@@ -244,16 +229,28 @@ class CameraManager(QObject):
         self.segments = 0
 
     def release_records(self):
-        # Find all files in the specified directory
-        files = glob.glob(os.path.join(records_path, '*'))
-        
-        # Iterate over each file and remove it
-        for file in files:
-            try:
-                os.remove(file)
-                print(f"Removed: {file}")
-            except Exception as e:
-                print(f"Failed to remove {file}. Reason: {e}")
+        if self.delete_records:
+            # Find all files in the specified directory
+            files = glob.glob(os.path.join(records_path, '*'))
+            
+            # Iterate over each file and remove it
+            for file in files:
+                try:
+                    os.remove(file)
+                    print(f"Removed: {file}")
+                except Exception as e:
+                    print(f"Failed to remove {file}. Reason: {e}")
+
+    def get_scoreboard(self):
+        print(self.camera_idx)
+        return f"v4l2src device=/dev/video{self.camera_idx} ! video/x-raw,width=640,height=480,framerate=30/1"
+
+    def get_camera(self, idx):
+        print(f"rtspsrc location=rtsp://admin:TaekwondoVAR@192.168.0.{self.court}{idx}:554 latency=800 ! rtph264depay ! h264parse ! vaapih264dec")
+        return f"rtspsrc location=rtsp://admin:TaekwondoVAR@169.254.0.{self.court}{idx}:554 latency=800 ! rtph264depay ! h264parse ! vaapih264dec"
+
+    def get_shmsink(self, idx):
+        return f"shmsrc socket-path=/tmp/camera{idx}_shm_socket do-timestamp=true is-live=true"
 
     def save_for_ai(self):
         return

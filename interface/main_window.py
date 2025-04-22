@@ -19,7 +19,6 @@ class MainWindow(QMainWindow):
 
         # Create instances of each screen
         self.main_screen = MainScreen(self.camera_manager)
-
         self.settings_screen = SettingsScreen(self.controller_manager, self.key_bind_manager, self.camera_manager)
         self.replay_screen = ReplayScreen(self.camera_manager)
         self.current_screen = 0
@@ -97,7 +96,7 @@ class MainWindow(QMainWindow):
                 self.camera_manager.reset_segments()
                 self.camera_manager.start_cameras()
             
-            elif self.isStopRecording():
+            else:
                 self.camera_manager.stop_cameras()
                 self.camera_manager.save_for_ai()
                 
