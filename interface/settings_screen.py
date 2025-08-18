@@ -15,6 +15,8 @@ from PyQt5.QtWidgets import (
 )
 from cv2_enumerate_cameras import enumerate_cameras
 
+import ipaddress
+
 class VideoStreamWidget(QWidget):
     def __init__(self, pipeline_description, parent=None):
         super().__init__(parent)
@@ -68,10 +70,11 @@ class VideoStreamWidget(QWidget):
         super().closeEvent(event)
 
 class SettingsScreen(QWidget):
-    def __init__(self, controller_manager, key_bind_manager, camera_manager):
+    def __init__(self, controller_manager, key_bind_manager, camera_manager, webserver_manager):
         super().__init__()
         self.controller_manager = controller_manager
         self.key_bind_manager = key_bind_manager
+        self.webserver_manager = webserver_manager
         self.camera_manager = camera_manager
         self.video_widgets = []
         self.is_update = False
@@ -142,18 +145,31 @@ class SettingsScreen(QWidget):
 
     def init_stream_tab(self):
         layout = QVBoxLayout()
+        layout.setSpacing(15)  # Set some spacing between sections for a cleaner look
+
+        # ===== Section 1: Basic YouTube Livestream =====
+        basic_title = QLabel("Basic YouTube Livestream")
+        basic_title.setStyleSheet("font-weight: bold; font-size: 16px;")
+        # layout.addWidget(basic_title, alignment=Qt.AlignTop) # Removed, not needed with addStretch
+        layout.addWidget(basic_title)
 
         start_frame = QFrame()
-        start_frame.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Maximum)
+        # Adjust size policy to be more flexible
+        start_frame.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Minimum)
 
         # Main horizontal layout
         main_layout = QHBoxLayout(start_frame)
+        main_layout.setAlignment(Qt.AlignLeft | Qt.AlignTop) # Align contents to the top-left
+        main_layout.setSpacing(10)
 
         # Left layout for the preview (compact)
         left_layout = QVBoxLayout()
-
-        # Camera preview area (left side)
-        preview_label = VideoStreamWidget(f"{self.camera_manager.get_shmsink(self.camera_manager.live_camera_idx)} ! video/x-raw,width={self.camera_manager.res_width},height={self.camera_manager.res_height},framerate={self.camera_manager.fps}/1,format=NV12 ! videoconvert ! videoscale ! video/x-raw,format=RGB,width=272,height=153 ! queue ! appsink name=sink emit-signals=True sync=True drop=False")
+        preview_label = VideoStreamWidget(
+            f"{self.camera_manager.get_shmsink(self.camera_manager.live_camera_idx)} "
+            f"! video/x-raw,width={self.camera_manager.res_width},height={self.camera_manager.res_height},"
+            f"framerate={self.camera_manager.fps}/1,format=NV12 ! videoconvert ! videoscale "
+            f"! video/x-raw,format=RGB,width=272,height=153 ! queue ! appsink name=sink emit-signals=True sync=True drop=False"
+        )
         self.video_widgets.append(preview_label)
         left_layout.addWidget(preview_label)
 
@@ -161,45 +177,86 @@ class SettingsScreen(QWidget):
         right_layout = QVBoxLayout()
         form_frame = QFrame()
         form_frame.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Maximum)
-        form_layout = QFormLayout(form_frame)  # Form layout for label-field alignment
+        form_layout = QFormLayout(form_frame)
         form_layout.setSpacing(10)
-        form_layout.setHorizontalSpacing(50)
-        form_layout.setLabelAlignment(Qt.AlignLeft)  # Ensure labels align to the left
+        form_layout.setHorizontalSpacing(20)
+        form_layout.setLabelAlignment(Qt.AlignLeft)
 
-        # Camera ID combo box and label
-        camera_id_label = QLabel("Camera ID:")
+        # Camera ID combo box
         camera_id_combo = QComboBox()
         camera_id_combo.setSizePolicy(QSizePolicy.Maximum, QSizePolicy.Maximum)
-        camera_id_combo.addItems([f"Camera {i+1}" for i in range(self.camera_manager.camera_count)])  # Populate with actual cameras
-        form_layout.addRow(camera_id_label, camera_id_combo)
+        camera_id_combo.addItems([f"Camera {i+1}" for i in range(self.camera_manager.camera_count)])
+        form_layout.addRow(QLabel("Camera ID:"), camera_id_combo)
 
         # Livestream key input
         youtube_key_input = QLineEdit()
-        youtube_key_input.setPlaceholderText("Enter YouTube Livestream Key")
+        youtube_key_input.setPlaceholderText("xxxx-xxxx-xxxx-xxxx-xxxx")
         youtube_key_input.setText(self.camera_manager.live_key)
         form_layout.addRow(QLabel("Livestream Key:"), youtube_key_input)
 
         # Start/Stop livestream button
-        self.start_stream_button = QPushButton("Start Stream")
+        self.start_stream_button = QPushButton("Start Basic YouTube Livetream")
         self.start_stream_button.clicked.connect(lambda x: self.toggle_stream(1, youtube_key_input.text()))
 
-        # Add form layout and button to the right layout
         right_layout.addWidget(form_frame)
         right_layout.addWidget(self.start_stream_button)
 
-        # Set the layout sizes to prevent stretching
         main_layout.addLayout(left_layout)
         main_layout.addLayout(right_layout)
 
-        # Connecting the stream status
         self.camera_manager.is_stream_stream.connect(lambda is_stream: self.on_stream(is_stream))
 
         layout.addWidget(start_frame)
-        space = QLabel("")
-        space.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Expanding)
-        layout.addWidget(space, alignment=Qt.AlignCenter)
+
+        # Divider line
+        line = QFrame()
+        line.setFrameShape(QFrame.HLine)
+        line.setFrameShadow(QFrame.Sunken)
+        layout.addWidget(line)
+
+        # ===== Section 2: Pro YouTube Livestream =====
+        pro_title = QLabel("Pro YouTube Livestream")
+        pro_title.setStyleSheet("font-weight: bold; font-size: 16px;")
+        layout.addWidget(pro_title)
+
+        pro_form_frame = QFrame()
+        # Adjust size policy for a tighter fit
+        pro_form_layout = QFormLayout(pro_form_frame)
+        pro_form_layout.setSpacing(10)
+        pro_form_layout.setHorizontalSpacing(20)
+
+        udp_port_input = QLineEdit()
+        udp_port_input.setPlaceholderText("9998")
+        udp_port_input.setText(str(self.webserver_manager.udp_port))
+        pro_form_layout.addRow(QLabel(f"Tk-Strike UDP Port:"), udp_port_input)
+
+        web_port_input = QLineEdit()
+        web_port_input.setPlaceholderText("8000")
+        web_port_input.setText(str(self.webserver_manager.webserver_port))
+        pro_form_layout.addRow(QLabel(f"WebServer Port:"), web_port_input)
+
+        obs_port_input = QLineEdit()
+        obs_port_input.setPlaceholderText("4455")
+        obs_port_input.setText(str(self.webserver_manager.obs_port))
+        pro_form_layout.addRow(QLabel(f"OBS WebSocket Port:"), obs_port_input)
+
+        obs_pass_input = QLineEdit()
+        obs_pass_input.setPlaceholderText("Enter OBS WebSocket Password")
+        obs_pass_input.setText(self.webserver_manager.obs_pass)
+        pro_form_layout.addRow(QLabel(f"OBS WebSocket Pass:"), obs_pass_input)
+
+        layout.addWidget(pro_form_frame)
+
+        # Start widgets server button
+        start_widgets_server_btn = QPushButton(f"{"Stop" if self.webserver_manager.thread.isRunning() else "Start"} Pro YouTube Livetream Server")
+        start_widgets_server_btn.clicked.connect(lambda x: self.toggle_webserver())
+        layout.addWidget(start_widgets_server_btn)
+
+        # Add a stretch to push all content to the top
+        layout.addStretch(1)
 
         self.stream_tab.setLayout(layout)
+
 
     def on_stream(self, is_stream):
         self.start_stream_button.setText("Stop Stream" if is_stream else "Start Stream")
@@ -213,6 +270,14 @@ class SettingsScreen(QWidget):
         else:
             self.set_live(key)
             self.camera_manager.start_stream()
+
+    def toggle_webserver(self):
+        if self.webserver_manager.thread.isRunning():
+            self.webserver_manager.stop_servers()
+
+        else:
+            self.webserver_manager.start_servers()
+
 
     def init_key_binding_tab(self):
         key_bind_layout = QFormLayout()
@@ -284,6 +349,11 @@ class SettingsScreen(QWidget):
         form_layout.setHorizontalSpacing(50)
         form_layout.setLabelAlignment(Qt.AlignLeft)  # Ensure labels align to the left
 
+        self.network_ip_input = QLineEdit()
+        self.network_ip_input.setPlaceholderText("x.x.x.x")
+        self.network_ip_input.setText(f"{self.camera_manager.network_ip}0")
+        self.network_ip_input.editingFinished.connect(lambda: self.set_network_ip(self.network_ip_input.text()))
+
         vaapi_toggle = QCheckBox()
         vaapi_toggle.setChecked(self.camera_manager.vaapi)
         vaapi_toggle.clicked.connect(lambda x: self.set_vaapi(x))
@@ -314,6 +384,7 @@ class SettingsScreen(QWidget):
         court_combo.setSizePolicy(QSizePolicy.Maximum, QSizePolicy.Maximum)
         court_combo.currentTextChanged.connect(lambda num: self.set_court(int(num)))
 
+        form_layout.addRow(QLabel("Network ip address:"), self.network_ip_input)
         form_layout.addRow(QLabel("Select Camera:"), self.cam_combo)
         form_layout.addRow(QLabel("Select Court:"), court_combo)
         form_layout.addRow(QLabel("Debug Mode:"), debug_toggle)
@@ -468,6 +539,19 @@ class SettingsScreen(QWidget):
         self.camera_manager.save_cameras()
         self.camera_manager.reload_shmsink()
         self.update_camera_list()
+
+    def set_network_ip(self, ip: str):
+        try:
+            if not isinstance(ipaddress.ip_address(ip), ipaddress.IPv4Address):
+                raise ValueError()
+            
+            self.network_ip_input.setStyleSheet("")
+            print(ip[:-len(ip.split(".")[-1])])
+            self.camera_manager.network_ip = ip[:-len(ip.split(".")[-1])]
+        except ValueError:
+            self.network_ip_input.setStyleSheet("border: 2px solid red;")
+
+        self.network_ip_input.clearFocus()
 
     def clear_layout(self):
         while self.tabs.count() > 0:

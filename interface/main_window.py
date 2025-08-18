@@ -5,13 +5,16 @@ from PyQt5.QtGui import QKeySequence, QFont
 from interface.main_screen import MainScreen
 from interface.settings_screen import SettingsScreen
 from interface.replay_screen import ReplayScreen
+from time import time
 
 class MainWindow(QMainWindow):
-    def __init__(self, controller_manager, key_bind_manager, camera_manager):
+    def __init__(self, controller_manager, key_bind_manager, camera_manager, webserver_manager):
         super().__init__()
 
         self.controller_manager = controller_manager
         self.key_bind_manager = key_bind_manager
+        self.webserver_manager = webserver_manager
+        self.webserver_manager.set_context(self)
         self.camera_manager = camera_manager
 
         # Create the stacked layout
@@ -19,7 +22,7 @@ class MainWindow(QMainWindow):
 
         # Create instances of each screen
         self.main_screen = MainScreen(self.camera_manager)
-        self.settings_screen = SettingsScreen(self.controller_manager, self.key_bind_manager, self.camera_manager)
+        self.settings_screen = SettingsScreen(self.controller_manager, self.key_bind_manager, self.camera_manager, self.webserver_manager)
         self.replay_screen = ReplayScreen(self.camera_manager)
         self.current_screen = 0
 
@@ -77,6 +80,9 @@ class MainWindow(QMainWindow):
                     self.camera_manager.stop_cameras()
                     self.show_replay()
                     self.current_screen = 2
+
+                    # pro webserver implementation
+                    self.webserver_manager.go_to_ivr_scene()
                 else:
                     self.show_toast_message("Video Replay can't be open without recording")
 
@@ -86,19 +92,15 @@ class MainWindow(QMainWindow):
                 self.show_main()
                 self.current_screen = 0
 
-        if key_sequence == QKeySequence(self.key_bind_manager.record_key) and self.current_screen == 0:
-            if self.camera_manager.error_while_shm:
-                self.show_toast_message("No video input selected")
-                return
+                # pro webserver implementation
+                self.webserver_manager.go_to_main_scene()
 
+        if key_sequence == QKeySequence(self.key_bind_manager.record_key) and self.current_screen == 0:
             if not self.camera_manager.is_recording:
-                self.camera_manager.release_records()
-                self.camera_manager.reset_segments()
-                self.camera_manager.start_cameras()
+                self.start_recording()
             
             else:
-                self.camera_manager.stop_cameras()
-                self.camera_manager.save_for_ai()
+                self.stop_recording()
                 
 
         if key_sequence == QKeySequence(self.key_bind_manager.next_camera_key) and self.current_screen == 2:
@@ -121,6 +123,26 @@ class MainWindow(QMainWindow):
 
         if key_sequence == QKeySequence(self.key_bind_manager.reset_zoom_key) and self.current_screen == 2:
             self.replay_screen.videoWidget.zoom_reset()
+
+    def start_recording(self):
+        if not self.camera_manager.is_recording:
+            if self.camera_manager.error_while_shm:
+                self.show_toast_message("No video input selected")
+                return
+        
+            self.camera_manager.release_records()
+            self.camera_manager.reset_segments()
+
+            self.camera_manager.fight_num = str(time())[6: 12]
+            self.camera_manager.start_cameras()
+
+            # pro webserver implementation
+            self.webserver_manager.go_to_main_scene()
+
+    def stop_recording(self):
+        if self.camera_manager.is_recording:
+            self.camera_manager.stop_cameras()
+            self.camera_manager.save_for_ai()
 
     def toggle_fullscreen(self):
         # If the window is already fullscreen, go back to normal

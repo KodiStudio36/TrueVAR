@@ -1,0 +1,6 @@
+{
+    "udp_port": 9998,
+    "webserver_port": 8000,
+    "obs_port": 4455,
+    "obs_pass": "samko211"
+}

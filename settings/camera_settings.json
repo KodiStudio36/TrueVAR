@@ -5,8 +5,9 @@
     "debug": false,
     "camera_idx": 0,
     "live_camera_idx": 1,
-    "live_key": "ze78-gupd-46hc-bseb-4hq4",
+    "live_key": "a679-y644-da7s-wm4k-dq5p",
     "delete_records": true,
-    "camera_count": 1,
-    "court": 1
+    "camera_count": 3,
+    "court": 2,
+    "network_ip": "192.168.0."
 }

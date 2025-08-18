@@ -2,3 +2,8 @@ pyqt5
 pygobject
 opencv-python-headless
 cv2-enumerate-cameras
+
+Flask
+eventlet
+flask_socketio
+obs-websocket-py

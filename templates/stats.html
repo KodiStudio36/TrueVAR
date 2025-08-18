@@ -1,0 +1,170 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <meta charset="UTF-8" />
+    <title>OBS Overlay</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link
+        href="https://fonts.googleapis.com/css2?family=Lato:ital,wght@0,100;0,300;0,400;0,700;0,900;1,100;1,300;1,400;1,700;1,900&display=swap"
+        rel="stylesheet">
+    <script src="https://cdn.socket.io/4.5.4/socket.io.min.js"></script>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/lipis/flag-icons@7.2.3/css/flag-icons.min.css" />
+    <link rel="stylesheet" href="{{ url_for('static', filename='styles.css') }}">
+</head>
+
+<body>
+    <!-- <div class="names hidden" id="names">
+        <div class="fighter" id="blue">
+            <div class="color" id="blue-color"></div>
+            <div class="data" style="width: var(--names-width)">
+                <span class="fi fi-sk" id="blue-flag"></span>
+                <div class="name" id="blue-name">CJ NICKOLAS</div>
+            </div>
+        </div>
+        <div class="fighter" id="red">
+            <div class="color" id="red-color"></div>
+            <div class="data" style="width: var(--names-width)">
+                <span class="fi fi-sk" id="red-flag"></span>
+                <div class="name" id="red-name">SIMONE ALESSIO</div>
+            </div>
+        </div>
+    </div> -->
+    <div class="results hidden" id="results">
+        <div class="flag-data" style="width: calc(var(--results-width) + 21px)">
+            <div class="category">Men's -58kg</div>
+            <div class="title">
+                <div class="text">RESULT - FINALS</div>
+                <div class="table">
+                    <div>1</div>
+                    <div>2</div>
+                    <div>3</div>
+                </div>
+            </div>
+        </div>
+        <div class="fighter" id="blue">
+            <div class="color" id="blue-color"></div>
+            <div class="data" style="width: var(--results-width)">
+                <!-- <div class="country" id="blue-country">CZE</div> -->
+                <span class="fi fi-sk" id="blue-flag"></span>
+                <div class="name" id="blue-name">CJ NICKOLAS</div>
+                <div class="table">
+                    <div id="blue-points-1"></div>
+                    <div id="blue-points-2"></div>
+                    <div id="blue-points-3"></div>
+                </div>
+            </div>
+        </div>
+        <div class="fighter" id="red">
+            <div class="color" id="red-color"></div>
+            <div class="data" style="width: var(--results-width)">
+                <!-- <div class="country" id="red-country">CZE</div> -->
+                <span class="fi fi-sk" id="red-flag"></span>
+                <div class="name" id="red-name">SIMONE ALESSIO</div>
+                <div class="table">
+                    <div id="red-points-1"></div>
+                    <div id="red-points-2"></div>
+                    <div id="red-points-3"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="vrCard hidden">
+        <div class="fighter" id="blue">
+            <div class="color animate-top" id="primary-color"></div>
+            <div class="data animate-side">
+                <div class="name" id="blue-name">Instant Video Replay</div>
+            </div>
+        </div>
+    </div>
+    <script>
+        var roundCount = 2;
+
+        const names = document.getElementById("names");
+        const results = document.getElementById("results");
+
+        const blueName = document.getElementById("blue-name");
+        const blueFlag = document.getElementById("blue-flag");
+        const bluePoints1 = document.getElementById("blue-points-1");
+        const bluePoints2 = document.getElementById("blue-points-2");
+        const bluePoints3 = document.getElementById("blue-points-3");
+
+        const redName = document.getElementById("red-name");
+        const redFlag = document.getElementById("red-flag");
+        const redPoints1 = document.getElementById("red-points-1");
+        const redPoints2 = document.getElementById("red-points-2");
+        const redPoints3 = document.getElementById("red-points-3");
+
+        const socket = io("ws://localhost:8000"); // Replace with OBS IP if needed
+
+        socket.on("connect", () => {
+            console.log("WebSocket Connectemch;103;Final;MEN M -45KG;;#0000ff;#FFFFFF;#ff0000;#FFFFFF;null;JUNIORS;3;120;cntDown;14;5d\n");
+        });
+
+        socket.on("udp_message", (data) => {
+            try {
+                console.log(data);
+                // Example: Display different types of alerts
+                if (data.event === "RoundStart") {
+                    //results.classList.add("hidden");
+                    //showNames();
+                } else if (data.event === "RoundEnd") {
+                    blueName.textContent = data.blue_name;
+                    blueFlag.className = `fi fi-${data.blue_flag}`;
+                    redName.textContent = data.red_name;
+                    redFlag.className = `fi fi-${data.red_flag}`;
+
+                    switch (data.round) {
+                        case 2:
+                            bluePoints1.textContent = data.blue_points_1;
+                            bluePoints2.textContent = data.blue_points_2;
+                            bluePoints3.textContent = "";
+                            redPoints1.textContent = data.red_points_1;
+                            redPoints2.textContent = data.red_points_2;
+                            redPoints3.textContent = "";
+                            break;
+                        case 3:
+                            bluePoints1.textContent = data.blue_points_1;
+                            bluePoints2.textContent = data.blue_points_2;
+                            bluePoints3.textContent = data.blue_points_3;
+                            redPoints1.textContent = data.red_points_1;
+                            redPoints2.textContent = data.red_points_2;
+                            redPoints3.textContent = data.red_points_3;
+                            break;
+                        default:
+                            bluePoints1.textContent = data.blue_points_1;
+                            bluePoints2.textContent = "";
+                            bluePoints3.textContent = "";
+                            redPoints1.textContent = data.red_points_1;
+                            redPoints2.textContent = "";
+                            redPoints3.textContent = "";
+                            break;
+                    }
+
+                    setTimeout(() => {
+                        results.classList.remove("hidden");
+
+                        setTimeout(() => {
+                            results.classList.add("hidden");
+                        }, 20000);
+                    }, 8000);
+                }
+
+            } catch (err) {
+                console.error("Failed to parse JSON:", err);
+            }
+        });
+
+        function showNames() {
+            names.classList.remove("hidden");
+
+            setTimeout(() => {
+                names.classList.add("hidden");
+            }, 5000);
+        }
+
+    </script>
+</body>
+
+</html>

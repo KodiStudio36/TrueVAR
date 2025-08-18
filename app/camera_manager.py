@@ -3,7 +3,6 @@ from PyQt5.QtCore import pyqtSignal, QObject
 import json
 import os
 import glob
-from time import time
 from app.cam import Cam
 import gi
 
@@ -33,6 +32,7 @@ class CameraManager(QObject):
         self.camera_idx = 0
         self.delete_records = True
         self.camera_count = 3
+        self.network_ip = "192.168.0."
 
         self.live_camera_idx = 1
         self.live_key = ""
@@ -83,8 +83,6 @@ class CameraManager(QObject):
             print(f"Pipeline state changed from {old} to {new} {bus}")
     
     def start_cameras(self):
-        self.fight_num = str(time())[6: 12]
-
         pipe = f"{self.get_shmsink(0)} ! video/x-raw,width=640,height=480,framerate={self.fps}/1,format=NV12,interlace-mode=progressive ! queue leaky=downstream ! {self.videoscale} ! video/x-raw,width={self.res_width // 4},height={self.res_height // 4} ! tee name=overlay_tee " if self.is_scoreboard else ""
 
         for idx in range(1, self.camera_count + 1):
@@ -188,6 +186,7 @@ class CameraManager(QObject):
             "delete_records": self.delete_records,
             "camera_count": self.camera_count,
             "court": self.court,
+            "network_ip": self.network_ip,
         }
 
         with open(camera_settings_file, 'w') as f:
@@ -218,6 +217,7 @@ class CameraManager(QObject):
                 self.delete_records = data["delete_records"]
                 self.camera_count = data["camera_count"]
                 self.court = data["court"]
+                self.network_ip = data["network_ip"]
 
     def get_filepath(self, idx, segment):
         return f"{records_path}/id{self.fight_num}_camera{idx}_segment{segment}.avi"
@@ -246,8 +246,8 @@ class CameraManager(QObject):
         return f"v4l2src device=/dev/video{self.camera_idx} ! video/x-raw,width=640,height=480,framerate=30/1"
 
     def get_camera(self, idx):
-        print(f"rtspsrc location=rtsp://admin:TaekwondoVAR@192.168.0.{self.court}{idx}:554 latency=800 ! rtph264depay ! h264parse ! vaapih264dec")
-        return f"rtspsrc location=rtsp://admin:TaekwondoVAR@169.254.0.{self.court}{idx}:554 latency=800 ! rtph264depay ! h264parse ! vaapih264dec"
+        print(f"rtspsrc location=rtsp://admin:TaekwondoVAR@{self.network_ip}{self.court}{idx}:554 latency=800 ! rtph264depay ! h264parse ! vaapih264dec")
+        return f"rtspsrc location=rtsp://admin:TaekwondoVAR@{self.network_ip}{self.court}{idx}:554 latency=800 ! rtph264depay ! h264parse ! vaapih264dec"
 
     def get_shmsink(self, idx):
         return f"shmsrc socket-path=/tmp/camera{idx}_shm_socket do-timestamp=true is-live=true"

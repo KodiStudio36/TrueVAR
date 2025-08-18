@@ -1,0 +1,224 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <meta charset="UTF-8" />
+    <title>OBS Overlay</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link
+        href="https://fonts.googleapis.com/css2?family=Lato:ital,wght@0,100;0,300;0,400;0,700;0,900;1,100;1,300;1,400;1,700;1,900&display=swap"
+        rel="stylesheet">
+    <link rel="stylesheet" href="{{ url_for('static', filename='styles.css') }}">
+    <script src="https://cdn.socket.io/4.5.4/socket.io.min.js"></script>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/lipis/flag-icons@7.2.3/css/flag-icons.min.css" />
+</head>
+
+<body>
+    <main class="main hidden" id="main">
+        <div class="fighter">
+            <div class="dark data" id="fight-num">143</div>
+            <div class="data" id="metadata">Men's round 1 -68kg</div>
+        </div>
+        <div class="fighter" id="blue">
+            <div class="color" id="blue-color"></div>
+            <div class="data" style="width: var(--data-width)">
+                <span class="fi fi-sk" id="blue-flag"></span>
+                <div class="name" id="blue-name">Samuel Chudy</div>
+            </div>
+            <div class="points" id="blue-points-1">0</div>
+            <div class="points" id="blue-points-2">0</div>
+            <div class="points" id="blue-points-3">0</div>
+            <div class="points gam-jeom" id="blue-gam-jeom">0</div>
+        </div>
+        <div class="fighter" id="red">
+            <div class="color" id="red-color"></div>
+            <div class="data" style="width: var(--data-width)">
+                <span class="fi fi-sk" id="red-flag"></span>
+                <div class="name" id="red-name">Matúš Matejka</div>
+            </div>
+            <div class="points" id="red-points-1">0</div>
+            <div class="points" id="red-points-2">0</div>
+            <div class="points" id="red-points-3">0</div>
+            <div class="points gam-jeom" id="red-gam-jeom">0</div>
+        </div>
+        <div class="fighter">
+            <div class="timer data" id="timer">0:11</div>
+            <div class="dark data" id="round">1st</div>
+        </div>
+    </main>
+    <script>
+        var roundCount = 1;
+        var hitLevel = 10;
+
+        const main = document.getElementById("main");
+        const timer = document.getElementById("timer");
+        const fightNum = document.getElementById("fight-num");
+        const metadata = document.getElementById("metadata");
+        const round = document.getElementById("round");
+
+        const blue = document.getElementById("blue");
+        const blueName = document.getElementById("blue-name");
+        const blueFlag = document.getElementById("blue-flag");
+        const bluePoints1 = document.getElementById("blue-points-1");
+        const bluePoints2 = document.getElementById("blue-points-2");
+        const bluePoints3 = document.getElementById("blue-points-3");
+        const blueGamJeom = document.getElementById("blue-gam-jeom");
+
+        const red = document.getElementById("red");
+        const redName = document.getElementById("red-name");
+        const redFlag = document.getElementById("red-flag");
+        const redPoints1 = document.getElementById("red-points-1");
+        const redPoints2 = document.getElementById("red-points-2");
+        const redPoints3 = document.getElementById("red-points-3");
+        const redGamJeom = document.getElementById("red-gam-jeom");
+
+        // const ws = new WebSocket("ws://localhost:6789");
+
+        const socket = io("ws://localhost:8000");  // Replace with OBS IP if needed
+
+        socket.on("connect", () => {
+            console.log("WebSocket Connect");
+        });
+
+        socket.on("udp_message", (data) => {
+            try {
+                console.log(data);
+                // Example: Display different types of alerts
+                if (data.event === "Update") {
+                    timer.textContent = data.clk;
+
+                    if (data.kye_shi && !timer.classList.contains("gam-jeom")) {
+                        timer.classList.add("gam-jeom");
+
+                    } else if (!data.kye_shi && timer.classList.contains("gam-jeom")) {
+                        timer.classList.remove("gam-jeom");
+
+                    }
+
+                    fightNum.textContent = data.match_id;
+                    metadata.textContent = data.title;
+
+                    switch (data.round) {
+                        case 2:
+                            round.textContent = "2nd";
+                            bluePoints2.style.display = "flex";
+                            bluePoints3.style.display = "none";
+                            redPoints2.style.display = "flex";
+                            redPoints3.style.display = "none";
+                            break;
+                        case 3:
+                            round.textContent = "3rd";
+                            bluePoints2.style.display = "flex";
+                            bluePoints3.style.display = "flex";
+                            redPoints2.style.display = "flex";
+                            redPoints3.style.display = "flex";
+                            break;
+                        default:
+                            round.textContent = "1st";
+                            bluePoints2.style.display = "none";
+                            bluePoints3.style.display = "none";
+                            redPoints2.style.display = "none";
+                            redPoints3.style.display = "none";
+                            break;
+                    }
+
+                    blueName.textContent = data.blue_name;
+                    blueFlag.className = `fi fi-${data.blue_flag}`;
+                    bluePoints1.textContent = data.blue_points_1;
+                    bluePoints2.textContent = data.blue_points_2;
+                    bluePoints3.textContent = data.blue_points_3;
+                    blueGamJeom.textContent = data.blue_gam_jeom;
+
+                    console.log(data.blue_gam_jeom);
+                    console.log(data.red_gam_jeom);
+
+                    if (data.blue_gam_jeom == "0") {
+                        blueGamJeom.style.display = "none";
+                    } else {
+                        blueGamJeom.style.display = "flex";
+                    }
+
+                    redName.textContent = data.red_name;
+                    redFlag.className = `fi fi-${data.red_flag}`;
+                    redPoints1.textContent = data.red_points_1;
+                    redPoints2.textContent = data.red_points_2;
+                    redPoints3.textContent = data.red_points_3;
+                    redGamJeom.textContent = data.red_gam_jeom;
+
+                    if (data.red_gam_jeom == "0") {
+                        redGamJeom.style.display = "none";
+                    } else {
+                        redGamJeom.style.display = "flex";
+                    }
+
+
+                } else if (data.event == "Punch") {
+                    addPunch(data.color);
+                } else if (data.event == "Trunk") {
+                    addTrunk(data.color);
+                } else if (data.event == "Head") {
+                    addHead(data.color);
+                } else if (data.event == "HitLevel") {
+                } else if (data.event === "RoundStart") {
+                    setTimeout(() => {
+                        main.classList.remove("hidden");
+                    }, 1000);
+                }
+                else if (data.event === "RoundEnd") {
+                    setTimeout(() => {
+                        main.classList.add("hidden");
+                    }, 3000);
+                }
+
+            } catch (err) {
+                console.error("Failed to parse JSON:", err);
+            }
+        });
+
+        function addPunch(color) {
+            var doc = new DOMParser().parseFromString(`<div class="dark data">PUNCH</div>`, "text/html");
+            let punch;
+            if (color == "blue") {
+                punch = blue.appendChild(doc.body.firstChild);
+            } else {
+                punch = red.appendChild(doc.body.firstChild);
+            }
+
+            setTimeout(() => {
+                punch.remove();
+            }, 1000);
+        }
+
+        function addTrunk(color) {
+            var doc = new DOMParser().parseFromString(`<div class="dark data">TRUNK</div>`, "text/html");
+            let punch;
+            if (color == "blue") {
+                punch = blue.appendChild(doc.body.firstChild);
+            } else {
+                punch = red.appendChild(doc.body.firstChild);
+            }
+
+            setTimeout(() => {
+                punch.remove();
+            }, 1000);
+        }
+
+        function addHead(color) {
+            var doc = new DOMParser().parseFromString(`<div class="dark data">HEAD</div>`, "text/html");
+            let punch;
+            if (color == "blue") {
+                punch = blue.appendChild(doc.body.firstChild);
+            } else {
+                punch = red.appendChild(doc.body.firstChild);
+            }
+
+            setTimeout(() => {
+                punch.remove();
+            }, 1000);
+        }
+
+    </script>
+</body>
+
+</html>
