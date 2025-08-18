@@ -77,8 +77,8 @@ class ServerWorker(QObject):
         self.flask_app = Flask(__name__)
         # Ensure templates folder exists for render_template to work
         # You might need to adjust this path based on your project structure
-        self.flask_app.template_folder = os.path.join(os.getcwd(), 'templates')
-        self.flask_app.static_folder = os.path.join(os.getcwd(), 'static')
+        self.flask_app.template_folder = os.path.join(os.getcwd(), 'server/templates')
+        self.flask_app.static_folder = os.path.join(os.getcwd(), 'server/static')
         self.socketio = SocketIO(self.flask_app, cors_allowed_origins="*", async_mode='threading')
 
         # Dynamically set routes based on your original code
