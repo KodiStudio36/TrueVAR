@@ -12,25 +12,26 @@
     <script src="https://cdn.socket.io/4.5.4/socket.io.min.js"></script>
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/lipis/flag-icons@7.2.3/css/flag-icons.min.css" />
     <link rel="stylesheet" href="{{ url_for('static', filename='styles.css') }}">
+    <!-- <link rel="stylesheet" href="../../server/static/styles.css"> -->
 </head>
 
 <body>
-    <!-- <div class="names hidden" id="names">
+    <div class="names hidden" id="names">
         <div class="fighter" id="blue">
             <div class="color" id="blue-color"></div>
             <div class="data" style="width: var(--names-width)">
-                <span class="fi fi-sk" id="blue-flag"></span>
-                <div class="name" id="blue-name">CJ NICKOLAS</div>
+                <span class="fi fi-sk" id="blue-flag-fighter"></span>
+                <div class="name" id="blue-name-fighter">CJ NICKOLAS</div>
             </div>
         </div>
         <div class="fighter" id="red">
             <div class="color" id="red-color"></div>
             <div class="data" style="width: var(--names-width)">
-                <span class="fi fi-sk" id="red-flag"></span>
-                <div class="name" id="red-name">SIMONE ALESSIO</div>
+                <span class="fi fi-sk" id="red-flag-fighter"></span>
+                <div class="name" id="red-name-fighter">SIMONE ALESSIO</div>
             </div>
         </div>
-    </div> -->
+    </div>
     <div class="results hidden" id="results">
         <div class="flag-data" style="width: calc(var(--results-width) + 21px)">
             <div class="category">Men's -58kg</div>
@@ -96,6 +97,12 @@
         const redPoints2 = document.getElementById("red-points-2");
         const redPoints3 = document.getElementById("red-points-3");
 
+        const blueNameFighter = document.getElementById("blue-name-fighter");
+        const blueFlagFighter = document.getElementById("blue-flag-fighter");
+
+        const redNameFighter = document.getElementById("red-name-fighter");
+        const redFlagFighter = document.getElementById("red-flag-fighter");
+
         const socket = io("ws://localhost:8000"); // Replace with OBS IP if needed
 
         socket.on("connect", () => {
@@ -109,6 +116,7 @@
                 if (data.event === "RoundStart") {
                     //results.classList.add("hidden");
                     //showNames();
+                    names.classList.add("hidden");
                 } else if (data.event === "RoundEnd") {
                     blueName.textContent = data.blue_name;
                     blueFlag.className = `fi fi-${data.blue_flag}`;
@@ -149,6 +157,13 @@
                             results.classList.add("hidden");
                         }, 20000);
                     }, 8000);
+                } else if (data.event === "FightersInit") {
+                    blueNameFighter.textContent = data.blue_name;
+                    blueFlagFighter.className = `fi fi-${data.blue_flag}`;
+                    redNameFighter.textContent = data.red_name;
+                    redFlagFighter.className = `fi fi-${data.red_flag}`;
+
+                    names.classList.remove("hidden");
                 }
 
             } catch (err) {

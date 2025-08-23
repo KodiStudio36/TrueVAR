@@ -2,7 +2,7 @@
     "is_scoreboard": true,
     "res": 720,
     "vaapi": true,
-    "debug": false,
+    "debug": true,
     "camera_idx": 0,
     "live_camera_idx": 1,
     "live_key": "a679-y644-da7s-wm4k-dq5p",

@@ -60,6 +60,14 @@ body {
     bottom: 0;
 }
 
+.vrCard {
+    position: absolute;
+    width: 100%;
+    display: flex;
+    align-items: end;
+    bottom: 0;
+}
+
 .results {
     position: absolute;
     width: 100%;

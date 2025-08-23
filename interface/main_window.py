@@ -82,7 +82,7 @@ class MainWindow(QMainWindow):
                     self.current_screen = 2
 
                     # pro webserver implementation
-                    self.webserver_manager.go_to_ivr_scene()
+                    self.webserver_manager.start_ivr_scene()
                 else:
                     self.show_toast_message("Video Replay can't be open without recording")
 
@@ -93,7 +93,7 @@ class MainWindow(QMainWindow):
                 self.current_screen = 0
 
                 # pro webserver implementation
-                self.webserver_manager.go_to_main_scene()
+                self.webserver_manager.end_ivr_scene()
 
         if key_sequence == QKeySequence(self.key_bind_manager.record_key) and self.current_screen == 0:
             if not self.camera_manager.is_recording:
@@ -135,9 +135,6 @@ class MainWindow(QMainWindow):
 
             self.camera_manager.fight_num = str(time())[6: 12]
             self.camera_manager.start_cameras()
-
-            # pro webserver implementation
-            self.webserver_manager.go_to_main_scene()
 
     def stop_recording(self):
         if self.camera_manager.is_recording:

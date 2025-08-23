@@ -110,9 +110,21 @@ class ServerWorker(QObject):
         if self.obs_ws:
             self.obs_ws.call(requests.SetCurrentProgramScene(sceneName="Main Scene")) 
 
-    def go_to_ivr_scene(self):
+    def start_ivr_scene(self):
+        self.socketio.emit("udp_message", {
+            "event": "IVRStart",
+        })
+
         if self.obs_ws:
             self.obs_ws.call(requests.SetCurrentProgramScene(sceneName="IVR Scene")) 
+
+    def end_ivr_scene(self):
+        self.socketio.emit("udp_message", {
+            "event": "IVREnd",
+        })
+
+        if self.obs_ws:
+            self.obs_ws.call(requests.SetCurrentProgramScene(sceneName="Main Scene"))
 
     def stop_servers(self):
         if not self._is_running:
@@ -273,6 +285,16 @@ class ServerWorker(QObject):
             update_data["blue_flag"] = alpha3_to_alpha2.get(parts[3]).lower()
             update_data["red_name"] = parts[5]
             update_data["red_flag"] = alpha3_to_alpha2.get(parts[7]).lower()
+
+            self.go_to_main_scene()
+
+            self.socketio.emit("udp_message", {
+                "event": "FightersInit",
+                "blue_name": update_data["blue_name"],
+                "red_name": update_data["red_name"],
+                "blue_flag": update_data["blue_flag"],
+                "red_flag": update_data["red_flag"],
+            })
 
         elif command == "sc1":
             print(update_data["round"], parts[1], parts[3])

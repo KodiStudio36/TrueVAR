@@ -53,9 +53,13 @@ class WebServerManager:
         if self.worker:
             self.worker.go_to_main_scene()
 
-    def go_to_ivr_scene(self):
+    def start_ivr_scene(self):
         if self.worker:
-            self.worker.go_to_ivr_scene()
+            self.worker.start_ivr_scene()
+
+    def end_ivr_scene(self):
+        if self.worker:
+            self.worker.end_ivr_scene()
 
     def save_webserver(self):
         """Save key binds to a JSON file."""
