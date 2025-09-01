@@ -260,4 +260,40 @@ gst-launch-1.0 -e \
 
 gst-launch-1.0 rtspsrc location=rtsp://admin:TaekwondoVAR@192.168.0.21:554 latency=800 ! rtph264depay ! h264parse ! vaapih264dec ! vaapipostproc ! video/x-raw,format=RGBA,width=1280,height=720,framerate=30/1 ! timeoverlay ! queue ! shmsink socket-path=/tmp/gst_shm_socket wait-for-connection=false shm-size=200000000
 
-"""
+videotestsrc ! vaapipostproc ! video/x-raw,width=1280,height=720,framerate=30/1,format=NV12 ! capsfilter ! queue ! shmsink socket-path=/tmp/camera1_shm_socket wait-for-connection=false shm-size=200000000 
+videotestsrc ! vaapipostproc ! video/x-raw,width=1280,height=720,framerate=30/1,format=NV12 ! capsfilter ! queue ! shmsink socket-path=/tmp/camera2_shm_socket wait-for-connection=false shm-size=200000000 
+videotestsrc ! vaapipostproc ! video/x-raw,width=1280,height=720,framerate=30/1,format=NV12 ! capsfilter ! queue ! shmsink socket-path=/tmp/camera3_shm_socket wait-for-connection=false shm-size=200000000
+
+gst-launch-1.0 -e \
+    wpesrc location=https://example.com draw-background=false ! video/x-raw,width=640,height=480,framerate=30/1,format=NV12 ! queue leaky=downstream ! vaapipostproc ! video/x-raw,width=320,height=180 ! tee name=overlay_tee \
+    videotestsrc ! vaapipostproc ! video/x-raw,width=1280,height=720,framerate=30/1,format=NV12 ! queue leaky=downstream ! vaapipostproc ! compositor name=comp2 sink_0::xpos=0 sink_0::ypos=0 sink_1::xpos=10 sink_1::ypos=10 ! video/x-raw,width=1280,height=720 ! vaapih264enc bitrate=4000 ! avimux ! filesink location=/home/kodi/Documents/programs/var/TrueVAR/records/id3347.9_camera1_segment0.avi overlay_tee. ! queue ! comp2. \
+    videotestsrc ! vaapipostproc ! video/x-raw,width=1280,height=720,framerate=30/1,format=NV12 ! queue leaky=downstream ! vaapipostproc ! compositor name=comp3 sink_0::xpos=0 sink_0::ypos=0 sink_1::xpos=10 sink_1::ypos=10 ! video/x-raw,width=1280,height=720 ! vaapih264enc bitrate=4000 ! avimux ! filesink location=/home/kodi/Documents/programs/var/TrueVAR/records/id3347.9_camera2_segment0.avi overlay_tee. ! queue ! comp3. \
+    videotestsrc ! vaapipostproc ! video/x-raw,width=1280,height=720,framerate=30/1,format=NV12 ! queue leaky=downstream ! vaapipostproc ! compositor name=comp4 sink_0::xpos=0 sink_0::ypos=0 sink_1::xpos=10 sink_1::ypos=10 ! video/x-raw,width=1280,height=720 ! vaapih264enc bitrate=4000 ! avimux ! filesink location=/home/kodi/Documents/programs/var/TrueVAR/records/id3347.9_camera3_segment0.avi overlay_tee. ! queue ! comp4.
+
+gst-launch-1.0 -e \
+                         wpesrc location=http://localhost:8000/scoreboard draw-background=true ! vaapipostproc ! video/x-raw,width=320,height=180,format=RGBA ! \
+                             tee name=overlay_tee \
+                         \
+                         videotestsrc ! vaapipostproc ! video/x-raw,width=1280,height=720,framerate=30/1,format=RGBA ! \
+                             queue leaky=downstream ! vaapipostproc ! \
+                             compositor name=comp2 sink_0::xpos=0 sink_0::ypos=0 sink_1::xpos=10 sink_1::ypos=10 ! \
+                             video/x-raw,width=1280,height=720 ! \
+                             vaapisink \
+                             overlay_tee. ! queue ! comp2. \
+                         \
+                         videotestsrc ! vaapipostproc ! video/x-raw,width=1280,height=720,framerate=30/1,format=RGBA ! \
+                             queue leaky=downstream ! vaapipostproc ! \
+                             compositor name=comp3 sink_0::xpos=0 sink_0::ypos=0 sink_1::xpos=10 sink_1::ypos=10 ! \
+                             video/x-raw,width=1280,height=720 ! \
+                             vaapisink \
+                             overlay_tee. ! queue ! comp3. \
+                         \
+                         videotestsrc ! vaapipostproc ! video/x-raw,width=1280,height=720,framerate=30/1,format=RGBA ! \
+                             queue leaky=downstream ! vaapipostproc ! \
+                             compositor name=comp4 sink_0::xpos=0 sink_0::ypos=0 sink_1::xpos=10 sink_1::ypos=10 ! \
+                             video/x-raw,width=1280,height=720 ! \
+                             vaapisink \
+                             overlay_tee. ! queue ! comp4.
+
+create scoreboard
+    """
