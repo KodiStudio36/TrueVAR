@@ -42,6 +42,8 @@ class MainWindow(QMainWindow):
 
         self.setCentralWidget(self.stacked_widget)
 
+        self.toggle_fullscreen()
+
     def show_main(self):
         # self.main_screen.update_camera_list()
         self.stacked_widget.setCurrentWidget(self.main_screen)
