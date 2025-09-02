@@ -57,8 +57,11 @@ WantedBy=default.target
 
 sudo nano /etc/udev/rules.d/99-shuttle-go.rules
 
-ACTION=="add", SUBSYSTEM=="input", ATTRS{name}=="Contour Design ShuttleXpress", TAG+="systemd", ENV{SYSTEMD_WANTS}="shuttle-go.service"
-ACTION=="remove", SUBSYSTEM=="input", ATTRS{name}=="Contour Design ShuttleXpress", TAG+="systemd", ENV{SYSTEMD_WANTS}="shuttle-go.service"
+# Start user service when device is added
+ACTION=="add", ATTRS{idVendor}=="0b33", ATTRS{idProduct}=="0020", TAG+="systemd", ENV{SYSTEMD_USER_WANTS}="shuttle-go.service"
+
+# Stop user service when device is removed
+ACTION=="remove", ATTRS{idVendor}=="0b33", ATTRS{idProduct}=="0020", RUN+="/bin/loginctl enable-linger truevar; /usr/bin/sudo -u truevar systemctl --user stop shuttle-go.service"
 
 sudo udevadm control --reload-rules
 sudo udevadm trigger
