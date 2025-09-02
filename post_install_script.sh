@@ -37,6 +37,8 @@ sudo systemctl start NetworkManager
 sudo systemctl enable systemd-networkd
 
 
+mkdir ~/.config/systemd
+mkdir ~/.config/systemd/user
 nano ~/.config/systemd/user/shuttle-go.service
 
 [Unit]
