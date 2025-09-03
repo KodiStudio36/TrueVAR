@@ -16,7 +16,7 @@ from obswebsocket import obsws, requests
 from PyQt5.QtCore import QObject, pyqtSignal
 
 # Assume this file exists
-from app.country import alpha3_to_alpha2
+from config import alpha3_to_alpha2
 
 # === Global State Variables ===
 # This is a bit messy, a better approach might be to

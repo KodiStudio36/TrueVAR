@@ -338,11 +338,23 @@ class SettingsScreen(QWidget):
         res_combo.setSizePolicy(QSizePolicy.Maximum, QSizePolicy.Maximum)
         res_combo.currentTextChanged.connect(lambda num: self.set_resolution(int(num)))
 
+        cam_layout_h = QHBoxLayout()
+        cam_layout_h.setSpacing(10)
+
         self.cam_combo = QComboBox()
         self.cam_combo.addItems([f"/dev/video{i}" for i in self.get_connected_cameras()])
         self.cam_combo.setCurrentText(f"/dev/video{self.camera_manager.camera_idx}")
         self.cam_combo.setSizePolicy(QSizePolicy.Maximum, QSizePolicy.Maximum)
         self.cam_combo.currentTextChanged.connect(lambda device: self.set_camera_idx(int(device[-1])))
+
+        refresh_button = QPushButton()
+        refresh_button.setIcon(self.style().standardIcon(QStyle.SP_BrowserReload))
+        refresh_button.setFixedHeight(self.cam_combo.sizeHint().height())  # match height
+        refresh_button.setFixedWidth(self.cam_combo.sizeHint().height())  # match height
+        refresh_button.clicked.connect(self.refresh_camera_list)
+
+        cam_layout_h.addWidget(self.cam_combo)
+        cam_layout_h.addWidget(refresh_button)
 
         court_combo = QComboBox()
         court_combo.addItems([f"{i}" for i in range(1, 26)])
@@ -351,7 +363,7 @@ class SettingsScreen(QWidget):
         court_combo.currentTextChanged.connect(lambda num: self.set_court(int(num)))
 
         form_layout.addRow(QLabel("Network ip address:"), self.network_ip_input)
-        form_layout.addRow(QLabel("Select Camera:"), self.cam_combo)
+        form_layout.addRow(QLabel("Select Camera:"), cam_layout_h)
         form_layout.addRow(QLabel("Select Court:"), court_combo)
         form_layout.addRow(QLabel("Debug Mode:"), debug_toggle)
         form_layout.addRow(QLabel("Resolution:"), res_combo)
@@ -503,6 +515,10 @@ class SettingsScreen(QWidget):
     def set_camera_idx(self, idx: int):
         self.camera_manager.camera_idx = idx
         self.camera_manager.save_cameras()
+        self.camera_manager.reload_shmsink()
+        self.update_camera_list()
+
+    def refresh_camera_list(self):
         self.camera_manager.reload_shmsink()
         self.update_camera_list()
 
