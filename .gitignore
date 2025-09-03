@@ -2,9 +2,13 @@
 .venv/
 **/__pycache__/
 
-# no huge recordings
+# don't push recordings
 records/*
 !records/.gitkeep
+
+# don't push settings
+settings/*
+!settings/.gitkeep
 
 # future ai development
 ai/

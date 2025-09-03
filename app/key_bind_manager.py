@@ -89,4 +89,7 @@ class KeyBindManager:
                 self.second_forward_key = data["second_forward_key"]
                 self.second_backward_key = data["second_backward_key"]
                 self.reset_zoom_key = data["reset_zoom_key"]
+
+        else:
+            self.save_keybindings()
                 

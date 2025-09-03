@@ -81,3 +81,6 @@ class WebServerManager:
                 self.webserver_port = data["webserver_port"]
                 self.obs_port = data["obs_port"]
                 self.obs_pass = data["obs_pass"]
+
+        else:
+            self.save_webserver()

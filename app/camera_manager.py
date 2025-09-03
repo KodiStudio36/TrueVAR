@@ -219,6 +219,9 @@ class CameraManager(QObject):
                 self.court = data["court"]
                 self.network_ip = data["network_ip"]
 
+        else:
+            self.save_cameras()
+
     def get_filepath(self, idx, segment):
         return f"{records_path}/id{self.fight_num}_camera{idx}_segment{segment}.avi"
     
