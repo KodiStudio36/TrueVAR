@@ -1,10 +1,18 @@
 #!/usr/bin/env bash
-# Wrapper to activate venv and run main.py
+# Wrapper to activate venv, optionally update repo, and run main.py
 
 cd /home/truevar/Documents/TrueVAR || exit 1
 
+# Check if GitHub is reachable
+if ping -c 1 github.com &> /dev/null; then
+    echo "Internet detected, updating code..."
+    git pull origin main || echo "Update failed, continuing with local code"
+else
+    echo "No internet connection, skipping update"
+fi
+
 # Activate virtual environment
-source /home/truevar/Documents/TrueVAR/.venv/bin/activate
+source .venv/bin/activate
 
 # Run your script
-exec python /home/truevar/Documents/TrueVAR/main.py
+exec python main.py

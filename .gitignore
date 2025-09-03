@@ -1,6 +1,10 @@
+# python
 .venv/
-records/
+**/__pycache__/
 
-reload_ip.sh
+# no huge recordings
+records/*
+!records/.gitkeep
 
+# future ai development
 ai/
