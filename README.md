@@ -60,9 +60,6 @@ python -m venv .venv
 source .venv/bin/activate
 pip install -r requirements.txt
 ```
-Create `records` directory (TODO)
-
-    mkdir records
 
 #### Make TrueVAR autostart on login
 ```
