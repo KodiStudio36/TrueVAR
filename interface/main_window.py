@@ -8,10 +8,9 @@ from interface.replay_screen import ReplayScreen
 from time import time
 
 class MainWindow(QMainWindow):
-    def __init__(self, controller_manager, key_bind_manager, camera_manager, webserver_manager):
+    def __init__(self, key_bind_manager, camera_manager, webserver_manager):
         super().__init__()
 
-        self.controller_manager = controller_manager
         self.key_bind_manager = key_bind_manager
         self.webserver_manager = webserver_manager
         self.webserver_manager.set_context(self)
@@ -22,7 +21,7 @@ class MainWindow(QMainWindow):
 
         # Create instances of each screen
         self.main_screen = MainScreen(self.camera_manager)
-        self.settings_screen = SettingsScreen(self.controller_manager, self.key_bind_manager, self.camera_manager, self.webserver_manager)
+        self.settings_screen = SettingsScreen(self.key_bind_manager, self.camera_manager, self.webserver_manager)
         self.replay_screen = ReplayScreen(self.camera_manager)
         self.current_screen = 0
 
@@ -181,5 +180,4 @@ class MainWindow(QMainWindow):
         # Stop all video streams on exit
         self.camera_manager.stop()
         self.settings_screen.stop()
-        self.controller_manager.stop()
         super().closeEvent(event)

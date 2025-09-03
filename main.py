@@ -1,7 +1,6 @@
 import sys
 from PyQt5.QtGui import QPixmap, QIcon
 from PyQt5.QtWidgets import QApplication
-from app.controller_manager import ControllerManager
 from app.key_bind_manager import KeyBindManager
 from app.webserver_manager import WebServerManager
 from app.camera_manager import CameraManager
@@ -13,15 +12,12 @@ def main():
     app = QApplication(sys.argv)
 
     # Initialize managers
-    controller_manager = ControllerManager()
-    controller_manager.start()
-    
     key_bind_manager = KeyBindManager()
     webserver_manager = WebServerManager()
     camera_manager = CameraManager()
 
     # Create the main window with the stacked layout
-    main_window = MainWindow(controller_manager, key_bind_manager, camera_manager, webserver_manager)
+    main_window = MainWindow(key_bind_manager, camera_manager, webserver_manager)
     main_window.setWindowTitle("TrueVAR")
     main_window.setWindowIcon(QIcon(QPixmap(icon_file)))
     main_window.show()

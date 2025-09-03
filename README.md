@@ -1,4 +1,4 @@
-TrueVAR Case Documentation
+TrueVAR Documentation
 ==========================
 
 
@@ -64,7 +64,7 @@ Create `records` directory (TODO)
 
     mkdir records
 
-Make TrueVAR autostart on login
+#### Make TrueVAR autostart on login
 ```
 cd ~
 echo "exec /home/truevar/Documents/TrueVAR/autostart_main.sh &" >> ~/.config/i3/config

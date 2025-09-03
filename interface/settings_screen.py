@@ -70,9 +70,8 @@ class VideoStreamWidget(QWidget):
         super().closeEvent(event)
 
 class SettingsScreen(QWidget):
-    def __init__(self, controller_manager, key_bind_manager, camera_manager, webserver_manager):
+    def __init__(self, key_bind_manager, camera_manager, webserver_manager):
         super().__init__()
-        self.controller_manager = controller_manager
         self.key_bind_manager = key_bind_manager
         self.webserver_manager = webserver_manager
         self.camera_manager = camera_manager
@@ -93,7 +92,7 @@ class SettingsScreen(QWidget):
         main_layout.addWidget(self.tabs)
         self.setLayout(main_layout)
 
-        if (int(self.cam_combo.currentText()[-1]) != self.camera_manager.camera_idx):
+        if (len(self.cam_combo.currentText()) > 0 and int(self.cam_combo.currentText()[-1]) != self.camera_manager.camera_idx):
             self.set_camera_idx(int(self.cam_combo.currentText()[-1]))
 
     def init_tabs(self):
@@ -109,39 +108,6 @@ class SettingsScreen(QWidget):
         self.key_bind_settings_tab = QWidget()
         self.init_key_binding_tab()
         self.tabs.addTab(self.key_bind_settings_tab, "Key Bind")
-
-        self.controller_tab = QWidget()
-        self.init_controller_tab()
-        self.tabs.addTab(self.controller_tab, "Controller")
-
-    def init_controller_tab(self):
-        # Layout for the YouTube streaming form
-        form_layout = QFormLayout()
-        form_layout.setSpacing(10)
-        form_layout.setHorizontalSpacing(50)
-
-        # Input field for the YouTube livestream key
-        controller_input = QLineEdit()
-        controller_input.setText(self.controller_manager.command_str)
-        controller_input.setPlaceholderText("Enter controller starter command")
-        form_layout.addRow("Controller command:", controller_input)
-
-        # Button to start the stream
-        submit_button = QPushButton("Save controller starter command")
-        submit_button.clicked.connect(lambda _: self.save_controller(controller_input.text()))
-
-        # Add form and button to the layout
-        layout = QVBoxLayout()
-        layout.addLayout(form_layout)
-        layout.addWidget(submit_button)
-        layout.addStretch()  # Push content to the top
-
-        self.controller_tab.setLayout(layout)
-
-    def save_controller(self, command):
-        self.controller_manager.save_command(command)
-        self.controller_manager.reload()
-        self.clearFocus()
 
     def init_stream_tab(self):
         layout = QVBoxLayout()
