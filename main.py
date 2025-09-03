@@ -1,4 +1,4 @@
-import sys
+import sys, os
 from PyQt5.QtGui import QPixmap, QIcon
 from PyQt5.QtWidgets import QApplication
 from app.key_bind_manager import KeyBindManager
@@ -7,6 +7,7 @@ from app.camera_manager import CameraManager
 from interface.main_window import MainWindow
 
 from config import icon_file
+from config import records_path
 
 def main():
     app = QApplication(sys.argv)
@@ -15,6 +16,8 @@ def main():
     key_bind_manager = KeyBindManager()
     webserver_manager = WebServerManager()
     camera_manager = CameraManager()
+
+    os.makedirs(records_path, exist_ok=True)
 
     # Create the main window with the stacked layout
     main_window = MainWindow(key_bind_manager, camera_manager, webserver_manager)
