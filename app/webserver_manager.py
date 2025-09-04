@@ -1,21 +1,23 @@
-# app/key_bind_manager.py
 import os, json
 from PyQt5.QtCore import QThread, QObject
 
 from app.server_worker import ServerWorker
 from config import webserver_settings_file
+from app.injector import singleton
+from app.settings_manager import SettingsManager, Setting
 
-class WebServerManager:
+@singleton
+class WebServerManager(SettingsManager):
+    udp_port = Setting(9998)
+    webserver_port = Setting(8000)
+    obs_port = Setting(4455)
+    obs_pass = Setting("samko211")
+
     def __init__(self):
-        self.udp_port = 9998
-        self.webserver_port = 8000
-        self.obs_port = 4455
-        self.obs_pass = "samko211"
-
         self.thread = QThread()
         self.worker = None
 
-        self.load_webserver()
+        super().__init__(webserver_settings_file)
 
     def start_servers(self):
         print("ggggg")
@@ -60,27 +62,3 @@ class WebServerManager:
     def end_ivr_scene(self):
         if self.worker:
             self.worker.end_ivr_scene()
-
-    def save_webserver(self):
-        """Save key binds to a JSON file."""
-        data = {
-            "udp_port": self.udp_port,
-            "webserver_port": self.webserver_port,
-            "obs_port": self.obs_port,
-            "obs_pass": self.obs_pass,
-        }
-        with open(webserver_settings_file, 'w') as f:
-            json.dump(data, f, indent=4)
-    
-    def load_webserver(self):
-        """Load key binds from a JSON file."""
-        if os.path.exists(webserver_settings_file):
-            with open(webserver_settings_file, 'r') as f:
-                data = json.load(f)
-                self.udp_port = data["udp_port"]
-                self.webserver_port = data["webserver_port"]
-                self.obs_port = data["obs_port"]
-                self.obs_pass = data["obs_pass"]
-
-        else:
-            self.save_webserver()

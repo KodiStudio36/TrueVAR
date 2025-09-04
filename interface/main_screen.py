@@ -2,10 +2,13 @@ from PyQt5.QtWidgets import QWidget, QVBoxLayout, QGridLayout, QLabel, QGraphics
 from PyQt5.QtGui import QColor
 from PyQt5.QtCore import Qt, QTimer
 
+from app.injector import Injector
+from app.camera_manager import CameraManager
+
 class MainScreen(QWidget):
-    def __init__(self, camera_manager):
+    def __init__(self):
         super().__init__()
-        self.camera_manager = camera_manager
+        self.camera_manager: CameraManager = Injector.find(CameraManager)
         self.blink_timers = {}  # To store timers for each camera's blink effect
         self.init_ui()
 

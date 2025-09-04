@@ -5,15 +5,14 @@ from PyQt5.QtMultimedia import QMediaPlayer, QMediaContent, QMediaPlaylist
 from PyQt5.QtCore import QUrl, Qt, QSizeF, QEvent
 from PyQt5.QtGui import QWheelEvent, QMouseEvent, QKeySequence, QFont
 
-from config import records_path
-
-#from config import Config
+from app.injector import Injector
+from app.camera_manager import CameraManager
 
 class ZoomableVideoWidget(QGraphicsView):
-    def __init__(self, camera_manager, segments):
+    def __init__(self, segments):
         super().__init__()
 
-        self.camera_manager = camera_manager
+        self.camera_manager: CameraManager = Injector.find(CameraManager)
         self.segments = segments
 
         # Create a scene and a video item
@@ -170,9 +169,9 @@ class ZoomableVideoWidget(QGraphicsView):
 
 
 class ReplayScreen(QWidget):
-    def __init__(self, camera_manager):
+    def __init__(self):
         super().__init__()
-        self.camera_manager = camera_manager
+        self.camera_manager: CameraManager = Injector.find(CameraManager)
 
         self.current_page = 1
 
@@ -196,7 +195,7 @@ class ReplayScreen(QWidget):
         hboxLayout2.addWidget(self.segmentNext)
 
         # Create and add the video widget
-        self.videoWidget = ZoomableVideoWidget(self.camera_manager, 0)
+        self.videoWidget = ZoomableVideoWidget(0)
         self.videoWidget.mediaPlayer.setPlaylist = QMediaPlaylist()
 
         # Create control buttons

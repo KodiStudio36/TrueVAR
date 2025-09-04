@@ -17,6 +17,18 @@ from cv2_enumerate_cameras import enumerate_cameras
 
 import ipaddress
 
+from app.injector import Injector
+from app.webserver_manager import WebServerManager
+from app.key_bind_manager import KeyBindManager
+from app.camera_manager import CameraManager
+
+class EscapeEnterLineEdit(QLineEdit):
+    def keyPressEvent(self, event):
+        if event.key() in (Qt.Key_Return, Qt.Key_Enter, Qt.Key_Escape):
+            self.clearFocus()  # Remove focus
+        else:
+            super().keyPressEvent(event)
+
 class VideoStreamWidget(QWidget):
     def __init__(self, pipeline_description, parent=None):
         super().__init__(parent)
@@ -70,11 +82,11 @@ class VideoStreamWidget(QWidget):
         super().closeEvent(event)
 
 class SettingsScreen(QWidget):
-    def __init__(self, key_bind_manager, camera_manager, webserver_manager):
+    def __init__(self):
         super().__init__()
-        self.key_bind_manager = key_bind_manager
-        self.webserver_manager = webserver_manager
-        self.camera_manager = camera_manager
+        self.key_bind_manager: KeyBindManager = Injector.find(KeyBindManager)
+        self.webserver_manager: WebServerManager = Injector.find(WebServerManager)
+        self.camera_manager: CameraManager = Injector.find(CameraManager)
         self.video_widgets = []
         self.is_update = False
         self.init_ui()
@@ -155,7 +167,7 @@ class SettingsScreen(QWidget):
         form_layout.addRow(QLabel("Camera ID:"), camera_id_combo)
 
         # Livestream key input
-        youtube_key_input = QLineEdit()
+        youtube_key_input = EscapeEnterLineEdit()
         youtube_key_input.setPlaceholderText("xxxx-xxxx-xxxx-xxxx-xxxx")
         youtube_key_input.setText(self.camera_manager.live_key)
         form_layout.addRow(QLabel("Livestream Key:"), youtube_key_input)
@@ -191,24 +203,28 @@ class SettingsScreen(QWidget):
         pro_form_layout.setSpacing(10)
         pro_form_layout.setHorizontalSpacing(20)
 
-        udp_port_input = QLineEdit()
+        udp_port_input = EscapeEnterLineEdit()
         udp_port_input.setPlaceholderText("9998")
         udp_port_input.setText(str(self.webserver_manager.udp_port))
+        udp_port_input.textChanged.connect(lambda text: setattr(self.webserver_manager, "udp_port", int(text)))
         pro_form_layout.addRow(QLabel(f"Tk-Strike UDP Port:"), udp_port_input)
 
-        web_port_input = QLineEdit()
+        web_port_input = EscapeEnterLineEdit()
         web_port_input.setPlaceholderText("8000")
         web_port_input.setText(str(self.webserver_manager.webserver_port))
+        web_port_input.textChanged.connect(lambda text: setattr(self.webserver_manager, "webserver_port", int(text)))
         pro_form_layout.addRow(QLabel(f"WebServer Port:"), web_port_input)
 
-        obs_port_input = QLineEdit()
+        obs_port_input = EscapeEnterLineEdit()
         obs_port_input.setPlaceholderText("4455")
         obs_port_input.setText(str(self.webserver_manager.obs_port))
+        obs_port_input.textChanged.connect(lambda text: setattr(self.webserver_manager, "obs_port", int(text)))
         pro_form_layout.addRow(QLabel(f"OBS WebSocket Port:"), obs_port_input)
 
-        obs_pass_input = QLineEdit()
+        obs_pass_input = EscapeEnterLineEdit()
         obs_pass_input.setPlaceholderText("Enter OBS WebSocket Password")
         obs_pass_input.setText(self.webserver_manager.obs_pass)
+        obs_pass_input.textChanged.connect(lambda text: setattr(self.webserver_manager, "obs_pass", text))
         pro_form_layout.addRow(QLabel(f"OBS WebSocket Pass:"), obs_pass_input)
 
         layout.addWidget(pro_form_frame)
@@ -225,9 +241,7 @@ class SettingsScreen(QWidget):
 
 
     def on_stream(self, is_stream):
-        self.start_stream_button.setText("Stop Stream" if is_stream else "Start Stream")
-
-    
+        self.start_stream_button.setText("Stop Stream" if is_stream else "Start Stream")    
 
     def toggle_stream(self, idx, key):
         if self.camera_manager.is_stream:
@@ -246,60 +260,25 @@ class SettingsScreen(QWidget):
 
 
     def init_key_binding_tab(self):
-        key_bind_layout = QFormLayout()
+        self.key_bind_layout = QFormLayout()
 
-        # For each key bind setting, add a button that allows editing
-        settings_button = QKeySequenceEdit()
-        replay_button = QKeySequenceEdit()
-        record_button = QKeySequenceEdit()
-        next_camera_button = QKeySequenceEdit()
-        play_pause_button = QKeySequenceEdit()
-        frame_forward_button = QKeySequenceEdit()
-        frame_backward_button = QKeySequenceEdit()
-        second_forward_button = QKeySequenceEdit()
-        second_backward_button = QKeySequenceEdit()
-        reset_zoom_button = QKeySequenceEdit()
+        self.key_bind_widgets = {}
 
-        settings_button.setKeySequence(self.key_bind_manager.settings_key)
-        replay_button.setKeySequence(self.key_bind_manager.replay_key)
-        record_button.setKeySequence(self.key_bind_manager.record_key)
-        next_camera_button.setKeySequence(self.key_bind_manager.next_camera_key)
-        play_pause_button.setKeySequence(self.key_bind_manager.play_pause_key)
-        frame_forward_button.setKeySequence(self.key_bind_manager.frame_forward_key)
-        frame_backward_button.setKeySequence(self.key_bind_manager.frame_backward_key)
-        second_forward_button.setKeySequence(self.key_bind_manager.second_forward_key)
-        second_backward_button.setKeySequence(self.key_bind_manager.second_backward_key)
-        reset_zoom_button.setKeySequence(self.key_bind_manager.reset_zoom_key)
+        for field_name in self.key_bind_manager._settings_fields:
+            seq_edit = QKeySequenceEdit()
+            seq_edit.setKeySequence(getattr(self.key_bind_manager, field_name))
+            seq_edit.editingFinished.connect(
+                lambda fn=field_name, widget=seq_edit: self.update_key_bind(fn, widget.keySequence().toString(), widget)
+            )
+            self.key_bind_widgets[field_name] = seq_edit
+            self.key_bind_layout.addRow(field_name.replace("_", " ").title() + ":", seq_edit)
 
-        settings_button.editingFinished.connect(lambda: self.update_key_bind(settings_button, self.key_bind_manager.change_settings_key))
-        replay_button.editingFinished.connect(lambda: self.update_key_bind(replay_button, self.key_bind_manager.change_replay_key))
-        record_button.editingFinished.connect(lambda: self.update_key_bind(record_button, self.key_bind_manager.change_record_key))
-        next_camera_button.editingFinished.connect(lambda: self.update_key_bind(next_camera_button, self.key_bind_manager.change_next_camera_key))
-        play_pause_button.editingFinished.connect(lambda: self.update_key_bind(play_pause_button, self.key_bind_manager.change_play_pause_key))
-        frame_forward_button.editingFinished.connect(lambda: self.update_key_bind(frame_forward_button, self.key_bind_manager.change_frame_forward_key))
-        frame_backward_button.editingFinished.connect(lambda: self.update_key_bind(frame_backward_button, self.key_bind_manager.change_frame_backward_key))
-        second_forward_button.editingFinished.connect(lambda: self.update_key_bind(second_forward_button, self.key_bind_manager.change_second_forward_key))
-        second_backward_button.editingFinished.connect(lambda: self.update_key_bind(second_backward_button, self.key_bind_manager.change_second_backward_key))
-        reset_zoom_button.editingFinished.connect(lambda: self.update_key_bind(reset_zoom_button, self.key_bind_manager.change_reset_zoom_key))
+        self.key_bind_settings_tab.setLayout(self.key_bind_layout)
 
-        key_bind_layout.addRow("Open Settings Shortcut:", settings_button)
-        key_bind_layout.addRow("Open Replay Shortcut:", replay_button)
-        key_bind_layout.addRow("Start Recording Shortcut:", record_button)
-        key_bind_layout.addRow("Go to Next Camera Shortcut:", next_camera_button)
-        key_bind_layout.addRow("Play/Pause Shortcut", play_pause_button)
-        key_bind_layout.addRow("Frame Forward Shortcut:", frame_forward_button)
-        key_bind_layout.addRow("Frame Backward Shortcut:", frame_backward_button)
-        key_bind_layout.addRow("Second Forward Shortcut:", second_forward_button)
-        key_bind_layout.addRow("Second Backward Shortcut:", second_backward_button)
-        key_bind_layout.addRow("Reset Zoom Shortcut:", reset_zoom_button)
-
-        self.key_bind_settings_tab.setLayout(key_bind_layout)
-
-    def update_key_bind(self, button: QKeySequenceEdit, func):
-        print(button.keySequence().toString())
-        if button.keySequence().toString() != "":
-            func(button.keySequence().toString())
-        button.clearFocus()
+    def update_key_bind(self, fn, key, widget):
+        if key != "":
+            setattr(self.key_bind_manager, fn, key)
+        widget.clearFocus()
 
     def init_camera_settings_tab(self):
         layout = QVBoxLayout()
@@ -315,7 +294,7 @@ class SettingsScreen(QWidget):
         form_layout.setHorizontalSpacing(50)
         form_layout.setLabelAlignment(Qt.AlignLeft)  # Ensure labels align to the left
 
-        self.network_ip_input = QLineEdit()
+        self.network_ip_input = EscapeEnterLineEdit()
         self.network_ip_input.setPlaceholderText("x.x.x.x")
         self.network_ip_input.setText(f"{self.camera_manager.network_ip}0")
         self.network_ip_input.editingFinished.connect(lambda: self.set_network_ip(self.network_ip_input.text()))

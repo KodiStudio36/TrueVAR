@@ -1,9 +1,7 @@
-# app/camera_manager.py
 from PyQt5.QtCore import pyqtSignal, QObject
 import json
 import os
 import glob
-from app.cam import Cam
 import gi
 
 gi.require_version("Gst", "1.0")
@@ -11,7 +9,9 @@ gi.require_version("GstApp", "1.0")
 from gi.repository import Gst
 
 from config import records_path, camera_settings_file, ai_path
+from app.injector import singleton
 
+@singleton
 class CameraManager(QObject):
     is_recording_stream = pyqtSignal(bool)
     is_stream_stream = pyqtSignal(bool)

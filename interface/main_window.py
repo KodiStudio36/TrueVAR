@@ -7,22 +7,27 @@ from interface.settings_screen import SettingsScreen
 from interface.replay_screen import ReplayScreen
 from time import time
 
+from app.injector import Injector
+from app.webserver_manager import WebServerManager
+from app.key_bind_manager import KeyBindManager
+from app.camera_manager import CameraManager
+
 class MainWindow(QMainWindow):
-    def __init__(self, key_bind_manager, camera_manager, webserver_manager):
+    def __init__(self):
         super().__init__()
 
-        self.key_bind_manager = key_bind_manager
-        self.webserver_manager = webserver_manager
-        self.webserver_manager.set_context(self)
-        self.camera_manager = camera_manager
+        self.key_bind_manager: KeyBindManager = Injector.find(KeyBindManager)
+        webserver_manager: WebServerManager = Injector.find(WebServerManager)
+        webserver_manager.set_context(self)
+        self.camera_manager: CameraManager = Injector.find(CameraManager)
 
         # Create the stacked layout
         self.stacked_widget = QStackedWidget(self)
 
         # Create instances of each screen
-        self.main_screen = MainScreen(self.camera_manager)
-        self.settings_screen = SettingsScreen(self.key_bind_manager, self.camera_manager, self.webserver_manager)
-        self.replay_screen = ReplayScreen(self.camera_manager)
+        self.main_screen = MainScreen()
+        self.settings_screen = SettingsScreen()
+        self.replay_screen = ReplayScreen()
         self.current_screen = 0
 
         # Add screens to the stacked widget
@@ -83,7 +88,7 @@ class MainWindow(QMainWindow):
                     self.current_screen = 2
 
                     # pro webserver implementation
-                    self.webserver_manager.start_ivr_scene()
+                    Injector.find(WebServerManager).start_ivr_scene()
                 else:
                     self.show_toast_message("Video Replay can't be open without recording")
 
@@ -94,7 +99,7 @@ class MainWindow(QMainWindow):
                 self.current_screen = 0
 
                 # pro webserver implementation
-                self.webserver_manager.end_ivr_scene()
+                Injector.find(WebServerManager).end_ivr_scene()
 
         if key_sequence == QKeySequence(self.key_bind_manager.record_key) and self.current_screen == 0:
             if not self.camera_manager.is_recording:
