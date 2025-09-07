@@ -17,69 +17,13 @@ from cv2_enumerate_cameras import enumerate_cameras
 
 import ipaddress
 
+from interface.settings.widgets.my_line_edit import MyLineEdit
+from interface.settings.widgets.video_stream_widget import VideoStreamWidget
+
 from app.injector import Injector
 from app.webserver_manager import WebServerManager
 from app.key_bind_manager import KeyBindManager
 from app.camera_manager import CameraManager
-
-class EscapeEnterLineEdit(QLineEdit):
-    def keyPressEvent(self, event):
-        if event.key() in (Qt.Key_Return, Qt.Key_Enter, Qt.Key_Escape):
-            self.clearFocus()  # Remove focus
-        else:
-            super().keyPressEvent(event)
-
-class VideoStreamWidget(QWidget):
-    def __init__(self, pipeline_description, parent=None):
-        super().__init__(parent)
-        self.pipeline_description = pipeline_description
-        self.label = QLabel("Initializing video...")
-        self.label.setFixedSize(272, 153)
-        self.label.setAlignment(Qt.AlignCenter)
-        self.pipeline = None
-        
-        layout = QVBoxLayout()
-        layout.addWidget(self.label)
-        self.setLayout(layout)
-
-    def start(self):
-        # Create the GStreamer pipeline with specified color format
-        self.pipeline = Gst.parse_launch(self.pipeline_description)
-        self.appsink = self.pipeline.get_by_name("sink")
-        self.appsink.set_property("emit-signals", True)
-        self.appsink.set_property("sync", False)
-        self.appsink.connect("new-sample", self.on_new_sample)
-
-        # Start the pipeline
-        self.pipeline.set_state(Gst.State.PLAYING)
-
-    def on_new_sample(self, sink):
-        # Callback for new samples from GStreamer pipeline
-        sample = sink.emit("pull-sample")
-        if sample:
-            buffer = sample.get_buffer()
-
-            # Extract frame data from the buffer
-            success, map_info = buffer.map(Gst.MapFlags.READ)
-            if success:
-                # Ensure we are using the RGB format for PyQt compatibility
-                frame_data = map_info.data
-                image = QImage(frame_data, 272, 153, QImage.Format_RGB888)
-                pixmap = QPixmap.fromImage(image)
-                
-                # Update the QLabel pixmap in a thread-safe way
-                QMetaObject.invokeMethod(self.label, "setPixmap", Qt.QueuedConnection, Q_ARG(QPixmap, pixmap))
-                
-                buffer.unmap(map_info)
-        return Gst.FlowReturn.OK
-
-    def stop(self):
-        if self.pipeline:
-            self.pipeline.set_state(Gst.State.NULL)
-
-    def closeEvent(self, event):
-        self.stop()
-        super().closeEvent(event)
 
 class SettingsScreen(QWidget):
     def __init__(self):
@@ -146,8 +90,8 @@ class SettingsScreen(QWidget):
             f"{self.camera_manager.get_shmsink(self.camera_manager.live_camera_idx)} "
             f"! video/x-raw,width={self.camera_manager.res_width},height={self.camera_manager.res_height},"
             f"framerate={self.camera_manager.fps}/1,format=NV12 ! videoconvert ! videoscale "
-            f"! video/x-raw,format=RGB,width=272,height=153 ! queue ! appsink name=sink emit-signals=True sync=True drop=False"
-        )
+            f"! video/x-raw,format=RGB,width=272,height=153 ! queue ! appsink name=sink emit-signals=True sync=True drop=False",
+        272, 153)
         self.video_widgets.append(preview_label)
         left_layout.addWidget(preview_label)
 
@@ -167,7 +111,7 @@ class SettingsScreen(QWidget):
         form_layout.addRow(QLabel("Camera ID:"), camera_id_combo)
 
         # Livestream key input
-        youtube_key_input = EscapeEnterLineEdit()
+        youtube_key_input = MyLineEdit()
         youtube_key_input.setPlaceholderText("xxxx-xxxx-xxxx-xxxx-xxxx")
         youtube_key_input.setText(self.camera_manager.live_key)
         form_layout.addRow(QLabel("Livestream Key:"), youtube_key_input)
@@ -203,25 +147,25 @@ class SettingsScreen(QWidget):
         pro_form_layout.setSpacing(10)
         pro_form_layout.setHorizontalSpacing(20)
 
-        udp_port_input = EscapeEnterLineEdit()
+        udp_port_input = MyLineEdit()
         udp_port_input.setPlaceholderText("9998")
         udp_port_input.setText(str(self.webserver_manager.udp_port))
         udp_port_input.textChanged.connect(lambda text: setattr(self.webserver_manager, "udp_port", int(text)))
         pro_form_layout.addRow(QLabel(f"Tk-Strike UDP Port:"), udp_port_input)
 
-        web_port_input = EscapeEnterLineEdit()
+        web_port_input = MyLineEdit()
         web_port_input.setPlaceholderText("8000")
         web_port_input.setText(str(self.webserver_manager.webserver_port))
         web_port_input.textChanged.connect(lambda text: setattr(self.webserver_manager, "webserver_port", int(text)))
         pro_form_layout.addRow(QLabel(f"WebServer Port:"), web_port_input)
 
-        obs_port_input = EscapeEnterLineEdit()
+        obs_port_input = MyLineEdit()
         obs_port_input.setPlaceholderText("4455")
         obs_port_input.setText(str(self.webserver_manager.obs_port))
         obs_port_input.textChanged.connect(lambda text: setattr(self.webserver_manager, "obs_port", int(text)))
         pro_form_layout.addRow(QLabel(f"OBS WebSocket Port:"), obs_port_input)
 
-        obs_pass_input = EscapeEnterLineEdit()
+        obs_pass_input = MyLineEdit()
         obs_pass_input.setPlaceholderText("Enter OBS WebSocket Password")
         obs_pass_input.setText(self.webserver_manager.obs_pass)
         obs_pass_input.textChanged.connect(lambda text: setattr(self.webserver_manager, "obs_pass", text))
@@ -294,7 +238,7 @@ class SettingsScreen(QWidget):
         form_layout.setHorizontalSpacing(50)
         form_layout.setLabelAlignment(Qt.AlignLeft)  # Ensure labels align to the left
 
-        self.network_ip_input = EscapeEnterLineEdit()
+        self.network_ip_input = MyLineEdit()
         self.network_ip_input.setPlaceholderText("x.x.x.x")
         self.network_ip_input.setText(f"{self.camera_manager.network_ip}0")
         self.network_ip_input.editingFinished.connect(lambda: self.set_network_ip(self.network_ip_input.text()))
@@ -394,7 +338,7 @@ class SettingsScreen(QWidget):
             cam_layout.addLayout(header_layout)
 
             # Camera preview
-            preview_label = VideoStreamWidget(f"{self.camera_manager.get_shmsink(idx)} ! video/x-raw,width={"640" if idx == 0 else self.camera_manager.res_width},height={"480" if idx == 0 else self.camera_manager.res_height},framerate={self.camera_manager.fps}/1,format=NV12 ! videoconvert ! videoscale ! video/x-raw,format=RGB,width=272,height=153 ! queue ! appsink name=sink emit-signals=True sync=True drop=False")
+            preview_label = VideoStreamWidget(f"{self.camera_manager.get_shmsink(idx)} ! video/x-raw,width={"640" if idx == 0 else self.camera_manager.res_width},height={"480" if idx == 0 else self.camera_manager.res_height},framerate={self.camera_manager.fps}/1,format=NV12 ! videoconvert ! videoscale ! video/x-raw,format=RGB,width=272,height=153 ! queue ! appsink name=sink emit-signals=True sync=True drop=False", 272, 153)
             self.video_widgets.append(preview_label)
 
             cam_layout.addWidget(preview_label)

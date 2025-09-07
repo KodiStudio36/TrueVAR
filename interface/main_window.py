@@ -3,7 +3,7 @@ from PyQt5.QtWidgets import QMainWindow, QStackedWidget, QLabel, QMessageBox
 from PyQt5.QtCore import QTimer, Qt
 from PyQt5.QtGui import QKeySequence, QFont
 from interface.main_screen import MainScreen
-from interface.settings_screen import SettingsScreen
+from interface.settings.settings_screen import SettingsScreen
 from interface.replay_screen import ReplayScreen
 from time import time
 
@@ -11,6 +11,7 @@ from app.injector import Injector
 from app.webserver_manager import WebServerManager
 from app.key_bind_manager import KeyBindManager
 from app.camera_manager import CameraManager
+from app.main_manager import MainManager
 
 class MainWindow(QMainWindow):
     def __init__(self):
@@ -30,6 +31,15 @@ class MainWindow(QMainWindow):
         self.replay_screen = ReplayScreen()
         self.current_screen = 0
 
+        self.screen_manager: MainManager = Injector.find(MainManager)
+        self.screen_manager.show_settings_signal.connect(self.show_settings)
+        self.screen_manager.hide_settings_signal.connect(self.hide_settings)
+        self.screen_manager.show_replay_signal.connect(self.show_replay)
+        self.screen_manager.hide_replay_signal.connect(self.hide_replay)
+        self.screen_manager.start_recording_signal.connect(self.start_recording)
+        self.screen_manager.stop_recording_signal.connect(self.stop_recording)
+
+
         # Add screens to the stacked widget
         self.stacked_widget.addWidget(self.main_screen)
         self.stacked_widget.addWidget(self.settings_screen)
@@ -37,6 +47,8 @@ class MainWindow(QMainWindow):
 
         # Set the first screen as the main screen
         self.stacked_widget.setCurrentWidget(self.main_screen)
+
+        print(self.width(), "jjjjjjjjjjjjj")
 
         self.toast_label = QLabel("", self)
         self.toast_label.setAlignment(Qt.AlignCenter)
@@ -46,19 +58,11 @@ class MainWindow(QMainWindow):
 
         self.setCentralWidget(self.stacked_widget)
 
-        self.toggle_fullscreen()
+        # self.toggle_fullscreen()
 
     def show_main(self):
         # self.main_screen.update_camera_list()
         self.stacked_widget.setCurrentWidget(self.main_screen)
-
-    def show_settings(self):
-        self.settings_screen.start()
-        self.stacked_widget.setCurrentWidget(self.settings_screen)
-
-    def show_replay(self):
-        self.replay_screen.start()
-        self.stacked_widget.setCurrentWidget(self.replay_screen)
 
     def keyPressEvent(self, event):
         key_sequence = QKeySequence(event.modifiers() | event.key())
@@ -69,37 +73,17 @@ class MainWindow(QMainWindow):
         # Open settings or replay screen based on key press
         if key_sequence == QKeySequence(self.key_bind_manager.settings_key):
             if self.current_screen == 0:
-                if not self.camera_manager.is_recording:
-                    self.show_settings()
-                    self.current_screen = 1
-                else:
-                    self.show_toast_message("Settings can't be open while recording")
+                self.show_settings()
 
             elif self.current_screen == 1:
-                self.settings_screen.stop()
-                self.show_main()
-                self.current_screen = 0
+                self.hide_settings()
 
         if key_sequence == QKeySequence(self.key_bind_manager.replay_key):
             if self.current_screen == 0:
-                if self.camera_manager.is_recording:
-                    self.camera_manager.stop_cameras()
-                    self.show_replay()
-                    self.current_screen = 2
-
-                    # pro webserver implementation
-                    Injector.find(WebServerManager).start_ivr_scene()
-                else:
-                    self.show_toast_message("Video Replay can't be open without recording")
+                self.show_replay()
 
             elif self.current_screen == 2:
-                self.camera_manager.new_segment()
-                self.camera_manager.start_cameras()
-                self.show_main()
-                self.current_screen = 0
-
-                # pro webserver implementation
-                Injector.find(WebServerManager).end_ivr_scene()
+                self.hide_replay()
 
         if key_sequence == QKeySequence(self.key_bind_manager.record_key) and self.current_screen == 0:
             if not self.camera_manager.is_recording:
@@ -130,6 +114,40 @@ class MainWindow(QMainWindow):
         if key_sequence == QKeySequence(self.key_bind_manager.reset_zoom_key) and self.current_screen == 2:
             self.replay_screen.videoWidget.zoom_reset()
 
+    def show_settings(self):
+        if not self.camera_manager.is_recording:
+            self.settings_screen.start()
+            self.stacked_widget.setCurrentWidget(self.settings_screen)
+            self.current_screen = 1
+        else:
+            self.show_toast_message("Settings can't be open while recording")
+
+    def hide_settings(self):
+        self.settings_screen.stop()
+        self.show_main()
+        self.current_screen = 0
+
+    def show_replay(self):
+        if self.camera_manager.is_recording:
+            self.camera_manager.stop_cameras()
+            self.replay_screen.start()
+            self.stacked_widget.setCurrentWidget(self.replay_screen)
+            self.current_screen = 2
+
+            # pro webserver implementation
+            Injector.find(WebServerManager).start_ivr_scene()
+        else:
+            self.show_toast_message("Video Replay can't be open without recording")
+
+    def hide_replay(self):
+        self.camera_manager.new_segment()
+        self.camera_manager.start_cameras()
+        self.show_main()
+        self.current_screen = 0
+
+        # pro webserver implementation
+        Injector.find(WebServerManager).end_ivr_scene()
+
     def start_recording(self):
         if not self.camera_manager.is_recording:
             if self.camera_manager.error_while_shm:
@@ -153,20 +171,6 @@ class MainWindow(QMainWindow):
             self.showNormal()  # Exit fullscreen
         else:
             self.showFullScreen()  # Enter fullscreen
-
-    def isStopRecording(self):
-        qmb = QMessageBox()
-        qmb.setWindowTitle("Stop recording")
-        qmb.setText("Are you sure you want to stop recording?")
-
-        qmb.setStandardButtons(QMessageBox.Ok | QMessageBox.Cancel)
-        qmb.button(QMessageBox.Ok).setText("Yes, stop recording")
-        qmb.button(QMessageBox.Cancel).setText("Cancel")
-
-        if qmb.exec() == QMessageBox.Ok:
-            return True
-        else:
-            return False
 
     def show_toast_message(self, message):
         """Show a temporary toast message."""
