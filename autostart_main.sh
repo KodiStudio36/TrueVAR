@@ -17,7 +17,4 @@ fi
 # Activate virtual environment
 source .venv/bin/activate
 
-exec pip install -r requirements.txt
-
-# Run your script
-exec python main.py
+exec pip install -r requirements.txt & python main.py
