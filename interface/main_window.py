@@ -20,6 +20,10 @@ class MainWindow(QMainWindow):
 
         self.key_bind_manager: KeyBindManager = Injector.find(KeyBindManager)
         self.camera_manager: CameraManager = Injector.find(CameraManager)
+        self.udp_manager: UdpManager = Injector.find(UdpManager)
+
+        if self.udp_manager.udp_default and not self.udp_manager.thread.isRunning():
+            self.udp_manager.start_listener()
 
         # Create the stacked layout
         self.stacked_widget = QStackedWidget(self)
@@ -45,8 +49,6 @@ class MainWindow(QMainWindow):
 
         # Set the first screen as the main screen
         self.stacked_widget.setCurrentWidget(self.main_screen)
-
-        print(self.width(), "jjjjjjjjjjjjj")
 
         self.toast_label = QLabel("", self)
         self.toast_label.setAlignment(Qt.AlignCenter)

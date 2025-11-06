@@ -1,6 +1,5 @@
 # app/udp_manager.py
 import os
-import json
 from PyQt5.QtCore import QThread, QObject, pyqtSignal
 
 from app.udp_worker import UdpWorker
@@ -8,21 +7,30 @@ from config import udp_settings_file # NOTE: Add 'udp_settings_file = "config/ud
 from app.injector import Injector
 from app.main_manager import MainManager
 from app.injector import singleton
+from app.settings_manager import SettingsManager, Setting # <-- Import new base class/descriptor
 
 @singleton
-class UdpManager(QObject):
+class UdpManager(SettingsManager, QObject): # <-- Inherit from QObject (first) and SettingsManager
     """Manages the UDP listener thread and settings."""
     # Signal to forward parsed UDP messages from the worker
     message_parsed = pyqtSignal(dict)
     # Signal to update UI about the listener's state (running/stopped)
     listener_state_changed = pyqtSignal(bool)
 
+    # --- Settings ---
+    # Define settings using the descriptor. This replaces manual load/save.
+    udp_port = Setting(9998) 
+    udp_default = Setting(False) 
+
     def __init__(self):
-        super().__init__()
-        self.udp_port = 9998
+        # Call QObject init first
+        SettingsManager.__init__(self, udp_settings_file) 
+        QObject.__init__(self) 
+        # Then call SettingsManager init, which loads settings
+
         self.thread = QThread()
         self.worker = None
-        self.load_settings()
+        # self.load_settings() <-- No longer needed
 
     def start_listener(self):
         if self.thread.isRunning():
@@ -30,7 +38,8 @@ class UdpManager(QObject):
             return
 
         self.thread = QThread()
-        self.worker = UdpWorker(self.udp_port)
+        # self.udp_port is now correctly fetched via the Setting descriptor
+        self.worker = UdpWorker(self.udp_port) 
         self.worker.moveToThread(self.thread)
 
         # Connect signals between manager and worker
@@ -57,25 +66,16 @@ class UdpManager(QObject):
         self.listener_state_changed.emit(False)
 
     def set_port(self, port):
+        """Sets the UDP port. The value is automatically saved."""
         try:
+            # Assigning to self.udp_port triggers the Setting descriptor's
+            # __set__ method, which handles type validation (if any)
+            # and automatically calls self.save()
             self.udp_port = int(port)
-            self.save_settings()
             print(f"UDP port set to {self.udp_port}")
         except (ValueError, TypeError):
             print(f"Invalid port number: {port}")
+        # self.save_settings() <-- No longer needed
 
-    def save_settings(self):
-        data = {"udp_port": self.udp_port}
-        with open(udp_settings_file, 'w') as f:
-            json.dump(data, f, indent=4)
-    
-    def load_settings(self):
-        if os.path.exists(udp_settings_file):
-            try:
-                with open(udp_settings_file, 'r') as f:
-                    data = json.load(f)
-                    self.udp_port = data.get("udp_port", 9998)
-            except (json.JSONDecodeError, KeyError):
-                self.save_settings()
-        else:
-            self.save_settings()
+    # save_settings() and load_settings() are removed, 
+    # as they are handled by the SettingsManager base class.
