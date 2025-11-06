@@ -5,7 +5,7 @@ from PyQt5.QtWidgets import (
 )
 import gi
 from PyQt5.QtGui import QPixmap, QIcon, QFont, QImage
-from PyQt5.QtCore import Qt, QMetaObject, Q_ARG
+from PyQt5.QtCore import Qt, QMetaObject, Q_ARG, pyqtSlot
 gi.require_version('Gst', '1.0')
 from gi.repository import Gst, GLib
 
@@ -24,6 +24,7 @@ from app.injector import Injector
 from app.webserver_manager import WebServerManager
 from app.key_bind_manager import KeyBindManager
 from app.camera_manager import CameraManager
+from app.udp_manager import UdpManager
 
 class SettingsScreen(QWidget):
     def __init__(self):
@@ -31,6 +32,7 @@ class SettingsScreen(QWidget):
         self.key_bind_manager: KeyBindManager = Injector.find(KeyBindManager)
         self.webserver_manager: WebServerManager = Injector.find(WebServerManager)
         self.camera_manager: CameraManager = Injector.find(CameraManager)
+        self.udp_manager: UdpManager = Injector.find(UdpManager)
         self.video_widgets = []
         self.is_update = False
         self.init_ui()
@@ -56,6 +58,10 @@ class SettingsScreen(QWidget):
         self.camera_settings_tab = QWidget()
         self.init_camera_settings_tab()
         self.tabs.addTab(self.camera_settings_tab, "Camera Settings")
+
+        self.udp_settings_tab = QWidget()
+        self.init_udp_settings_tab()
+        self.tabs.addTab(self.udp_settings_tab, "UDP Settings")
 
         self.stream_tab = QWidget()
         self.init_stream_tab()
@@ -147,12 +153,6 @@ class SettingsScreen(QWidget):
         pro_form_layout.setSpacing(10)
         pro_form_layout.setHorizontalSpacing(20)
 
-        udp_port_input = MyLineEdit()
-        udp_port_input.setPlaceholderText("9998")
-        udp_port_input.setText(str(self.webserver_manager.udp_port))
-        udp_port_input.textChanged.connect(lambda text: setattr(self.webserver_manager, "udp_port", int(text)))
-        pro_form_layout.addRow(QLabel(f"Tk-Strike UDP Port:"), udp_port_input)
-
         web_port_input = MyLineEdit()
         web_port_input.setPlaceholderText("8000")
         web_port_input.setText(str(self.webserver_manager.webserver_port))
@@ -184,13 +184,62 @@ class SettingsScreen(QWidget):
         self.stream_tab.setLayout(layout)
 
 
+    def init_udp_settings_tab(self):
+        layout = QVBoxLayout()
+        layout.setSpacing(15)
+
+        title = QLabel("UDP Listener for Tk-Strike")
+        title.setStyleSheet("font-weight: bold; font-size: 16px;")
+        layout.addWidget(title)
+
+        form_frame = QFrame()
+        form_layout = QFormLayout(form_frame)
+        
+        self.udp_port_input = QLineEdit()
+        self.udp_port_input.setPlaceholderText("9998")
+        self.udp_port_input.setText(str(self.udp_manager.udp_port))
+        self.udp_port_input.editingFinished.connect(self.update_udp_port)
+        form_layout.addRow(QLabel("Tk-Strike UDP Port:"), self.udp_port_input)
+        
+        layout.addWidget(form_frame)
+
+        self.start_udp_button = QPushButton("Start UDP Listener")
+        self.start_udp_button.clicked.connect(self.toggle_udp_listener)
+        layout.addWidget(self.start_udp_button)
+        
+        # Connect to the manager's state signal to update the button text
+        self.udp_manager.listener_state_changed.connect(self.on_udp_listener_state_change)
+        # Set initial button state
+        self.on_udp_listener_state_change(self.udp_manager.thread.isRunning())
+
+        layout.addStretch(1)
+        self.udp_settings_tab.setLayout(layout)
+
+    # NEW methods and slots for handling the UDP tab
+    def toggle_udp_listener(self):
+        if self.udp_manager.thread.isRunning():
+            self.udp_manager.stop_listener()
+        else:
+            self.udp_manager.start_listener()
+
+    @pyqtSlot(bool)
+    def on_udp_listener_state_change(self, is_running):
+        self.start_udp_button.setText("Stop UDP Listener" if is_running else "Start UDP Listener")
+
+    def update_udp_port(self):
+        self.udp_manager.set_port(self.udp_port_input.text())
+        self.udp_port_input.clearFocus()
+
+    @pyqtSlot(bool)
+    def on_webserver_state_change(self, is_running):
+        self.start_webserver_button.setText("Stop Pro YouTube Livetream Server" if is_running else "Start Pro YouTube Livetream Server")
+
     def on_stream(self, is_stream):
-        self.start_stream_button.setText("Stop Stream" if is_stream else "Start Stream")    
+        self.start_stream_button.setText("Stop Stream" if is_stream else "Start Stream")
 
     def toggle_stream(self, idx, key):
         if self.camera_manager.is_stream:
             self.camera_manager.stop_stream() 
-
         else:
             self.set_live(key)
             self.camera_manager.start_stream()
@@ -198,7 +247,6 @@ class SettingsScreen(QWidget):
     def toggle_webserver(self):
         if self.webserver_manager.thread.isRunning():
             self.webserver_manager.stop_servers()
-
         else:
             self.webserver_manager.start_servers()
 
@@ -212,7 +260,7 @@ class SettingsScreen(QWidget):
             seq_edit = QKeySequenceEdit()
             seq_edit.setKeySequence(getattr(self.key_bind_manager, field_name))
             seq_edit.editingFinished.connect(
-                lambda fn=field_name, widget=seq_edit: self.update_key_bind(fn, widget.keySequence().toString(), widget)
+                lambda fn, widget=seq_edit: self.update_key_bind(fn, widget.keySequence().toString(), widget)
             )
             self.key_bind_widgets[field_name] = seq_edit
             self.key_bind_layout.addRow(field_name.replace("_", " ").title() + ":", seq_edit)

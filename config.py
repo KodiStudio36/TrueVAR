@@ -7,6 +7,7 @@ settings_path = os.path.dirname(__file__) + "/settings"
 camera_settings_file = settings_path + "/camera_settings.json"
 key_bind_settings_file = settings_path + "/key_bind_settings.json"
 webserver_settings_file = settings_path + "/webserver_settings.json"
+udp_settings_file = settings_path + "/udp_settings.json"
 
 alpha3_to_alpha2 = {
     'AFG': 'AF',

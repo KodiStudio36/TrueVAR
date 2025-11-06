@@ -8,8 +8,9 @@ from interface.replay_screen import ReplayScreen
 from time import time
 
 from app.injector import Injector
-from app.webserver_manager import WebServerManager
+from app.udp_manager import UdpManager
 from app.key_bind_manager import KeyBindManager
+from app.webserver_manager import WebServerManager
 from app.camera_manager import CameraManager
 from app.main_manager import MainManager
 
@@ -18,8 +19,6 @@ class MainWindow(QMainWindow):
         super().__init__()
 
         self.key_bind_manager: KeyBindManager = Injector.find(KeyBindManager)
-        webserver_manager: WebServerManager = Injector.find(WebServerManager)
-        webserver_manager.set_context(self)
         self.camera_manager: CameraManager = Injector.find(CameraManager)
 
         # Create the stacked layout
@@ -38,7 +37,6 @@ class MainWindow(QMainWindow):
         self.screen_manager.hide_replay_signal.connect(self.hide_replay)
         self.screen_manager.start_recording_signal.connect(self.start_recording)
         self.screen_manager.stop_recording_signal.connect(self.stop_recording)
-
 
         # Add screens to the stacked widget
         self.stacked_widget.addWidget(self.main_screen)
