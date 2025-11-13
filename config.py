@@ -2,13 +2,17 @@ import os
 
 records_path = os.path.dirname(__file__) + "/records"
 ai_path = os.path.dirname(__file__) + "/ai"
-
 settings_path = os.path.dirname(__file__) + "/settings"
+scripts_path = os.path.dirname(__file__) + ""
+
 camera_settings_file = settings_path + "/camera_settings.json"
 key_bind_settings_file = settings_path + "/key_bind_settings.json"
 webserver_settings_file = settings_path + "/webserver_settings.json"
 udp_settings_file = settings_path + "/udp_settings.json"
 licence_settings_file = settings_path + "/licence.json"
+external_screen_settings_file = settings_path + "/external_screen_settings.json"
+
+manage_external_screen_script = scripts_path + "/manage_display.sh"
 
 alpha3_to_alpha2 = {
     'AFG': 'AF',

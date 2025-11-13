@@ -1,7 +1,7 @@
 from PyQt5.QtWidgets import (
     QWidget, QVBoxLayout, QHBoxLayout, QLabel, QPushButton, QLineEdit,
     QComboBox, QTabWidget, QFrame, QDialog, QCheckBox,
-    QStyle, QSizePolicy, QKeySequenceEdit, QFormLayout, QGridLayout
+    QStyle, QSizePolicy, QKeySequenceEdit, QFormLayout, QGridLayout, QSpinBox
 )
 import gi
 from PyQt5.QtGui import QPixmap, QIcon, QFont, QImage
@@ -26,6 +26,7 @@ from app.key_bind_manager import KeyBindManager
 from app.camera_manager import CameraManager
 from app.udp_manager import UdpManager
 from app.licence_manager import LicenceManager
+from app.external_screen_manager import ExternalScreenManager
 
 class SettingsScreen(QWidget):
     def __init__(self):
@@ -35,6 +36,7 @@ class SettingsScreen(QWidget):
         self.camera_manager: CameraManager = Injector.find(CameraManager)
         self.udp_manager: UdpManager = Injector.find(UdpManager)
         self.licence_manager: LicenceManager = Injector.find(LicenceManager)
+        self.external_screen_manager: ExternalScreenManager = Injector.find(ExternalScreenManager)
         self.video_widgets = []
         self.is_update = False
         self.init_ui()
@@ -62,6 +64,10 @@ class SettingsScreen(QWidget):
         self.camera_settings_tab = QWidget()
         self.init_camera_settings_tab()
         self.tabs.addTab(self.camera_settings_tab, "Video Replay")
+
+        self.external_screen_tab = QWidget()
+        self.init_external_screen_tab()
+        self.tabs.addTab(self.external_screen_tab, "External Screen")
 
         self.udp_settings_tab = QWidget()
         self.init_udp_settings_tab()
@@ -190,6 +196,87 @@ class SettingsScreen(QWidget):
         layout.addStretch(1)
 
         self.stream_tab.setLayout(layout)
+
+    def init_external_screen_tab(self):
+        layout = QVBoxLayout()
+        layout.setSpacing(15)
+
+        title = QLabel("External Screen Manager")
+        title.setStyleSheet("font-weight: bold; font-size: 16px;")
+        layout.addWidget(title)
+
+        form_frame = QFrame()
+        form_layout = QFormLayout(form_frame)
+
+        # Setting: Main Display
+        self.main_display_input = QLineEdit()
+        self.main_display_input.setText(self.external_screen_manager.main_display)
+        self.main_display_input.setPlaceholderText("e.g., eDP-1")
+        self.main_display_input.editingFinished.connect(
+            lambda: setattr(self.external_screen_manager, 'main_display', self.main_display_input.text())
+        )
+        form_layout.addRow(QLabel("Main Display Name (xrandr):"), self.main_display_input)
+        
+        # Setting: External Display
+        self.ext_display_input = QLineEdit()
+        self.ext_display_input.setText(self.external_screen_manager.external_display)
+        self.ext_display_input.setPlaceholderText("e.g., HDMI-1")
+        self.ext_display_input.editingFinished.connect(
+            lambda: setattr(self.external_screen_manager, 'external_display', self.ext_display_input.text())
+        )
+        form_layout.addRow(QLabel("External Display Name (xrandr):"), self.ext_display_input)
+
+        # Setting: Workspace
+        self.workspace_spin = QSpinBox()
+        self.workspace_spin.setMinimum(1)
+        self.workspace_spin.setMaximum(12) # Reasonable max
+        self.workspace_spin.setValue(self.external_screen_manager.target_workspace)
+        self.workspace_spin.valueChanged.connect(
+            lambda val: setattr(self.external_screen_manager, 'target_workspace', val)
+        )
+        form_layout.addRow(QLabel("Target Workspace:"), self.workspace_spin)
+        
+        # Setting: Window Title
+        self.window_title_input = QLineEdit()
+        self.window_title_input.setText(self.external_screen_manager.window_title)
+        self.window_title_input.editingFinished.connect(
+            lambda: setattr(self.external_screen_manager, 'window_title', self.window_title_input.text())
+        )
+        form_layout.addRow(QLabel("Window Title:"), self.window_title_input)
+
+        layout.addWidget(form_frame)
+
+        # --- Action Buttons ---
+        self.start_ext_screen_button = QPushButton("Start External Screen")
+        self.start_ext_screen_button.clicked.connect(self.toggle_external_screen)
+        layout.addWidget(self.start_ext_screen_button)
+        
+        self.toggle_display_mode_button = QPushButton("Toggle Mirror/Extended Mode")
+        self.toggle_display_mode_button.clicked.connect(self.external_screen_manager.toggle_display_mode)
+        layout.addWidget(self.toggle_display_mode_button)
+
+        # Connect to the manager's state signal
+        self.external_screen_manager.screen_state_changed.connect(self.on_external_screen_state_change)
+        # Set initial button state
+        self.on_external_screen_state_change(self.external_screen_manager.is_running)
+
+        layout.addStretch(1)
+        self.external_screen_tab.setLayout(layout)
+
+    # --- Slots for External Screen Tab ---
+    def toggle_external_screen(self):
+        if self.external_screen_manager.is_running:
+            self.external_screen_manager.stop_external_screen()
+        else:
+            self.external_screen_manager.start_external_screen()
+
+    @pyqtSlot(bool)
+    def on_external_screen_state_change(self, is_running):
+        self.start_ext_screen_button.setText("Stop External Screen" if is_running else "Start External Screen")
+
+    def update_external_camera_idx(self, index):
+        # index is 0-based, camera_idx is 1-based
+        self.external_screen_manager.external_camera_idx = index + 1
 
 
     def init_udp_settings_tab(self):
@@ -402,7 +489,7 @@ class SettingsScreen(QWidget):
             cam_layout.addLayout(header_layout)
 
             # Camera preview
-            preview_label = VideoStreamWidget(f"{self.camera_manager.get_shmsink(idx)} ! video/x-raw,width={"640" if idx == 0 else self.camera_manager.res_width},height={"480" if idx == 0 else self.camera_manager.res_height},framerate={self.camera_manager.fps}/1,format=NV12 ! videoconvert ! videoscale ! video/x-raw,format=RGB,width=272,height=153 ! queue ! appsink name=sink emit-signals=True sync=True drop=False", 272, 153)
+            preview_label = VideoStreamWidget(f"{self.camera_manager.get_shmsink(idx)} ! video/x-raw,width={"1280" if idx == 0 else self.camera_manager.res_width},height={"720" if idx == 0 else self.camera_manager.res_height},framerate={self.camera_manager.fps}/1,format=NV12 ! videoconvert ! videoscale ! video/x-raw,format=RGB,width=272,height=153 ! queue ! appsink name=sink emit-signals=True sync=True drop=False", 272, 153)
             self.video_widgets.append(preview_label)
 
             cam_layout.addWidget(preview_label)

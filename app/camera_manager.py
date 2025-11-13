@@ -83,7 +83,7 @@ class CameraManager(QObject):
             print(f"Pipeline state changed from {old} to {new} {bus}")
     
     def start_cameras(self):
-        pipe = f"{self.get_shmsink(0)} ! video/x-raw,width=640,height=480,framerate={self.fps}/1,format=NV12,interlace-mode=progressive ! queue leaky=downstream ! {self.videoscale} ! video/x-raw,width={self.res_width // 4},height={self.res_height // 4} ! tee name=overlay_tee " if self.is_scoreboard else ""
+        pipe = f"{self.get_shmsink(0)} ! video/x-raw,width=1280,height=720,framerate={self.fps}/1,format=NV12,interlace-mode=progressive ! queue leaky=downstream ! {self.videoscale} ! video/x-raw,width={self.res_width // 4},height={self.res_height // 4} ! tee name=overlay_tee " if self.is_scoreboard else ""
 
         for idx in range(1, self.camera_count + 1):
             pipe += f"{self.get_shmsink(idx)} ! video/x-raw,width={self.res_width},height={self.res_height},framerate={self.fps}/1,format=NV12,interlace-mode=progressive ! queue leaky=downstream ! {self.videoconvert}{f" ! compositor name=comp{idx+1} sink_0::xpos=0 sink_0::ypos=0 sink_1::xpos=10 sink_1::ypos=10 ! video/x-raw,width={self.res_width},height={self.res_height}" if self.is_scoreboard else ""} ! {self.h264enc} bitrate=4000 ! avimux ! filesink location={self.get_filepath(idx, self.segments)} "
@@ -120,7 +120,7 @@ class CameraManager(QObject):
                 print(f"Removed: {file_path}")
 
             print("here", self.camera_idx)
-            pipe += f"{self.get_scoreboard()} ! {self.videoconvert} ! video/x-raw,width=640,height=480,framerate={self.fps}/1,format=NV12 ! capsfilter ! queue ! shmsink socket-path={file_path} wait-for-connection=false shm-size=200000000 "
+            pipe += f"{self.get_scoreboard()} ! jpegdec ! videoconvert ! vaapipostproc ! video/x-raw,width=1280,height=720,framerate=30/1,format=NV12 ! queue ! shmsink socket-path={file_path} wait-for-connection=false shm-size=200000000 "
 
             for idx in range(1, self.camera_count +1):
                 file_path = f"/tmp/camera{idx}_shm_socket"
@@ -246,7 +246,13 @@ class CameraManager(QObject):
 
     def get_scoreboard(self):
         print(self.camera_idx)
-        return f"v4l2src device=/dev/video{self.camera_idx} ! video/x-raw,width=640,height=480,framerate=30/1"
+        return f"v4l2src device=/dev/video{self.camera_idx} ! image/jpeg,width=1280,height=720,framerate=30/1"
+    
+    """
+    v4l2src device=/dev/video2 ! \
+        image/jpeg,width=1920,height=1080,framerate=30/1 ! jpegdec ! videoconvert ! vaapipostproc ! video/x-raw,width=1920,height=1080,framerate=30/1,format=NV12 ! queue ! \
+        shmsink socket-path=/tmp/camera0_shm_socket wait-for-connection=false shm-size=200000000
+    """
 
     def get_camera(self, idx):
         print(f"rtspsrc location=rtsp://admin:TaekwondoVAR@{self.network_ip}{self.court}{idx}:554 latency=800 ! rtph264depay ! h264parse ! vaapih264dec")
