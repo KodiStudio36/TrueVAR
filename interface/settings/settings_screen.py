@@ -363,7 +363,11 @@ class SettingsScreen(QWidget):
             seq_edit = QKeySequenceEdit()
             seq_edit.setKeySequence(getattr(self.key_bind_manager, field_name))
             seq_edit.editingFinished.connect(
-                lambda fn, widget=seq_edit: self.update_key_bind(fn, widget.keySequence().toString(), widget)
+            lambda fn_captured=field_name, widget=seq_edit: self.update_key_bind(
+                    fn_captured, 
+                    widget.keySequence().toString(), 
+                    widget
+                )
             )
             self.key_bind_widgets[field_name] = seq_edit
             self.key_bind_layout.addRow(field_name.replace("_", " ").title() + ":", seq_edit)
