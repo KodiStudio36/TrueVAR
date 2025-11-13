@@ -9,6 +9,7 @@ from time import time
 
 from app.injector import Injector
 from app.udp_manager import UdpManager
+from app.external_screen_manager import ExternalScreenManager
 from app.key_bind_manager import KeyBindManager
 from app.webserver_manager import WebServerManager
 from app.camera_manager import CameraManager
@@ -21,6 +22,7 @@ class MainWindow(QMainWindow):
         self.key_bind_manager: KeyBindManager = Injector.find(KeyBindManager)
         self.camera_manager: CameraManager = Injector.find(CameraManager)
         self.udp_manager: UdpManager = Injector.find(UdpManager)
+        self.external_screen_manager: ExternalScreenManager = Injector.find(ExternalScreenManager)
 
         if self.udp_manager.udp_default and not self.udp_manager.thread.isRunning():
             self.udp_manager.start_listener()
@@ -91,6 +93,9 @@ class MainWindow(QMainWindow):
             
             else:
                 self.stop_recording()
+
+        if key_sequence == QKeySequence(self.key_bind_manager.toggle_external_screen_key):
+            self.external_screen_manager.toggle_display_mode()
                 
 
         if key_sequence == QKeySequence(self.key_bind_manager.next_camera_key) and self.current_screen == 2:

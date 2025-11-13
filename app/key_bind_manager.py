@@ -16,8 +16,7 @@ class KeyBindManager(SettingsManager):
     second_forward_key = Setting("Shift+Right")
     second_backward_key = Setting("Shift+Left")
     reset_zoom_key = Setting("Escape")
-    toggle_external_screen_key = Setting("F10")
-    toggle_display_mode_key = Setting("F11")
+    toggle_external_screen_key = Setting("W")
 
     def __init__(self):
         super().__init__(key_bind_settings_file)
