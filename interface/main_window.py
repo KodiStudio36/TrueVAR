@@ -1,6 +1,6 @@
 # interface/main_window.py
 from PyQt5.QtWidgets import QMainWindow, QStackedWidget, QLabel, QMessageBox
-from PyQt5.QtCore import QTimer, Qt
+from PyQt5.QtCore import QTimer, Qt, pyqtSlot
 from PyQt5.QtGui import QKeySequence, QFont
 from interface.main_screen import MainScreen
 from interface.settings.settings_screen import SettingsScreen
@@ -52,6 +52,26 @@ class MainWindow(QMainWindow):
         # Set the first screen as the main screen
         self.stacked_widget.setCurrentWidget(self.main_screen)
 
+        self.screen_indicator_label = QLabel("Mirroring the screen", self)
+        self.screen_indicator_label.setAlignment(Qt.AlignCenter)
+        self.screen_indicator_label.setFont(QFont("Arial", 10))
+        self.screen_indicator_label.setStyleSheet("""
+            QLabel {
+                color: black; 
+                background-color: white; 
+                border: 1px solid black; 
+                border-radius: 2px; 
+                padding: 5px 10px;
+            }
+        """)
+        self.screen_indicator_label.setVisible(False) # Start hidden
+        
+        # Connect the manager's state change signal to the new slot
+        self.external_screen_manager.screen_changed_mirror.connect(self.update_screen_indicator)
+        
+        # Set the initial state based on the manager's current state
+        self.update_screen_indicator(self.external_screen_manager.is_running)
+
         self.toast_label = QLabel("", self)
         self.toast_label.setAlignment(Qt.AlignCenter)
         self.toast_label.setFont(QFont("Arial", 14))
@@ -61,6 +81,8 @@ class MainWindow(QMainWindow):
         self.setCentralWidget(self.stacked_widget)
 
         # self.toggle_fullscreen()
+
+        self.resizeEvent(None)
 
     def show_main(self):
         # self.main_screen.update_camera_list()
@@ -176,6 +198,33 @@ class MainWindow(QMainWindow):
             self.showNormal()  # Exit fullscreen
         else:
             self.showFullScreen()  # Enter fullscreen
+
+    @pyqtSlot(bool)
+    def update_screen_indicator(self, is_running):
+        """Show or hide the 'Showing to coaches' indicator."""
+        self.screen_indicator_label.setVisible(is_running)
+        # Repositioning is handled in resizeEvent
+
+    # --- NEW: Override resizeEvent to reposition the indicator ---
+    def resizeEvent(self, event):
+        """Repositions the indicator label when the window size changes."""
+        
+        # Make sure the indicator is positioned correctly in the top-right corner
+        self.screen_indicator_label.adjustSize()
+        
+        # Calculate position: top-right corner with a 10px margin
+        x = self.width() - self.screen_indicator_label.width() - 16
+        y = 48
+        
+        self.screen_indicator_label.move(x, y)
+        
+        # Also reposition the toast label if needed (good practice for resize)
+        self.toast_label.move(
+            (self.width() - self.toast_label.width()) // 2,
+            (self.height() - self.toast_label.height()) // 2
+        )
+
+        super().resizeEvent(event)
 
     def show_toast_message(self, message):
         """Show a temporary toast message."""

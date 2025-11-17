@@ -15,6 +15,7 @@
                 "S3": "0xffe2+0xff53 // One second right (right arrow)",
                 "F5": "space // Play/Pause",
                 "F6": "e // Change camera engle",
+                "F7": "w // Change camera engle",
                 "F8": "r // Open video replay",
                 "F9": "n // Start/Stop recording"
             }

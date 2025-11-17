@@ -69,21 +69,21 @@ class SettingsScreen(QWidget):
         self.init_external_screen_tab()
         self.tabs.addTab(self.external_screen_tab, "External Screen")
 
-        self.udp_settings_tab = QWidget()
-        self.init_udp_settings_tab()
-        self.tabs.addTab(self.udp_settings_tab, "Scoreboard Listener")
-
         self.stream_tab = QWidget()
         self.init_stream_tab()
         self.tabs.addTab(self.stream_tab, "Stream")
 
-        self.licence_tab = QWidget()
-        self.init_licence_tab()
-        self.tabs.addTab(self.licence_tab, "Licence")
+        self.udp_settings_tab = QWidget()
+        self.init_udp_settings_tab()
+        self.tabs.addTab(self.udp_settings_tab, "Scoreboard Listener")
 
         self.key_bind_settings_tab = QWidget()
         self.init_key_binding_tab()
         self.tabs.addTab(self.key_bind_settings_tab, "Key Binds")
+
+        self.licence_tab = QWidget()
+        self.init_licence_tab()
+        self.tabs.addTab(self.licence_tab, "Licence")
 
     def init_stream_tab(self):
         layout = QVBoxLayout()
@@ -215,7 +215,7 @@ class SettingsScreen(QWidget):
         self.main_display_input.editingFinished.connect(
             lambda: setattr(self.external_screen_manager, 'main_display', self.main_display_input.text())
         )
-        form_layout.addRow(QLabel("Main Display Name (xrandr):"), self.main_display_input)
+        form_layout.addRow(QLabel("Main Display Name:"), self.main_display_input)
         
         # Setting: External Display
         self.ext_display_input = QLineEdit()
@@ -224,7 +224,7 @@ class SettingsScreen(QWidget):
         self.ext_display_input.editingFinished.connect(
             lambda: setattr(self.external_screen_manager, 'external_display', self.ext_display_input.text())
         )
-        form_layout.addRow(QLabel("External Display Name (xrandr):"), self.ext_display_input)
+        form_layout.addRow(QLabel("External Display Name:"), self.ext_display_input)
 
         # Setting: Workspace
         self.workspace_spin = QSpinBox()

@@ -262,6 +262,7 @@ class ReplayScreen(QWidget):
 
         self.isPlaying = False
         self.isFirstOpen = False
+        self.duration = 0
     # Method to play or pause the video
     def play_video(self):
         if self.videoWidget.mediaPlayer.state() == QMediaPlayer.PlayingState:
@@ -280,7 +281,7 @@ class ReplayScreen(QWidget):
 
     # Method to handle changes in video position
     def position_changed(self, position):
-        print(position, "wuuuuuuuuuuuuuuuuuu")
+        print(position, self.videoWidget.mediaPlayer.duration(), "wuuuuuuuuuuuuuuuuuu")
         self.slider.setValue(position)
 
     # Method to set the video position
@@ -289,15 +290,19 @@ class ReplayScreen(QWidget):
 
     def seekable_changed(self):
         print("vidavail")
-        if self.isFirstOpen:
-            self.isFirstOpen = False
-            self.set_position(self.videoWidget.mediaPlayer.duration()-2000)
-            self.position_changed(self.videoWidget.mediaPlayer.duration()-2000)
+        # if self.isFirstOpen:
+        #     self.isFirstOpen = False
+        #     print(self.videoWidget.mediaPlayer.duration())
+        self.set_position(self.duration-5000)
+        #self.position_changed(self.duration-2000)
 
 
     # Method to handle changes in video duration
     def duration_changed(self, duration):
+        print("jaaaaaaaaaaaaaaaaaaaj", duration)
         self.slider.setRange(0, duration)
+        print("yes")
+        self.duration = duration
 
     def sliderPressed(self):
         self.isPlayingOnSlide = False
@@ -328,6 +333,7 @@ class ReplayScreen(QWidget):
     def next_page(self):
         self.current_page += 1 
         if self.current_page == self.camera_manager.camera_count +1: self.current_page = 1
+        print("from here")
         self.videoWidget.load_video(self.current_page, self.videoWidget.mediaPlayer.position())
         if self.isPlaying:
             self.videoWidget.play_video()
@@ -343,6 +349,7 @@ class ReplayScreen(QWidget):
         self.segmentNext.setDisabled(self.camera_manager.segments <= segments)
         self.segmentBack.setDisabled(segments <= 0)
         self.videoWidget.set_segments(segments)
+        print("from hereeee")
         self.videoWidget.load_video(1, position)
         self.current_page = 1
         self.update_label()

@@ -28,6 +28,8 @@ class ExternalScreenManager(SettingsManager, QObject):
     # Signal to update UI about the screen's state (running/stopped)
     screen_state_changed = pyqtSignal(bool)
 
+    screen_changed_mirror = pyqtSignal(bool)
+
     # --- Settings ---
     # The 'xrandr' name for the main display (e.g., "eDP-1")
     main_display = Setting("DP-1")
@@ -36,7 +38,7 @@ class ExternalScreenManager(SettingsManager, QObject):
     # The target workspace (e.g., 6)
     target_workspace = Setting(6)
     # The title the GStreamer window will have
-    window_title = Setting("External VAR Screen")
+    window_title = Setting("python")
 
     def __init__(self):
         # Gst.init(None) is called by CameraManager, but good practice.
@@ -163,7 +165,14 @@ class ExternalScreenManager(SettingsManager, QObject):
             return
             
         print("Toggling display mode...")
-        subprocess.run([SCRIPT_PATH, "toggle", self.main_display, self.external_display])
+        result = subprocess.run(
+            [SCRIPT_PATH, "toggle", self.main_display, self.external_display],
+            capture_output=True,  # Capture stdout and stderr
+            text=True,            # Decode stdout and stderr as text (using the default locale encoding)
+            check=False           # Don't raise an exception on non-zero exit code (optional, but safer)
+        )
+
+        self.screen_changed_mirror.emit(result.stdout == "Switching to mirror mode.\n")
 
     # --- GStreamer Bus Callbacks ---
     def on_eos(self, bus, msg):
