@@ -160,7 +160,7 @@ class CameraManager(QObject):
             "queue ! compositor name=comp1 sink_0::xpos=0 sink_0::ypos=0 sink_1::xpos=10 sink_1::ypos=10 ! video/x-raw,width=1280,height=720 ! x264enc bitrate=2000 tune=zerolatency key-int-max=60 ! "
             f'video/x-h264,profile=main ! flvmux streamable=true name=mux ! rtmpsink location="rtmp://a.rtmp.youtube.com/live2/{self.live_key}" '
             "audiotestsrc wave=silence ! mux. "
-            f"{self.get_shmsink(0)} ! video/x-raw,width=640,height=480,framerate=30/1,format=NV12,interlace-mode=progressive ! vaapipostproc ! video/x-raw,width=320,height=200 ! comp1."
+            f"{self.get_shmsink(0)} ! video/x-raw,width=1280,height=720,framerate={self.fps}/1,format=NV12,interlace-mode=progressive ! {self.videoscale} ! video/x-raw,width={self.res_width // 4},height={self.res_height // 4} ! comp1."
         )
         self.stream_pipeline.set_state(Gst.State.PLAYING)
         self.is_stream = True
