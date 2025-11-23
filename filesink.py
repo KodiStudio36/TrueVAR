@@ -256,3 +256,10 @@ gst-launch-1.0 -e \
 
 create scoreboard
     """
+
+"""
+shmsrc socket-path={shmsrc_socket} do-timestamp=true is-live=true \
+    ! video/x-raw,format=NV12,width=1280,height=720,framerate=30/1 \
+    ! videoconvert \
+    ! xvimagesink name=extsink force-aspect-ratio=true
+"""

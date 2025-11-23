@@ -61,7 +61,8 @@ class ExternalScreenManager(SettingsManager, QObject):
         # We use xvimagesink as it's common and allows setting a window title.
         return (
             f"shmsrc socket-path={shmsrc_socket} do-timestamp=true is-live=true "
-            f"! video/x-raw,format=NV12,width=1280,height=720,framerate=30/1 "
+            f"! video/x-raw,format=NV12,width=1280,height=720,framerate=30/1,interlace-mode=progressive "
+            f"! queue leaky=downstream "
             f"! videoconvert "
             f"! xvimagesink name=extsink force-aspect-ratio=true"
         )
