@@ -62,9 +62,8 @@ class ExternalScreenManager(SettingsManager, QObject):
         return (
             f"shmsrc socket-path={shmsrc_socket} do-timestamp=true is-live=true "
             f"! video/x-raw,format=NV12,width=1280,height=720,framerate=30/1,interlace-mode=progressive "
-            f"! queue leaky=downstream "
-            f"! videoconvert "
-            f"! xvimagesink name=extsink force-aspect-ratio=true"
+            f"! queue leaky=downstream max-size-buffers=1 "
+            f"! vaapisink name=extsink sync=false"
         )
 
     def start_external_screen(self):

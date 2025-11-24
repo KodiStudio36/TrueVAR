@@ -120,7 +120,7 @@ class CameraManager(QObject):
                 print(f"Removed: {file_path}")
 
             print("here", self.camera_idx)
-            pipe += f"{self.get_scoreboard()} ! jpegdec ! videoconvert ! queue leaky=2 max-size-buffers=1 ! vaapipostproc ! video/x-raw,width=1280,height=720,framerate=30/1,format=NV12 ! shmsink socket-path={file_path} wait-for-connection=false shm-size=200000000 "
+            pipe += f"{self.get_scoreboard()} ! vaapijpegdec ! vaapipostproc ! video/x-raw,width=1280,height=720,framerate=30/1,format=NV12 ! shmsink socket-path={file_path} wait-for-connection=false shm-size=200000000 sync=false async=false "
 
             for idx in range(1, self.camera_count +1):
                 file_path = f"/tmp/camera{idx}_shm_socket"
@@ -129,7 +129,7 @@ class CameraManager(QObject):
                     os.remove(file_path)
                     print(f"Removed: {file_path}")
 
-                pipe += f"{"videotestsrc" if self.debug else self.get_camera(idx)} ! {self.videoconvert} ! video/x-raw,width={self.res_width},height={self.res_height},framerate={self.fps}/1,format=NV12 ! queue ! shmsink socket-path={file_path} wait-for-connection=false shm-size=200000000 "
+                pipe += f"{"videotestsrc" if self.debug else self.get_camera(idx)} ! {self.videoconvert} ! video/x-raw,width={self.res_width},height={self.res_height},framerate={self.fps}/1,format=NV12 ! queue ! shmsink socket-path={file_path} wait-for-connection=false shm-size=200000000 sync=false async=false "
 
             print(pipe)
 
