@@ -8,58 +8,66 @@ gi.require_version("Gst", "1.0")
 gi.require_version("GstApp", "1.0")
 from gi.repository import Gst
 
+# Assuming these are available in your structure
 from config import records_path, camera_settings_file, ai_path
 from app.injector import singleton
+from app.settings_manager import SettingsManager, Setting # <--- NEW IMPORTS
 
 @singleton
-class CameraManager(QObject):
+class CameraManager(SettingsManager, QObject): # <--- INHERIT FROM SettingsManager
     is_recording_stream = pyqtSignal(bool)
     is_stream_stream = pyqtSignal(bool)
 
+    # --- Settings Definitions (Replacing instance variables) ---
+    is_scoreboard = Setting(True)
+    fps = Setting(30)
+    res_height = Setting(720) # res_width will be a property
+    debug = Setting(True)
+    court = Setting(1)
+    camera_idx = Setting(0) # Scoreboard camera index
+    delete_records = Setting(True)
+    camera_count = Setting(3) # Number of RTSP cameras (1 to N)
+    network_ip = Setting("192.168.0.")
+    live_camera_idx = Setting(1)
+    live_key = Setting("")
+    # -----------------------------------------------------------
+
     def __init__(self):
+        # Initialize SettingsManager and load settings from file
+        SettingsManager.__init__(self, camera_settings_file)
         QObject.__init__(self)
+        
+        # --- Internal state variables ---
         self.is_recording = False
         self.is_stream = False
         self.fight_num = 0
-
-        self.is_scoreboard = True
-        self.fps = 30
-        self.res_width = 1280
-        self.res_height = 720
-        self.vaapi = True
-        self.debug = True
-        self.court = 1
-        self.camera_idx = 0
-        self.delete_records = True
-        self.camera_count = 3
-        self.network_ip = "192.168.0."
-
-        self.live_camera_idx = 1
-        self.live_key = ""
-
-        self.load_cameras()
-        self.get_components()
-
-        Gst.init()
-
         self.shm_pipeline = None
         self.error_while_shm = False
+        self.segments = 0
+        self.pipeline = None
+        self.stream_pipeline = None
+
+        if not Gst.is_initialized():
+            Gst.init(None)
+
+        # Start the SHM source pipeline (ONLY for the scoreboard)
         self.start_shmsink()
 
-        self.segments = 0
+    @property
+    def res_width(self):
+        """Calculates width based on the saved height."""
+        return self.res_height // 9 * 16
 
-    def get_components(self):
-        self.videoconvert = "vaapipostproc" if self.vaapi else "videoconvert"
-        self.videoscale = "vaapipostproc" if self.vaapi else "videoconvert ! videoscale"
-        self.h264enc = "vaapih264enc" if self.vaapi else "x264enc"
+    # Removed load_cameras and save_cameras. Use self.load_settings() / self.save_settings()
 
     def add_camera(self):
         self.camera_count += 1
-        self.save_cameras()
-
+        self.save_settings() # <--- Updated
+        
     def remove_camera(self):
-        self.camera_count -= 1
-        self.save_cameras()
+        if self.camera_count > 0:
+            self.camera_count -= 1
+            self.save_settings() # <--- Updated
 
     def handle_message(self, bus, message):
         """Handle messages from the GStreamer bus."""
@@ -83,17 +91,34 @@ class CameraManager(QObject):
             print(f"Pipeline state changed from {old} to {new} {bus}")
     
     def start_cameras(self):
-        pipe = f"{self.get_shmsink(0)} ! video/x-raw,width=1280,height=720,framerate={self.fps}/1,format=NV12,interlace-mode=progressive ! queue leaky=downstream ! {self.videoscale} ! video/x-raw,width={self.res_width // 4},height={self.res_height // 4} ! tee name=overlay_tee " if self.is_scoreboard else ""
+        """Starts the Recording Pipeline (Scoreboard SHM + RTSP Direct)."""
+        
+        # 1. Start with the scoreboard source (SHM) and the overlay tee
+        pipe = f"{self.get_shmsink(0)} ! video/x-raw,width=1280,height=720,framerate={self.fps}/1,format=NV12,interlace-mode=progressive ! queue leaky=downstream ! vaapipostproc ! video/x-raw,width={self.res_width // 4},height={self.res_height // 4} ! tee name=overlay_tee " if self.is_scoreboard else ""
 
+        # 2. Iterate through RTSP cameras (1 to N)
         for idx in range(1, self.camera_count + 1):
-            pipe += f"{self.get_shmsink(idx)} ! video/x-raw,width={self.res_width},height={self.res_height},framerate={self.fps}/1,format=NV12,interlace-mode=progressive ! queue leaky=downstream ! {self.videoconvert}{f" ! compositor name=comp{idx+1} sink_0::xpos=0 sink_0::ypos=0 sink_1::xpos=10 sink_1::ypos=10 ! video/x-raw,width={self.res_width},height={self.res_height}" if self.is_scoreboard else ""} ! {self.h264enc} bitrate=4000 ! avimux ! filesink location={self.get_filepath(idx, self.segments)} "
+            
+            # --- Source: Changed from get_shmsink(idx) to get_camera(idx) ---
+            source_pipe = f"{"videotestsrc" if self.debug else self.get_camera(idx)} ! vaapipostproc"
+            
+            # --- Main Pipeline for recording a single camera ---
+            pipe += f"{source_pipe} ! video/x-raw,width={self.res_width},height={self.res_height},framerate={self.fps}/1,format=NV12,interlace-mode=progressive ! queue "
+            
+            # --- Compositor and filesink ---
+            if self.is_scoreboard:
+                # Add compositor for the scoreboard overlay
+                pipe += f" ! compositor name=comp{idx+1} sink_0::xpos=0 sink_0::ypos=0 sink_1::xpos=10 sink_1::ypos=10 ! video/x-raw,width={self.res_width},height={self.res_height}"
+            
+            # Encoder and Filesink
+            pipe += f" ! vaapih264enc bitrate=4000 ! avimux ! filesink location={self.get_filepath(idx, self.segments)} "
+            
+            # Connect the scoreboard overlay to the compositor
             pipe += f"overlay_tee. ! queue ! comp{idx+1}. " if self.is_scoreboard else ""
 
         print(pipe)
-
-        self.pipeline = Gst.parse_launch(
-            pipe
-        )
+        # ... (rest of the start_cameras logic is the same)
+        self.pipeline = Gst.parse_launch(pipe)
         bus = self.pipeline.get_bus()
         bus.add_signal_watch()
         bus.connect("message", self.handle_message)
@@ -111,39 +136,34 @@ class CameraManager(QObject):
             self.is_recording_stream.emit(self.is_recording)
 
     def start_shmsink(self, skip_cameras=None):
+        """Starts the SHM Source Pipeline (ONLY for the Scoreboard/Camera 0)."""
         try:
-            file_path = f"/tmp/camera{0}_shm_socket"
+            # 1. Scoreboard (Camera 0) logic (KEEP)
+            file_path = f"/tmp/camera0_shm_socket"
             pipe = ""
 
             if os.path.exists(file_path):
                 os.remove(file_path)
                 print(f"Removed: {file_path}")
 
-            print("here", self.camera_idx)
+            print("Starting scoreboard shmsink:", self.camera_idx)
             pipe += f"{self.get_scoreboard()} ! jpegdec ! videoconvert ! queue leaky=2 max-size-buffers=1 ! vaapipostproc ! video/x-raw,width=1280,height=720,framerate=30/1,format=NV12 ! shmsink socket-path={file_path} wait-for-connection=false shm-size=200000000 "
 
-            for idx in range(1, self.camera_count +1):
-                file_path = f"/tmp/camera{idx}_shm_socket"
-
-                if os.path.exists(file_path):
-                    os.remove(file_path)
-                    print(f"Removed: {file_path}")
-
-                pipe += f"{"videotestsrc" if self.debug else self.get_camera(idx)} ! {self.videoconvert} ! video/x-raw,width={self.res_width},height={self.res_height},framerate={self.fps}/1,format=NV12 ! queue ! shmsink socket-path={file_path} wait-for-connection=false shm-size=200000000 "
-
-            print(pipe)
+            # 2. RTSP Camera Loop (REMOVED)
+            # The loop for idx in range(1, self.camera_count + 1) is removed.
+            
+            print("SHM Sink Pipeline (Scoreboard only):", pipe)
 
             if pipe != "":
-                self.shm_pipeline = Gst.parse_launch(
-                    pipe
-                )
+                self.shm_pipeline = Gst.parse_launch(pipe)
                 bus = self.shm_pipeline.get_bus()
                 bus.add_signal_watch()
                 bus.connect("message", self.handle_message)
                 self.shm_pipeline.set_state(Gst.State.PLAYING)
 
             self.error_while_shm = False
-        except:
+        except Exception as e: # Catch specific exception instead of generic
+            print(f"Error starting SHM sink pipeline: {e}")
             self.error_while_shm = True
 
     def stop_shmsink(self):
@@ -155,13 +175,29 @@ class CameraManager(QObject):
         self.start_shmsink()
 
     def start_stream(self):
-        self.stream_pipeline = Gst.parse_launch(
-            f"{self.get_shmsink(self.live_camera_idx)} ! video/x-raw,width=1280,height=720,framerate=30/1,format=NV12,interlace-mode=progressive ! vaapipostproc ! "
+        """Starts the Streaming Pipeline (RTSP Direct + Scoreboard SHM)."""
+        
+        # --- Main Stream Source: Changed from get_shmsink to get_camera ---
+        stream_source = f"{"videotestsrc" if self.debug else self.get_camera(self.live_camera_idx)}"
+        
+        # The main pipeline starts with the RTSP source
+        pipe = (
+            f"{stream_source} ! vaapipostproc ! video/x-raw,width=1280,height=720,framerate=30/1,format=NV12,interlace-mode=progressive ! vaapipostproc ! "
+            f"{self.get_shmsink(0)} ! video/x-raw,width=1280,height=720,framerate={self.fps}/1,format=NV12,interlace-mode=progressive ! vaapipostproc ! video/x-raw,width={self.res_width // 4},height={self.res_height // 4} ! comp1."
+        )
+
+        # The compositor logic is a bit messy in your original. Cleaned up and ordered for clarity:
+        pipeline_str = (
+            f"{stream_source} ! vaapipostproc ! video/x-raw,width=1280,height=720,framerate=30/1,format=NV12,interlace-mode=progressive ! vaapipostproc ! "
             "queue ! compositor name=comp1 sink_0::xpos=0 sink_0::ypos=0 sink_1::xpos=10 sink_1::ypos=10 ! video/x-raw,width=1280,height=720 ! x264enc bitrate=2000 tune=zerolatency key-int-max=60 ! "
             f'video/x-h264,profile=main ! flvmux streamable=true name=mux ! rtmpsink location="rtmp://a.rtmp.youtube.com/live2/{self.live_key}" '
             "audiotestsrc wave=silence ! mux. "
-            f"{self.get_shmsink(0)} ! video/x-raw,width=1280,height=720,framerate={self.fps}/1,format=NV12,interlace-mode=progressive ! {self.videoscale} ! video/x-raw,width={self.res_width // 4},height={self.res_height // 4} ! comp1."
+            # Scoreboard Overlay: Always SHM
+            f"{self.get_shmsink(0)} ! video/x-raw,width=1280,height=720,framerate={self.fps}/1,format=NV12,interlace-mode=progressive ! vaapipostproc ! video/x-raw,width={self.res_width // 4},height={self.res_height // 4} ! comp1."
         )
+        
+        print("Streaming Pipeline:", pipeline_str)
+        self.stream_pipeline = Gst.parse_launch(pipeline_str)
         self.stream_pipeline.set_state(Gst.State.PLAYING)
         self.is_stream = True
         self.is_stream_stream.emit(self.is_stream)
@@ -172,55 +208,10 @@ class CameraManager(QObject):
             self.is_stream = False
             self.is_stream_stream.emit(self.is_stream)
 
-    def save_cameras(self):
-        """Save camera settings to a JSON file."""
-        print(self.cameras)
-        data = {
-            "is_scoreboard": self.is_scoreboard,
-            "res": self.res_height,
-            "vaapi": self.vaapi,
-            "debug": self.debug,
-            "camera_idx": self.camera_idx,
-            "live_camera_idx": self.live_camera_idx,
-            "live_key": self.live_key,
-            "delete_records": self.delete_records,
-            "camera_count": self.camera_count,
-            "court": self.court,
-            "network_ip": self.network_ip,
-        }
-
-        with open(camera_settings_file, 'w') as f:
-            json.dump(data, f, indent=4)
-
-        self.get_components()
-
     def stop(self):
         self.stop_shmsink()
         if self.is_recording:
             self.stop_cameras()
-
-    def load_cameras(self):
-        self.cameras = []
-        """Load camera settings from a JSON file."""
-        if os.path.exists(camera_settings_file):
-            with open(camera_settings_file, 'r') as f:
-                data = json.load(f)
-
-                self.is_scoreboard = data["is_scoreboard"]
-                self.res_height = data["res"]
-                self.res_width = self.res_height // 9 * 16
-                self.vaapi = data["vaapi"]
-                self.debug = data["debug"]
-                self.camera_idx = data["camera_idx"]
-                self.live_camera_idx = data["live_camera_idx"]
-                self.live_key = data["live_key"]
-                self.delete_records = data["delete_records"]
-                self.camera_count = data["camera_count"]
-                self.court = data["court"]
-                self.network_ip = data["network_ip"]
-
-        else:
-            self.save_cameras()
 
     def get_filepath(self, idx, segment):
         return f"{records_path}/id{self.fight_num}_camera{idx}_segment{segment}.avi"
@@ -245,20 +236,16 @@ class CameraManager(QObject):
                     print(f"Failed to remove {file}. Reason: {e}")
 
     def get_scoreboard(self):
-        print(self.camera_idx)
+        # Uses self.camera_idx (now a Setting)
         return f"v4l2src device=/dev/video{self.camera_idx} ! image/jpeg,width=1280,height=720,framerate=30/1"
     
-    """
-    v4l2src device=/dev/video2 ! \
-        image/jpeg,width=1920,height=1080,framerate=30/1 ! jpegdec ! videoconvert ! vaapipostproc ! video/x-raw,width=1920,height=1080,framerate=30/1,format=NV12 ! queue ! \
-        shmsink socket-path=/tmp/camera0_shm_socket wait-for-connection=false shm-size=200000000
-    """
-
     def get_camera(self, idx):
+        # Uses self.network_ip, self.court (now Settings)
         print(f"rtspsrc location=rtsp://admin:TaekwondoVAR@{self.network_ip}{self.court}{idx}:554 latency=800 ! rtph264depay ! h264parse ! vaapih264dec")
         return f"rtspsrc location=rtsp://admin:TaekwondoVAR@{self.network_ip}{self.court}{idx}:554 latency=800 ! rtph264depay ! h264parse ! vaapih264dec"
 
     def get_shmsink(self, idx):
+        # Only used for idx=0 now
         return f"shmsrc socket-path=/tmp/camera{idx}_shm_socket do-timestamp=true is-live=true"
 
     def save_for_ai(self):

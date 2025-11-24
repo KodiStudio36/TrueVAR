@@ -258,8 +258,49 @@ create scoreboard
     """
 
 """
-shmsrc socket-path={shmsrc_socket} do-timestamp=true is-live=true \
-    ! video/x-raw,format=NV12,width=1280,height=720,framerate=30/1 \
+gst-launch-1.0 -e \
+v4l2src device=/dev/video0 ! image/jpeg,width=1280,height=720,framerate=30/1 ! jpegdec ! videoconvert ! queue leaky=2 max-size-buffers=1 ! vaapipostproc ! \
+    video/x-raw,width=1280,height=720,framerate=30/1,format=NV12 ! shmsink socket-path=/tmp/camera0_shm_socket wait-for-connection=false shm-size=200000000
+
+gst-launch-1.0 -e \
+shmsrc socket-path=/tmp/camera0_shm_socket do-timestamp=true is-live=true ! \
+    video/x-raw,width=1280,height=720,framerate=30/1,format=NV12,interlace-mode=progressive ! \
+    queue leaky=downstream ! vaapipostproc ! video/x-raw,width=320,height=180 ! tee name=overlay_tee  \
+videotestsrc ! vaapipostproc ! video/x-raw,width=1280,height=720,framerate=30/1,format=NV12,interlace-mode=progressive ! queue ! \
+    compositor name=comp1 sink_0::xpos=0 sink_0::ypos=0 sink_1::xpos=10 sink_1::ypos=10 ! video/x-raw,width=1280,height=720 ! \
+    vaapih264enc bitrate=4000 ! avimux ! filesink location=test1.avi \
+overlay_tee. ! queue ! comp1. \
+videotestsrc ! vaapipostproc ! video/x-raw,width=1280,height=720,framerate=30/1,format=NV12,interlace-mode=progressive ! queue ! \
+    compositor name=comp2 sink_0::xpos=0 sink_0::ypos=0 sink_1::xpos=10 sink_1::ypos=10 ! video/x-raw,width=1280,height=720 ! \
+    vaapih264enc bitrate=4000 ! avimux ! filesink location=test2.avi \
+overlay_tee. ! queue ! comp2. \
+videotestsrc ! vaapipostproc ! video/x-raw,width=1280,height=720,framerate=30/1,format=NV12,interlace-mode=progressive ! queue ! \
+    compositor name=comp3 sink_0::xpos=0 sink_0::ypos=0 sink_1::xpos=10 sink_1::ypos=10 ! video/x-raw,width=1280,height=720 ! \
+    vaapih264enc bitrate=4000 ! avimux ! filesink location=test3.avi \
+overlay_tee. ! queue ! comp3.
+
+gst-launch-1.0 -e \
+shmsrc socket-path=/tmp/camera0_shm_socket do-timestamp=true is-live=true \
+    ! video/x-raw,format=NV12,width=1280,height=720,framerate=30/1,interlace-mode=progressive \
+    ! queue leaky=downstream \
     ! videoconvert \
     ! xvimagesink name=extsink force-aspect-ratio=true
+
+gst-launch-1.0 -e \
+shmsrc socket-path=/tmp/camera0_shm_socket do-timestamp=true is-live=true ! \
+    video/x-raw,width=1280,height=720,framerate=30/1,format=NV12,interlace-mode=progressive ! \
+    queue leaky=downstream ! vaapipostproc ! video/x-raw,width=320,height=180 ! tee name=overlay_tee  \
+rtspsrc location=rtsp://admin:TaekwondoVAR@myip1:554 latency=800 ! rtph264depay ! h264parse ! vaapih264dec ! vaapipostproc ! video/x-raw,width=1280,height=720,framerate=30/1,format=NV12,interlace-mode=progressive ! queue ! \
+    compositor name=comp1 sink_0::xpos=0 sink_0::ypos=0 sink_1::xpos=10 sink_1::ypos=10 ! video/x-raw,width=1280,height=720 ! \
+    vaapih264enc bitrate=4000 ! avimux ! filesink location=test1.avi \
+overlay_tee. ! queue ! comp1. \
+rtspsrc location=rtsp://admin:TaekwondoVAR@myip2:554 latency=800 ! rtph264depay ! h264parse ! vaapih264dec ! vaapipostproc ! video/x-raw,width=1280,height=720,framerate=30/1,format=NV12,interlace-mode=progressive ! queue ! \
+    compositor name=comp2 sink_0::xpos=0 sink_0::ypos=0 sink_1::xpos=10 sink_1::ypos=10 ! video/x-raw,width=1280,height=720 ! \
+    vaapih264enc bitrate=4000 ! avimux ! filesink location=test2.avi \
+overlay_tee. ! queue ! comp2. \
+rtspsrc location=rtsp://admin:TaekwondoVAR@myip3:554 latency=800 ! rtph264depay ! h264parse ! vaapih264dec ! vaapipostproc ! video/x-raw,width=1280,height=720,framerate=30/1,format=NV12,interlace-mode=progressive ! queue ! \
+    compositor name=comp3 sink_0::xpos=0 sink_0::ypos=0 sink_1::xpos=10 sink_1::ypos=10 ! video/x-raw,width=1280,height=720 ! \
+    vaapih264enc bitrate=4000 ! avimux ! filesink location=test3.avi \
+overlay_tee. ! queue ! comp3.
+    
 """

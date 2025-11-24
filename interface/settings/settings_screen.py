@@ -398,10 +398,6 @@ class SettingsScreen(QWidget):
         self.network_ip_input.setText(f"{self.camera_manager.network_ip}0")
         self.network_ip_input.editingFinished.connect(lambda: self.set_network_ip(self.network_ip_input.text()))
 
-        vaapi_toggle = QCheckBox()
-        vaapi_toggle.setChecked(self.camera_manager.vaapi)
-        vaapi_toggle.clicked.connect(lambda x: self.set_vaapi(x))
-
         delete_toggle = QCheckBox()
         delete_toggle.setChecked(self.camera_manager.delete_records)
         delete_toggle.clicked.connect(lambda x: self.set_release_records(x))
@@ -445,7 +441,6 @@ class SettingsScreen(QWidget):
         form_layout.addRow(QLabel("Select Court:"), court_combo)
         form_layout.addRow(QLabel("Debug Mode:"), debug_toggle)
         form_layout.addRow(QLabel("Resolution:"), res_combo)
-        form_layout.addRow(QLabel("VA-API Support:"), vaapi_toggle)
         form_layout.addRow(QLabel("Relese Records:"), delete_toggle)
 
         layout.addWidget(start_frame)
@@ -493,9 +488,26 @@ class SettingsScreen(QWidget):
             cam_layout.addLayout(header_layout)
 
             # Camera preview
-            preview_label = VideoStreamWidget(f"{self.camera_manager.get_shmsink(idx)} ! video/x-raw,width={"1280" if idx == 0 else self.camera_manager.res_width},height={"720" if idx == 0 else self.camera_manager.res_height},framerate={self.camera_manager.fps}/1,format=NV12 ! videoconvert ! videoscale ! video/x-raw,format=RGB,width=272,height=153 ! queue ! appsink name=sink emit-signals=True sync=True drop=False", 272, 153)
-            self.video_widgets.append(preview_label)
+            if idx == 0:
+                # Scoreboard (SHM Source)
+                source_pipe = self.camera_manager.get_shmsink(0)
+                width = 1280
+                height = 720
+            else:
+                # RTSP Cameras (Direct Source, needs full pipeline)
+                source_pipe = f"{"videotestsrc" if self.camera_manager.debug else self.camera_manager.get_camera(idx)} ! vaapipostproc"
+                width = self.camera_manager.res_width
+                height = self.camera_manager.res_height
+                
+            # Construct the final pipeline string for the preview
+            pipeline_desc = (
+                f"{source_pipe} ! video/x-raw,width={width},height={height},framerate={self.camera_manager.fps}/1,format=NV12 ! "
+                f"videoconvert ! videoscale ! video/x-raw,format=RGB,width=272,height=153 ! "
+                f"queue ! appsink name=sink emit-signals=True sync=True drop=False"
+            )
 
+            preview_label = VideoStreamWidget(pipeline_desc, 272, 153)
+            self.video_widgets.append(preview_label)
             cam_layout.addWidget(preview_label)
             cam_frame.setLayout(cam_layout)
 
@@ -551,48 +563,42 @@ class SettingsScreen(QWidget):
         self.init_tabs()
         self.start()
 
-    def set_vaapi(self, vaapi):
-        self.camera_manager.vaapi = vaapi
-        self.camera_manager.save_cameras()
-        self.camera_manager.reload_shmsink()
-        self.update_camera_list()
-
     def set_debug(self, debug):
         self.camera_manager.debug = debug
-        self.camera_manager.save_cameras()
+        # self.camera_manager.save_cameras()
         self.camera_manager.reload_shmsink()
         self.update_camera_list()
 
     def set_release_records(self, delete_records):
         self.camera_manager.delete_records = delete_records
-        self.camera_manager.save_cameras()
+        # self.camera_manager.save_cameras()
 
     def set_live(self, key):
         self.camera_manager.live_key = key
-        self.camera_manager.save_cameras()
+        # self.camera_manager.save_cameras()
 
     def set_scoreboard(self, is_scoreboard):
         self.camera_manager.is_scoreboard = is_scoreboard
-        self.camera_manager.save_cameras()
+        # self.camera_manager.save_cameras()
         print(is_scoreboard)
 
     def set_resolution(self, resolution: int):
         self.camera_manager.res_height = resolution
         self.camera_manager.res_width = resolution // 9 * 16
-        self.camera_manager.save_cameras()
+        # self.camera_manager.save_cameras()
         self.camera_manager.reload_shmsink()
         self.update_camera_list()
         print(f"{resolution // 9 * 16}:{resolution}")
 
     def set_court(self, court: int):
         self.camera_manager.court = court
-        self.camera_manager.save_cameras()
+        # self.camera_manager.save_cameras()
         self.camera_manager.reload_shmsink()
         self.update_camera_list()
 
     def set_camera_idx(self, idx: int):
         self.camera_manager.camera_idx = idx
-        self.camera_manager.save_cameras()
+        # self.camera_manager.save_cameras()
         self.camera_manager.reload_shmsink()
         self.update_camera_list()
 
