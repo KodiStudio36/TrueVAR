@@ -259,8 +259,19 @@ create scoreboard
 
 """
 gst-launch-1.0 -e \
-v4l2src device=/dev/video0 ! image/jpeg,width=1280,height=720,framerate=30/1 ! jpegdec ! videoconvert ! queue leaky=2 max-size-buffers=1 ! vaapipostproc ! \
-    video/x-raw,width=1280,height=720,framerate=30/1,format=NV12 ! shmsink socket-path=/tmp/camera0_shm_socket wait-for-connection=false shm-size=200000000
+v4l2src device=/dev/video0 ! image/jpeg,width=1280,height=720,framerate=30/1 ! vaapijpegdec ! queue leaky=2 max-size-buffers=1 ! vaapipostproc ! \
+    video/x-raw,width=1280,height=720,framerate=30/1,format=NV12 ! tee name=scoreboard_tee \
+scoreboard_tee. vaapisink name=mysink xid-usage=auto window-class="mysink" window-title="External Preview" \
+scoreboard_tee. shmsink socket-path=/tmp/camera0_shm_socket wait-for-connection=false shm-size=200000000
+
+gst-launch-1.0 -e \
+v4l2src device=/dev/video0 ! image/jpeg,width=1280,height=720,framerate=30/1 \
+    ! vaapijpegdec ! vaapipostproc ! video/x-raw,width=1280,height=720,framerate=30/1,format=NV12 \
+    ! tee name=scoreboard_tee \
+scoreboard_tee. ! queue leaky=downstream max-size-buffers=1 \
+    ! xvimagesink name=extsink force-aspect-ratio=true \
+scoreboard_tee. ! queue leaky=downstream max-size-buffers=1 \
+    ! shmsink socket-path=/tmp/camera0_shm_socket wait-for-connection=false shm-size=200000000
 
 gst-launch-1.0 -e \
 shmsrc socket-path=/tmp/camera0_shm_socket do-timestamp=true is-live=true ! \
@@ -285,6 +296,12 @@ shmsrc socket-path=/tmp/camera0_shm_socket do-timestamp=true is-live=true \
     ! queue leaky=downstream \
     ! videoconvert \
     ! xvimagesink name=extsink force-aspect-ratio=true
+    
+gst-launch-1.0 -e \
+shmsrc socket-path=/tmp/camera0_shm_socket do-timestamp=true is-live=true \
+    ! video/x-raw,format=NV12,width=1280,height=720,framerate=30/1,interlace-mode=progressive \
+    ! queue leaky=downstream max-size-buffers=1 \
+    ! vaapisink name=mysink xid-usage=auto window-class="mysink" window-title="External Preview"
 
 gst-launch-1.0 -e \
 shmsrc socket-path=/tmp/camera0_shm_socket do-timestamp=true is-live=true ! \

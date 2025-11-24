@@ -1,43 +1,44 @@
+# app/camera_manager.py
 from PyQt5.QtCore import pyqtSignal, QObject
 import json
 import os
 import glob
 import gi
+import time
 
 gi.require_version("Gst", "1.0")
 gi.require_version("GstApp", "1.0")
-from gi.repository import Gst
+gi.require_version("GstVideo", "1.0")
+from gi.repository import Gst, GstVideo
 
-# Assuming these are available in your structure
 from config import records_path, camera_settings_file, ai_path
 from app.injector import singleton
-from app.settings_manager import SettingsManager, Setting # <--- NEW IMPORTS
+from app.settings_manager import SettingsManager, Setting
 
 @singleton
-class CameraManager(SettingsManager, QObject): # <--- INHERIT FROM SettingsManager
+class CameraManager(SettingsManager, QObject):
     is_recording_stream = pyqtSignal(bool)
     is_stream_stream = pyqtSignal(bool)
+    # Signal to tell ExternalScreenManager that pipeline restarted so it can move the window
+    pipeline_reloaded = pyqtSignal()
 
-    # --- Settings Definitions (Replacing instance variables) ---
+    # --- Settings ---
     is_scoreboard = Setting(True)
     fps = Setting(30)
-    res_height = Setting(720) # res_width will be a property
+    res_height = Setting(720)
     debug = Setting(True)
     court = Setting(1)
-    camera_idx = Setting(0) # Scoreboard camera index
+    camera_idx = Setting(0)
     delete_records = Setting(True)
-    camera_count = Setting(3) # Number of RTSP cameras (1 to N)
+    camera_count = Setting(3)
     network_ip = Setting("192.168.0.")
     live_camera_idx = Setting(1)
     live_key = Setting("")
-    # -----------------------------------------------------------
 
     def __init__(self):
-        # Initialize SettingsManager and load settings from file
         SettingsManager.__init__(self, camera_settings_file)
         QObject.__init__(self)
         
-        # --- Internal state variables ---
         self.is_recording = False
         self.is_stream = False
         self.fight_num = 0
@@ -47,48 +48,146 @@ class CameraManager(SettingsManager, QObject): # <--- INHERIT FROM SettingsManag
         self.pipeline = None
         self.stream_pipeline = None
 
+        # State to track if external screen branch should be added
+        self.enable_external_screen_branch = False 
+        self.window_title = "python" # Default title for xdotool/wmctrl
+
         if not Gst.is_initialized():
             Gst.init(None)
 
-        # Start the SHM source pipeline (ONLY for the scoreboard)
         self.start_shmsink()
 
     @property
     def res_width(self):
-        """Calculates width based on the saved height."""
         return self.res_height // 9 * 16
-
-    # Removed load_cameras and save_cameras. Use self.load_settings() / self.save_settings()
 
     def add_camera(self):
         self.camera_count += 1
-        self.save_settings() # <--- Updated
+        self.save_settings()
         
     def remove_camera(self):
         if self.camera_count > 0:
             self.camera_count -= 1
-            self.save_settings() # <--- Updated
+            self.save_settings()
 
     def handle_message(self, bus, message):
-        """Handle messages from the GStreamer bus."""
         msg_type = message.type
         if msg_type == Gst.MessageType.ERROR:
             err, debug_info = message.parse_error()
             print(f"Error received: {err.message} {bus}")
-            if debug_info:
-                print(f"Debug info: {debug_info}")
-            # Handle cleanup or recovery here
-        elif msg_type == Gst.MessageType.WARNING:
-            warn, debug_info = message.parse_warning()
-            print(f"Warning received: {warn.message} {bus}")
-            if debug_info:
-                print(f"Debug info: {debug_info}")
         elif msg_type == Gst.MessageType.EOS:
             print("End of Stream reached.")
-            # Stop the pipeline or restart if needed
-        elif msg_type == Gst.MessageType.STATE_CHANGED:
-            old, new, pending = message.parse_state_changed()
-            print(f"Pipeline state changed from {old} to {new} {bus}")
+
+    # --- CONTROL METHODS FOR EXTERNAL SCREEN MANAGER ---
+    def set_external_screen_enabled(self, enabled: bool, window_title="python"):
+        """Called by ExternalScreenManager to toggle the screen branch."""
+        if self.enable_external_screen_branch != enabled:
+            print(f"CameraManager: Switching External Screen to {enabled}")
+            self.enable_external_screen_branch = enabled
+            self.window_title = window_title
+            self.reload_shmsink()
+            # Emit signal so ExternalScreenManager knows to run the 'move' script
+            if enabled:
+                # Give GStreamer a moment to create the window handle
+                # ideally this is handled by sync_message, but for scripts, a signal works
+                self.pipeline_reloaded.emit()
+
+    # --- PIPELINE GENERATION ---
+    def start_shmsink(self, skip_cameras=None):
+        """
+        Starts the Master Source Pipeline (Camera 0).
+        If enable_external_screen_branch is True, it adds the display sink.
+        """
+        try:
+            self.stop_shmsink()
+            
+            # Common Source Part (Capture -> Hardware Decode -> NV12)
+            # We use 'tee' if screen is enabled, otherwise we might not strictly need it, 
+            # but using it consistently is safer.
+            
+            file_path = f"/tmp/camera0_shm_socket"
+            if os.path.exists(file_path):
+                os.remove(file_path)
+
+            print(f"Starting Master Pipeline. Screen Enabled: {self.enable_external_screen_branch}")
+
+            # 1. The Source and Decode
+            # Note: Added 'tee name=t' at the end of the source block
+            pipe_source = (
+                f"{self.get_scoreboard()} "
+                f"! vaapijpegdec " 
+                f"! vaapipostproc " 
+                f"! video/x-raw,width=1280,height=720,framerate=30/1,format=NV12 "
+                f"! tee name=t "
+            )
+
+            # 2. Branch A: Shared Memory (Always Active)
+            pipe_shm = (
+                f"t. ! queue leaky=downstream max-size-buffers=1 "
+                f"! shmsink socket-path={file_path} wait-for-connection=false shm-size=200000000 "
+            )
+
+            # 3. Branch B: External Screen (Conditional)
+            pipe_screen = ""
+            if self.enable_external_screen_branch:
+                # Using xvimagesink as requested. 
+                # force-aspect-ratio=true helps with fullscreen stretching issues
+                pipe_screen = (
+                    f"t. ! queue leaky=downstream max-size-buffers=1 "
+                    f"! xvimagesink name=extsink force-aspect-ratio=true sync=false "
+                )
+
+            full_pipe = pipe_source + pipe_shm + pipe_screen
+
+            print(f"Pipeline: {full_pipe}")
+
+            self.shm_pipeline = Gst.parse_launch(full_pipe)
+            bus = self.shm_pipeline.get_bus()
+            bus.add_signal_watch()
+            bus.connect("message", self.handle_message)
+            
+            # Hook for Window Title (Important for your move script)
+            if self.enable_external_screen_branch:
+                bus.enable_sync_message_emission()
+                # bus.connect("sync-message::element", self.on_sync_message)
+
+            self.shm_pipeline.set_state(Gst.State.PLAYING)
+            self.error_while_shm = False
+
+        except Exception as e:
+            print(f"Error starting Master pipeline: {e}")
+            self.error_while_shm = True
+
+    # def on_sync_message(self, bus, msg):
+    #     """Sets the window title so external scripts can find it."""
+    #     if not self.enable_external_screen_branch:
+    #         return
+            
+    #     if GstVideo.is_video_overlay_prepare_window_handle_message(msg):
+    #         sink = msg.src
+    #         # We only care about the external screen sink
+    #         if sink.get_name() == "extsink":
+    #             try:
+    #                 overlay = GstVideo.VideoOverlay()
+    #                 # Set the title to match what ExternalScreenManager expects
+    #                 overlay.set_window_title(self.window_title)
+    #                 # Force a draw of the window handle
+    #                 overlay.expose() 
+    #             except Exception as e:
+    #                 print(f"Failed to set window title: {e}")
+
+    def stop_shmsink(self):
+        if self.shm_pipeline:
+            self.shm_pipeline.set_state(Gst.State.NULL)
+            self.shm_pipeline = None
+
+    def reload_shmsink(self):
+        self.stop_shmsink()
+        self.start_shmsink()
+
+    # --- Other Camera Manager Methods (Recording, etc) ---
+    def get_scoreboard(self):
+        return f"v4l2src device=/dev/video{self.camera_idx} ! image/jpeg,width=1280,height=720,framerate=30/1"
     
     def start_cameras(self):
         """Starts the Recording Pipeline (Scoreboard SHM + RTSP Direct)."""
@@ -135,44 +234,44 @@ class CameraManager(SettingsManager, QObject): # <--- INHERIT FROM SettingsManag
             self.is_recording = False
             self.is_recording_stream.emit(self.is_recording)
 
-    def start_shmsink(self, skip_cameras=None):
-        """Starts the SHM Source Pipeline (ONLY for the Scoreboard/Camera 0)."""
-        try:
-            # 1. Scoreboard (Camera 0) logic (KEEP)
-            file_path = f"/tmp/camera0_shm_socket"
-            pipe = ""
+    # def start_shmsink(self, skip_cameras=None):
+    #     """Starts the SHM Source Pipeline (ONLY for the Scoreboard/Camera 0)."""
+    #     try:
+    #         # 1. Scoreboard (Camera 0) logic (KEEP)
+    #         file_path = f"/tmp/camera0_shm_socket"
+    #         pipe = ""
 
-            if os.path.exists(file_path):
-                os.remove(file_path)
-                print(f"Removed: {file_path}")
+    #         if os.path.exists(file_path):
+    #             os.remove(file_path)
+    #             print(f"Removed: {file_path}")
 
-            print("Starting scoreboard shmsink:", self.camera_idx)
-            pipe += f"{self.get_scoreboard()} ! jpegdec ! videoconvert ! queue leaky=2 max-size-buffers=1 ! vaapipostproc ! video/x-raw,width=1280,height=720,framerate=30/1,format=NV12 ! shmsink socket-path={file_path} wait-for-connection=false shm-size=200000000 "
+    #         print("Starting scoreboard shmsink:", self.camera_idx)
+    #         pipe += f"{self.get_scoreboard()} ! vaapijpegdec ! queue leaky=2 max-size-buffers=1 ! vaapipostproc ! video/x-raw,width=1280,height=720,framerate=30/1,format=NV12 ! shmsink socket-path={file_path} wait-for-connection=false shm-size=200000000 "
 
-            # 2. RTSP Camera Loop (REMOVED)
-            # The loop for idx in range(1, self.camera_count + 1) is removed.
+    #         # 2. RTSP Camera Loop (REMOVED)
+    #         # The loop for idx in range(1, self.camera_count + 1) is removed.
             
-            print("SHM Sink Pipeline (Scoreboard only):", pipe)
+    #         print("SHM Sink Pipeline (Scoreboard only):", pipe)
 
-            if pipe != "":
-                self.shm_pipeline = Gst.parse_launch(pipe)
-                bus = self.shm_pipeline.get_bus()
-                bus.add_signal_watch()
-                bus.connect("message", self.handle_message)
-                self.shm_pipeline.set_state(Gst.State.PLAYING)
+    #         if pipe != "":
+    #             self.shm_pipeline = Gst.parse_launch(pipe)
+    #             bus = self.shm_pipeline.get_bus()
+    #             bus.add_signal_watch()
+    #             bus.connect("message", self.handle_message)
+    #             self.shm_pipeline.set_state(Gst.State.PLAYING)
 
-            self.error_while_shm = False
-        except Exception as e: # Catch specific exception instead of generic
-            print(f"Error starting SHM sink pipeline: {e}")
-            self.error_while_shm = True
+    #         self.error_while_shm = False
+    #     except Exception as e: # Catch specific exception instead of generic
+    #         print(f"Error starting SHM sink pipeline: {e}")
+    #         self.error_while_shm = True
 
-    def stop_shmsink(self):
-        if self.shm_pipeline:
-            self.shm_pipeline.set_state(Gst.State.NULL)
+    # def stop_shmsink(self):
+    #     if self.shm_pipeline:
+    #         self.shm_pipeline.set_state(Gst.State.NULL)
 
-    def reload_shmsink(self):
-        self.stop_shmsink()
-        self.start_shmsink()
+    # def reload_shmsink(self):
+    #     self.stop_shmsink()
+    #     self.start_shmsink()
 
     def start_stream(self):
         """Starts the Streaming Pipeline (RTSP Direct + Scoreboard SHM)."""
