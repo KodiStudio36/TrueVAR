@@ -1,4 +1,5 @@
 from app.injector import Injector
+from app.obs_manager import OBSManager
 from app.camera_manager import CameraManager
 from app.main_manager import MainManager
 
@@ -15,6 +16,7 @@ class MainScreen(QWidget):
     def __init__(self):
         super().__init__()
         self.camera_manager: CameraManager = Injector.find(CameraManager)
+        self.obs_manager: OBSManager = Injector.find(OBSManager)
         self.blink_timers = {}
         self.video_widgets = []
         self.init_ui()
@@ -35,13 +37,14 @@ class MainScreen(QWidget):
         toolbar_layout.addWidget(left_btn, alignment=Qt.AlignLeft)
 
         # Center text input + button
-        text_input = QLabel("some text here")
+        text_input = QLabel("Stream is not ready")
         text_input.setFixedWidth(200)
         toolbar_layout.addWidget(text_input, alignment=Qt.AlignLeft)
 
         toolbar_layout.addStretch()
 
         self.recording_btn = QPushButton("Start Recording")
+        self.recording_btn.clicked.connect(lambda: Injector.find(MainManager).toggle_recording())
         toolbar_layout.addWidget(self.recording_btn, alignment=Qt.AlignRight)
 
         # Stretch before settings
@@ -98,10 +101,8 @@ class MainScreen(QWidget):
         self.setLayout(vertical)
 
         # connect recording status
-        self.camera_manager.is_recording_stream.connect(
-            lambda is_recording:
-                self.update_status(is_recording)
-        )
+        self.camera_manager.is_recording_stream.connect(self.update_status)
+        self.obs_manager.connected.connect(self.update_status)
 
     def update_status(self, is_recording):
         if is_recording:

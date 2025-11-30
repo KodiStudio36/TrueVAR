@@ -9,6 +9,7 @@ from time import time
 
 from app.injector import Injector
 from app.udp_manager import UdpManager
+from app.obs_manager import OBSManager
 from app.external_screen_manager import ExternalScreenManager
 from app.key_bind_manager import KeyBindManager
 from app.webserver_manager import WebServerManager
@@ -20,6 +21,7 @@ class MainWindow(QMainWindow):
         super().__init__()
 
         self.key_bind_manager: KeyBindManager = Injector.find(KeyBindManager)
+        self.obs_manager: OBSManager = Injector.find(OBSManager)
         self.camera_manager: CameraManager = Injector.find(CameraManager)
         self.udp_manager: UdpManager = Injector.find(UdpManager)
         self.external_screen_manager: ExternalScreenManager = Injector.find(ExternalScreenManager)
@@ -41,8 +43,7 @@ class MainWindow(QMainWindow):
         self.screen_manager.hide_settings_signal.connect(self.hide_settings)
         self.screen_manager.show_replay_signal.connect(self.show_replay)
         self.screen_manager.hide_replay_signal.connect(self.hide_replay)
-        self.screen_manager.start_recording_signal.connect(self.start_recording)
-        self.screen_manager.stop_recording_signal.connect(self.stop_recording)
+        self.screen_manager.toggle_recording_signal.connect(self.toggle_recording)
 
         # Add screens to the stacked widget
         self.stacked_widget.addWidget(self.main_screen)
@@ -68,9 +69,6 @@ class MainWindow(QMainWindow):
         
         # Connect the manager's state change signal to the new slot
         self.external_screen_manager.screen_changed_mirror.connect(self.update_screen_indicator)
-        
-        # Set the initial state based on the manager's current state
-        self.update_screen_indicator(self.external_screen_manager.is_running)
 
         self.toast_label = QLabel("", self)
         self.toast_label.setAlignment(Qt.AlignCenter)
@@ -108,18 +106,18 @@ class MainWindow(QMainWindow):
 
             elif self.current_screen == 2:
                 self.hide_replay()
+                if self.external_screen_manager.is_mirror:
+                    self.external_screen_manager.toggle_display_mode()
 
         if key_sequence == QKeySequence(self.key_bind_manager.record_key) and self.current_screen == 0:
-            if not self.camera_manager.is_recording:
-                self.start_recording()
-            
-            else:
-                self.stop_recording()
+            self.toggle_recording()
 
         if key_sequence == QKeySequence(self.key_bind_manager.toggle_external_screen_key):
             self.external_screen_manager.toggle_display_mode()
-                
 
+        if key_sequence == QKeySequence(self.key_bind_manager.set_troubleshooting_scene):
+            self.obs_manager.set_troubleshooting_scene()
+                
         if key_sequence == QKeySequence(self.key_bind_manager.next_camera_key) and self.current_screen == 2:
             self.replay_screen.next_page()
 
@@ -162,7 +160,7 @@ class MainWindow(QMainWindow):
             self.current_screen = 2
 
             # pro webserver implementation
-            Injector.find(WebServerManager).start_ivr_scene()
+            self.obs_manager.set_ivr_scene()
         else:
             self.show_toast_message("Video Replay can't be open without recording")
 
@@ -173,7 +171,14 @@ class MainWindow(QMainWindow):
         self.current_screen = 0
 
         # pro webserver implementation
-        Injector.find(WebServerManager).end_ivr_scene()
+        self.obs_manager.set_main_scene()
+
+    def toggle_recording(self):
+        if not self.camera_manager.is_recording:
+            self.start_recording()
+        
+        else:
+            self.stop_recording()
 
     def start_recording(self):
         if not self.camera_manager.is_recording:
@@ -200,10 +205,12 @@ class MainWindow(QMainWindow):
             self.showFullScreen()  # Enter fullscreen
 
     @pyqtSlot(bool)
-    def update_screen_indicator(self, is_running):
+    def update_screen_indicator(self, is_mirror):
         """Show or hide the 'Showing to coaches' indicator."""
-        self.screen_indicator_label.setVisible(is_running)
+        self.screen_indicator_label.setVisible(is_mirror)
         # Repositioning is handled in resizeEvent
+        if is_mirror and self.current_screen == 2:
+            self.obs_manager.set_ivr_closeup_scene()
 
     # --- NEW: Override resizeEvent to reposition the indicator ---
     def resizeEvent(self, event):

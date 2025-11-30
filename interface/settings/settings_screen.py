@@ -11,7 +11,7 @@ from gi.repository import Gst, GLib
 
 import cv2
 from PyQt5.QtWidgets import (
-    QDialog, QVBoxLayout, QLabel, QLineEdit, QPushButton, QComboBox, QApplication
+    QDialog, QVBoxLayout, QLabel, QLineEdit, QPushButton, QComboBox, QApplication, QGroupBox
 )
 from cv2_enumerate_cameras import enumerate_cameras
 
@@ -27,6 +27,7 @@ from app.camera_manager import CameraManager
 from app.udp_manager import UdpManager
 from app.licence_manager import LicenceManager
 from app.external_screen_manager import ExternalScreenManager
+from app.obs_manager import OBSManager
 
 class SettingsScreen(QWidget):
     def __init__(self):
@@ -37,6 +38,7 @@ class SettingsScreen(QWidget):
         self.udp_manager: UdpManager = Injector.find(UdpManager)
         self.licence_manager: LicenceManager = Injector.find(LicenceManager)
         self.external_screen_manager: ExternalScreenManager = Injector.find(ExternalScreenManager)
+        self.obs_manager: OBSManager = Injector.find(OBSManager)
         self.video_widgets = []
         self.is_update = False
         self.init_ui()
@@ -87,115 +89,95 @@ class SettingsScreen(QWidget):
 
     def init_stream_tab(self):
         layout = QVBoxLayout()
-        layout.setSpacing(15)  # Set some spacing between sections for a cleaner look
+        layout.setSpacing(15)
 
-        # ===== Section 1: Basic YouTube Livestream =====
-        basic_title = QLabel("Basic YouTube Livestream")
-        basic_title.setStyleSheet("font-weight: bold; font-size: 16px;")
-        # layout.addWidget(basic_title, alignment=Qt.AlignTop) # Removed, not needed with addStretch
-        layout.addWidget(basic_title)
+        # ===== Section 1: OBS Integration =====
+        obs_title = QLabel("OBS Studio Control")
+        obs_title.setStyleSheet("font-weight: bold; font-size: 16px;")
+        layout.addWidget(obs_title)
 
-        start_frame = QFrame()
-        # Adjust size policy to be more flexible
-        start_frame.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Minimum)
-
-        # Main horizontal layout
-        main_layout = QHBoxLayout(start_frame)
-        main_layout.setAlignment(Qt.AlignLeft | Qt.AlignTop) # Align contents to the top-left
-        main_layout.setSpacing(10)
-
-        # Left layout for the preview (compact)
-        left_layout = QVBoxLayout()
-        preview_label = VideoStreamWidget(
-            f"{self.camera_manager.get_shmsink(self.camera_manager.live_camera_idx)} "
-            f"! video/x-raw,width={self.camera_manager.res_width},height={self.camera_manager.res_height},"
-            f"framerate={self.camera_manager.fps}/1,format=NV12 ! videoconvert ! videoscale "
-            f"! video/x-raw,format=RGB,width=272,height=153 ! queue ! appsink name=sink emit-signals=True sync=True drop=False",
-        272, 153)
-        self.video_widgets.append(preview_label)
-        left_layout.addWidget(preview_label)
-
-        # Right layout for camera controls (compact)
-        right_layout = QVBoxLayout()
-        form_frame = QFrame()
-        form_frame.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Maximum)
-        form_layout = QFormLayout(form_frame)
-        form_layout.setSpacing(10)
-        form_layout.setHorizontalSpacing(20)
-        form_layout.setLabelAlignment(Qt.AlignLeft)
-
-        # Camera ID combo box
-        camera_id_combo = QComboBox()
-        camera_id_combo.setSizePolicy(QSizePolicy.Maximum, QSizePolicy.Maximum)
-        camera_id_combo.addItems([f"Camera {i+1}" for i in range(self.camera_manager.camera_count)])
-        form_layout.addRow(QLabel("Camera ID:"), camera_id_combo)
-
-        # Livestream key input
-        youtube_key_input = MyLineEdit()
-        youtube_key_input.setPlaceholderText("xxxx-xxxx-xxxx-xxxx-xxxx")
-        youtube_key_input.setText(self.camera_manager.live_key)
-        form_layout.addRow(QLabel("Livestream Key:"), youtube_key_input)
-
-        # Start/Stop livestream button
-        self.start_stream_button = QPushButton("Start Basic YouTube Livetream")
-        self.start_stream_button.clicked.connect(lambda x: self.toggle_stream(1, youtube_key_input.text()))
-
-        right_layout.addWidget(form_frame)
-        right_layout.addWidget(self.start_stream_button)
-
-        main_layout.addLayout(left_layout)
-        main_layout.addLayout(right_layout)
-
-        self.camera_manager.is_stream_stream.connect(lambda is_stream: self.on_stream(is_stream))
-
-        layout.addWidget(start_frame)
-
-        # Divider line
-        line = QFrame()
-        line.setFrameShape(QFrame.HLine)
-        line.setFrameShadow(QFrame.Sunken)
-        layout.addWidget(line)
-
-        # ===== Section 2: Pro YouTube Livestream =====
-        pro_title = QLabel("Pro YouTube Livestream")
-        pro_title.setStyleSheet("font-weight: bold; font-size: 16px;")
-        layout.addWidget(pro_title)
-
-        pro_form_frame = QFrame()
-        # Adjust size policy for a tighter fit
-        pro_form_layout = QFormLayout(pro_form_frame)
-        pro_form_layout.setSpacing(10)
-        pro_form_layout.setHorizontalSpacing(20)
-
-        web_port_input = MyLineEdit()
-        web_port_input.setPlaceholderText("8000")
-        web_port_input.setText(str(self.webserver_manager.webserver_port))
-        web_port_input.textChanged.connect(lambda text: setattr(self.webserver_manager, "webserver_port", int(text)))
-        pro_form_layout.addRow(QLabel(f"WebServer Port:"), web_port_input)
-
-        obs_port_input = MyLineEdit()
-        obs_port_input.setPlaceholderText("4455")
-        obs_port_input.setText(str(self.webserver_manager.obs_port))
-        obs_port_input.textChanged.connect(lambda text: setattr(self.webserver_manager, "obs_port", int(text)))
-        pro_form_layout.addRow(QLabel(f"OBS WebSocket Port:"), obs_port_input)
-
+        obs_frame = QFrame()
+        obs_layout = QFormLayout(obs_frame)
+        
+        # 1. Configuration Inputs
         obs_pass_input = MyLineEdit()
-        obs_pass_input.setPlaceholderText("Enter OBS WebSocket Password")
-        obs_pass_input.setText(self.webserver_manager.obs_pass)
-        obs_pass_input.textChanged.connect(lambda text: setattr(self.webserver_manager, "obs_pass", text))
-        pro_form_layout.addRow(QLabel(f"OBS WebSocket Pass:"), obs_pass_input)
+        obs_pass_input.setEchoMode(QLineEdit.Password)
+        obs_pass_input.setText(self.obs_manager.obs_password)
+        obs_pass_input.textChanged.connect(lambda t: setattr(self.obs_manager, "obs_password", t))
+        obs_layout.addRow("OBS Password:", obs_pass_input)
 
-        layout.addWidget(pro_form_frame)
+        layout.addWidget(obs_frame)
 
-        # Start widgets server button
-        start_widgets_server_btn = QPushButton(f"{"Stop" if self.webserver_manager.thread.isRunning() else "Start"} Pro YouTube Livetream Server")
-        start_widgets_server_btn.clicked.connect(lambda x: self.toggle_webserver())
-        layout.addWidget(start_widgets_server_btn)
+        # 2. Launch Buttons (Launch with specific Collections)
+        btn_layout = QHBoxLayout()
+        
+        btn_launch_basic = QPushButton("Launch OBS (Basic Mode)")
+        btn_launch_basic.clicked.connect(lambda: self.launch_and_setup_obs("basic"))
+        
+        btn_launch_pro = QPushButton("Launch OBS (Pro Mode)")
+        btn_launch_pro.clicked.connect(lambda: self.launch_and_setup_obs("pro"))
 
-        # Add a stretch to push all content to the top
+        btn_layout.addWidget(btn_launch_basic)
+        btn_layout.addWidget(btn_launch_pro)
+        layout.addLayout(btn_layout)
+
+        # 3. Live Controls (Only work if OBS is open)
+        control_group = QGroupBox("Live Controls")
+        control_layout = QHBoxLayout()
+
+        btn_connect = QPushButton("Connect WebSocket")
+        btn_connect.clicked.connect(self.obs_manager.connect_to_obs)
+        
+        btn_start_stream = QPushButton("Start Streaming")
+        btn_start_stream.setStyleSheet("background-color: green; color: white;")
+        btn_start_stream.clicked.connect(self.obs_manager.start_streaming)
+
+        btn_stop_stream = QPushButton("Stop Streaming")
+        btn_stop_stream.setStyleSheet("background-color: red; color: white;")
+        btn_stop_stream.clicked.connect(self.obs_manager.stop_streaming)
+
+        control_layout.addWidget(btn_connect)
+        control_layout.addWidget(btn_start_stream)
+        control_layout.addWidget(btn_stop_stream)
+        control_group.setLayout(control_layout)
+        layout.addWidget(control_group)
+
+        # 4. Scene Switcher Example
+        scene_group = QGroupBox("Scene Switcher")
+        scene_layout = QHBoxLayout()
+        
+        btn_scoreboard = QPushButton("Start Soon Scene")
+        btn_scoreboard.clicked.connect(lambda: self.obs_manager.set_scene("Start Soon Scene"))
+        scene_layout.addWidget(btn_scoreboard)
+
+        btn_scoreboard = QPushButton("Main Scene")
+        btn_scoreboard.clicked.connect(lambda: self.obs_manager.set_scene("Main Scene"))
+        scene_layout.addWidget(btn_scoreboard)
+
+        btn_scoreboard = QPushButton("IVR Scene")
+        btn_scoreboard.clicked.connect(lambda: self.obs_manager.set_scene("IVR Scene"))
+        scene_layout.addWidget(btn_scoreboard)
+
+        btn_scoreboard = QPushButton("IVR Closeup Scene")
+        btn_scoreboard.clicked.connect(lambda: self.obs_manager.set_scene("IVR Closeup Scene"))
+        scene_layout.addWidget(btn_scoreboard)
+
+        scene_group.setLayout(scene_layout)
+        layout.addWidget(scene_group)
+
         layout.addStretch(1)
-
         self.stream_tab.setLayout(layout)
+
+    def launch_and_setup_obs(self, mode):
+        """
+        1. Launches OBS with the correct collection CLI argument.
+        2. Waits a moment (optional, or rely on manual Connect).
+        3. Connects WebSocket.
+        """
+        self.obs_manager.launch_obs(mode=mode)
+        
+        # Optional: Try to auto-connect after 5 seconds
+        # QTimer.singleShot(5000, self.obs_manager.connect_to_obs)
 
     def init_external_screen_tab(self):
         layout = QVBoxLayout()

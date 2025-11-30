@@ -33,6 +33,7 @@ class ExternalScreenManager(SettingsManager, QObject):
         SettingsManager.__init__(self, external_screen_settings_file)
         QObject.__init__(self)
         self.is_running = False
+        self.is_mirror = False
         
         # Get reference to camera manager
         self.camera_manager: CameraManager = Injector.find(CameraManager)
@@ -61,6 +62,8 @@ class ExternalScreenManager(SettingsManager, QObject):
             self.camera_manager.set_external_screen_enabled(True, self.window_title)
             
             self.screen_state_changed.emit(True)
+            self.is_mirror = False
+            self.screen_changed_mirror.emit(self.is_mirror)
 
         except Exception as e:
             print(f"Failed to enable external screen: {e}")
@@ -102,16 +105,19 @@ class ExternalScreenManager(SettingsManager, QObject):
 
             self.is_running = False
             self.screen_state_changed.emit(False)
+            self.is_mirror = False
+            self.screen_changed_mirror.emit(self.is_mirror)
 
         except Exception as e:
             print(f"Error stopping external screen: {e}")
 
     def toggle_display_mode(self):
         # (This remains mostly the same, handling xrandr toggles)
-        if not os.path.exists(SCRIPT_PATH):
+        if not self.is_running or not os.path.exists(SCRIPT_PATH):
             return
         result = subprocess.run(
             [SCRIPT_PATH, "toggle", self.main_display, self.external_display],
             capture_output=True, text=True, check=False
         )
-        self.screen_changed_mirror.emit(result.stdout == "Switching to mirror mode.\n")
+        self.is_mirror = result.stdout == "Switching to mirror mode.\n"
+        self.screen_changed_mirror.emit(self.is_mirror)
