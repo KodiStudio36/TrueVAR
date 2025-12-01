@@ -2,8 +2,8 @@ import fitz
 import re
 
 # --- CONFIGURATION FOR CUSTOM FONTS ---
-REGULAR_FONT_FILE = "static/MomoTrustSans-Regular.ttf"
-BOLD_FONT_FILE = "MomoTrustDisplay-Regular.ttf"
+REGULAR_FONT_FILE = "obs/MomoTrustSans-Regular.ttf"
+BOLD_FONT_FILE = "obs/MomoTrustDisplay-Regular.ttf"
 CUSTOM_FONT_NAME = "MomoTrustFamily"
 # -------------------------------------
 
@@ -58,7 +58,7 @@ def create_starting_soon_graphics(
 
     doc = fitz.open(input_pdf_path)
     page = doc[0]
-    MAX_WIDTH = 750
+    MAX_WIDTH = 800
 
     # Prepare dynamic insertion data
     INSERTION_DATA = [
@@ -74,7 +74,7 @@ def create_starting_soon_graphics(
         },
         {
             "html_text": f"<p><b>{court_number}</b></p>",
-            "start_point": (434, 602),
+            "start_point": (434, 610),
             "fontsize": 48
         },
     ]

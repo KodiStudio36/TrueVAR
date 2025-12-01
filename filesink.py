@@ -320,4 +320,37 @@ rtspsrc location=rtsp://admin:TaekwondoVAR@myip3:554 latency=800 ! rtph264depay 
     vaapih264enc bitrate=4000 ! avimux ! filesink location=test3.avi \
 overlay_tee. ! queue ! comp3.
     
+gst-launch-1.0 -e \
+    \
+    # --- Scoreboard Source (Camera 0) --- \
+    v4l2src device=/dev/video0 \
+    ! image/jpeg,width=1280,height=720,framerate=30/1 \
+    ! vaapijpegdec \
+    ! vaapipostproc \
+    ! video/x-raw,width=1280,height=720,framerate=30/1,format=NV12 \
+    ! shmsink socket-path=/tmp/camera0_shm_socket wait-for-connection=false shm-size=200000000 sync=false async=false\
+\
+    # --- Camera 1 Source to SHM --- \
+    videotestsrc ! vaapipostproc \
+    ! video/x-raw,width=1280,height=720,framerate=30/1,format=NV12 ! queue leaky=downstream max-size-buffers=1 \
+    ! shmsink socket-path=/tmp/camera1_shm_socket wait-for-connection=false shm-size=200000000 sync=false async=false \
+    \
+    # --- Camera 2 Source to SHM --- \
+    videotestsrc ! vaapipostproc \
+    ! video/x-raw,width=1280,height=720,framerate=30/1,format=NV12 ! queue leaky=downstream max-size-buffers=1 \
+    ! shmsink socket-path=/tmp/camera2_shm_socket wait-for-connection=false shm-size=200000000 sync=false async=false \
+    \
+    # --- Camera 3 Source to SHM --- \
+    videotestsrc ! vaapipostproc \
+    ! video/x-raw,width=1280,height=720,framerate=30/1,format=NV12 ! queue leaky=downstream max-size-buffers=1 \
+    ! shmsink socket-path=/tmp/camera3_shm_socket wait-for-connection=false shm-size=200000000 sync=false async=false
+
+    gst-launch-1.0 -e \
+    \
+v4l2src device=/dev/video0 ! image/jpeg,width=1280,height=720,framerate=30/1 ! vaapijpegdec ! vaapipostproc ! video/x-raw,width=1280,height=720,framerate=30/1,format=NV12 ! \
+tee name=t t. ! queue leaky=downstream max-size-buffers=1 ! shmsink socket-path=/tmp/camera0_shm_socket wait-for-connection=false shm-size=200000000 sync=false async=false \
+videotestsrc ! vaapipostproc ! video/x-raw,width=1280,height=720,framerate=/1,format=NV12 ! queue leaky=downstream max-size-buffers=1 ! shmsink socket-path=/tmp/camera1_shm_socket wait-for-connection=false shm-size=200000000 sync=false async=false \
+videotestsrc ! vaapipostproc ! video/x-raw,width=1280,height=720,framerate=/1,format=NV12 ! queue leaky=downstream max-size-buffers=1 ! shmsink socket-path=/tmp/camera2_shm_socket wait-for-connection=false shm-size=200000000 sync=false async=false \
+videotestsrc ! vaapipostproc ! video/x-raw,width=1280,height=720,framerate=/1,format=NV12 ! queue leaky=downstream max-size-buffers=1 ! shmsink socket-path=/tmp/camera3_shm_socket wait-for-connection=false shm-size=200000000 sync=false async=false
+
 """
