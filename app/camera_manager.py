@@ -139,6 +139,15 @@ class CameraManager(SettingsManager, QObject):
 
             full_pipe = pipe_source + pipe_shm + pipe_screen
 
+            for idx in range(1, self.camera_count + 1):
+
+
+                full_pipe += (
+                    f"{"videotestsrc" if self.debug else self.get_camera(idx)} ! vaapipostproc "
+                    f"! video/x-raw,width=1280,height=720,framerate=/1,format=NV12 ! queue leaky=downstream max-size-buffers=1 "
+                    f"! shmsink socket-path=/tmp/camera{idx}_shm_socket wait-for-connection=false shm-size=200000000 "
+                )
+
             print(f"Pipeline: {full_pipe}")
 
             self.shm_pipeline = Gst.parse_launch(full_pipe)
@@ -198,11 +207,8 @@ class CameraManager(SettingsManager, QObject):
         # 2. Iterate through RTSP cameras (1 to N)
         for idx in range(1, self.camera_count + 1):
             
-            # --- Source: Changed from get_shmsink(idx) to get_camera(idx) ---
-            source_pipe = f"{"videotestsrc" if self.debug else self.get_camera(idx)} ! vaapipostproc"
-            
             # --- Main Pipeline for recording a single camera ---
-            pipe += f"{source_pipe} ! video/x-raw,width={self.res_width},height={self.res_height},framerate={self.fps}/1,format=NV12,interlace-mode=progressive ! queue "
+            pipe += f"{self.get_shmsink(idx)} ! video/x-raw,width=1280,height=720,framerate={self.fps}/1,format=NV12,interlace-mode=progressive ! queue leaky=downstream ! vaapipostproc "
             
             # --- Compositor and filesink ---
             if self.is_scoreboard:
