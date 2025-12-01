@@ -176,3 +176,10 @@ sudo systemctl start NetworkManager
 sudo systemctl enable systemd-networkd
 ```
 The End
+
+### OBS
+
+```
+yay -S obs-studio-browser
+sudo pacman -S obs-gstreamer
+```
