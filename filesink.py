@@ -263,3 +263,245 @@ shmsrc socket-path={shmsrc_socket} do-timestamp=true is-live=true \
     ! videoconvert \
     ! xvimagesink name=extsink force-aspect-ratio=true
 """
+
+
+"""
+gst-launch-1.0 -e \
+    \
+    # --- Scoreboard Source (Camera 0) --- \
+    v4l2src device=/dev/video0 \
+    ! image/jpeg,width=1280,height=720,framerate=30/1 \
+    ! vaapijpegdec \
+    ! vaapipostproc \
+    ! video/x-raw,width=1280,height=720,framerate=30/1,format=NV12 \
+    ! shmsink socket-path=/tmp/camera0_shm_socket wait-for-connection=false shm-size=200000000 \
+    \
+    # --- Camera 1 Source to SHM --- \
+    rtspsrc location=rtsp://admin:TaekwondoVAR@192.168.0.11:554 latency=800 \
+    ! rtph264depay ! h264parse ! vaapih264dec ! vaapipostproc \
+    ! video/x-raw,width=1280,height=720,framerate=30/1,format=NV12 ! queue leaky=downstream max-size-buffers=1 \
+    ! shmsink socket-path=/tmp/camera1_shm_socket wait-for-connection=false shm-size=200000000 \
+    \
+    # --- Camera 2 Source to SHM --- \
+    rtspsrc location=rtsp://admin:TaekwondoVAR@192.168.0.12:554 latency=800 \
+    ! rtph264depay ! h264parse ! vaapih264dec ! vaapipostproc \
+    ! video/x-raw,width=1280,height=720,framerate=30/1,format=NV12 ! queue leaky=downstream max-size-buffers=1 \
+    ! shmsink socket-path=/tmp/camera2_shm_socket wait-for-connection=false shm-size=200000000 \
+    \
+    # --- Camera 3 Source to SHM --- \
+    rtspsrc location=rtsp://admin:TaekwondoVAR@192.168.0.13:554 latency=800 \
+    ! rtph264depay ! h264parse ! vaapih264dec ! vaapipostproc \
+    ! video/x-raw,width=1280,height=720,framerate=30/1,format=NV12 ! queue leaky=downstream max-size-buffers=1 \
+    ! shmsink socket-path=/tmp/camera3_shm_socket wait-for-connection=false shm-size=200000000
+
+gst-launch-1.0 -e \
+    \
+    # --- Scoreboard (Camera 0) --- \
+    v4l2src device=/dev/video0 \
+    ! image/jpeg,width=1280,height=720,framerate=30/1 \
+    ! vaapijpegdec ! vaapipostproc \
+    ! video/x-raw,width=1280,height=720,framerate=30/1,format=NV12 \
+    ! shmsink socket-path=/tmp/camera0_shm_socket wait-for-connection=false shm-size=200000000 sync=false async=false \
+    \
+    # --- Camera 1 (RTSP to SHM) --- \
+    rtspsrc location=rtsp://admin:TaekwondoVAR@192.168.0.11:554 latency=800 \
+    ! rtph264depay ! h264parse ! vaapih264dec \
+    ! vaapipostproc ! video/x-raw,width=1280,height=720,framerate=30/1,format=NV12 \
+    ! queue \
+    ! shmsink socket-path=/tmp/camera1_shm_socket wait-for-connection=false shm-size=200000000 sync=false async=false \
+    \
+    # --- Camera 2 (RTSP to SHM) --- \
+    rtspsrc location=rtsp://admin:TaekwondoVAR@192.168.0.12:554 latency=800 \
+    ! rtph264depay ! h264parse ! vaapih264dec \
+    ! vaapipostproc ! video/x-raw,width=1280,height=720,framerate=30/1,format=NV12 \
+    ! queue \
+    ! shmsink socket-path=/tmp/camera2_shm_socket wait-for-connection=false shm-size=200000000 sync=false async=false \
+    \
+    # --- Camera 3 (RTSP to SHM) --- \
+    rtspsrc location=rtsp://admin:TaekwondoVAR@192.168.0.13:554 latency=800 \
+    ! rtph264depay ! h264parse ! vaapih264dec \
+    ! vaapipostproc ! video/x-raw,width=1280,height=720,framerate=30/1,format=NV12 \
+    ! queue \
+    ! shmsink socket-path=/tmp/camera3_shm_socket wait-for-connection=false shm-size=200000000 sync=false async=false
+
+gst-launch-1.0 -e \
+    \
+    # --- Scoreboard Input (From SHM) & Prep for Overlay --- \
+    shmsrc socket-path=/tmp/camera0_shm_socket do-timestamp=true is-live=true \
+    ! video/x-raw,width=1280,height=720,framerate=30/1,format=NV12,interlace-mode=progressive \
+    ! queue leaky=downstream ! vaapipostproc \
+    ! video/x-raw,width=320,height=180 \
+    ! tee name=overlay_tee \
+    \
+    # --- Camera 1 Recording Branch --- \
+    shmsrc socket-path=/tmp/camera1_shm_socket do-timestamp=true is-live=true \
+    ! video/x-raw,width=1280,height=720,framerate=30/1,format=NV12,interlace-mode=progressive \
+    ! queue leaky=downstream ! vaapipostproc \
+    ! compositor name=comp1 sink_0::xpos=0 sink_0::ypos=0 sink_1::xpos=10 sink_1::ypos=10 \
+    ! video/x-raw,width=1280,height=720 \
+    ! vaapih264enc bitrate=4000 ! avimux ! filesink location=/tmp/camera1_test.avi \
+    \
+    # --- Link Scoreboard Overlay to Camera 1 --- \
+    overlay_tee. ! queue ! comp1. \
+    \
+    # --- Camera 2 Recording Branch --- \
+    shmsrc socket-path=/tmp/camera2_shm_socket do-timestamp=true is-live=true \
+    ! video/x-raw,width=1280,height=720,framerate=30/1,format=NV12,interlace-mode=progressive \
+    ! queue leaky=downstream ! vaapipostproc \
+    ! compositor name=comp2 sink_0::xpos=0 sink_0::ypos=0 sink_1::xpos=10 sink_1::ypos=10 \
+    ! video/x-raw,width=1280,height=720 \
+    ! vaapih264enc bitrate=4000 ! avimux ! filesink location=/tmp/camera2_test.avi \
+    \
+    # --- Link Scoreboard Overlay to Camera 2 --- \
+    overlay_tee. ! queue ! comp2.
+
+gst-launch-1.0 -e \
+    \
+    # --- Scoreboard Overlay Source --- \
+    shmsrc socket-path=/tmp/camera0_shm_socket do-timestamp=true is-live=true \
+    ! video/x-raw,width=1280,height=720,framerate=30/1,format=NV12,interlace-mode=progressive \
+    ! queue leaky=downstream \
+    ! vaapipostproc \
+    ! video/x-raw,width=320,height=180 \
+    ! tee name=overlay_tee \
+    \
+    # --- Camera 1 Branch --- \
+    shmsrc socket-path=/tmp/camera1_shm_socket do-timestamp=true is-live=true \
+    ! video/x-raw,width=1280,height=720,framerate=30/1,format=NV12,interlace-mode=progressive \
+    ! queue leaky=downstream \
+    ! vaapipostproc \
+    ! compositor name=comp2 sink_0::xpos=0 sink_0::ypos=0 sink_1::xpos=10 sink_1::ypos=10 ! video/x-raw,width=1280,height=720 \
+    ! vaapih264enc bitrate=4000 ! avimux ! filesink location=/tmp/cam1.avi \
+    \
+    # Connect Overlay to Cam 1 \
+    overlay_tee. ! queue ! comp2. \
+    \
+    # --- Camera 2 Branch --- \
+    shmsrc socket-path=/tmp/camera2_shm_socket do-timestamp=true is-live=true \
+    ! video/x-raw,width=1280,height=720,framerate=30/1,format=NV12,interlace-mode=progressive \
+    ! queue leaky=downstream \
+    ! vaapipostproc \
+    ! compositor name=comp3 sink_0::xpos=0 sink_0::ypos=0 sink_1::xpos=10 sink_1::ypos=10 ! video/x-raw,width=1280,height=720 \
+    ! vaapih264enc bitrate=4000 ! avimux ! filesink location=/tmp/cam2.avi \
+    \
+    # Connect Overlay to Cam 2 \
+    overlay_tee. ! queue ! comp3.
+
+
+
+
+gst-launch-1.0 -e \
+    \
+    # --- Scoreboard Source (Camera 0) --- \
+    v4l2src device=/dev/video0 \
+    ! image/jpeg,width=1280,height=720,framerate=30/1 \
+    ! vaapijpegdec \
+    ! vaapipostproc \
+    ! video/x-raw,width=1280,height=720,framerate=30/1,format=NV12 \
+    ! shmsink socket-path=/tmp/camera0_shm_socket wait-for-connection=false shm-size=200000000 sync=false async=false\
+    \
+    # --- Camera 1 Source to SHM --- \
+    videotestsrc ! vaapipostproc \
+    ! video/x-raw,width=1280,height=720,framerate=30/1,format=NV12 ! queue leaky=downstream max-size-buffers=1 \
+    ! shmsink socket-path=/tmp/camera1_shm_socket wait-for-connection=false shm-size=200000000 sync=false async=false \
+    \
+    # --- Camera 2 Source to SHM --- \
+    videotestsrc ! vaapipostproc \
+    ! video/x-raw,width=1280,height=720,framerate=30/1,format=NV12 ! queue leaky=downstream max-size-buffers=1 \
+    ! shmsink socket-path=/tmp/camera2_shm_socket wait-for-connection=false shm-size=200000000 sync=false async=false \
+    \
+    # --- Camera 3 Source to SHM --- \
+    videotestsrc ! vaapipostproc \
+    ! video/x-raw,width=1280,height=720,framerate=30/1,format=NV12 ! queue leaky=downstream max-size-buffers=1 \
+    ! shmsink socket-path=/tmp/camera3_shm_socket wait-for-connection=false shm-size=200000000 sync=false async=false
+
+gst-launch-1.0 -e \
+    \
+    # --- Scoreboard Source (Camera 0) --- \
+    v4l2src device=/dev/video0 \
+    ! image/jpeg,width=1280,height=720,framerate=30/1 \
+    ! vaapijpegdec \
+    ! vaapipostproc \
+    ! video/x-raw,width=1280,height=720,framerate=30/1,format=NV12 \
+    ! shmsink socket-path=/tmp/camera0_shm_socket wait-for-connection=false shm-size=200000000 sync=false async=false \
+    \
+    # --- Camera 1 Source to SHM --- \
+    videotestsrc ! vaapipostproc \
+    ! video/x-raw,width=1280,height=720,framerate=30/1,format=NV12 ! queue \
+    ! shmsink socket-path=/tmp/camera1_shm_socket wait-for-connection=false shm-size=200000000 sync=false async=false \
+    \
+    # --- Camera 2 Source to SHM --- \
+    videotestsrc ! vaapipostproc \
+    ! video/x-raw,width=1280,height=720,framerate=30/1,format=NV12 ! queue \
+    ! shmsink socket-path=/tmp/camera2_shm_socket wait-for-connection=false shm-size=200000000 sync=false async=false \
+    \
+    # --- Camera 3 Source to SHM --- \
+    videotestsrc ! vaapipostproc \
+    ! video/x-raw,width=1280,height=720,framerate=30/1,format=NV12 ! queue \
+    ! shmsink socket-path=/tmp/camera3_shm_socket wait-for-connection=false shm-size=200000000 sync=false async=false
+
+    
+
+gst-launch-1.0 -e \
+    \
+    # --- Scoreboard Input (From SHM) & Prep for Overlay --- \
+    shmsrc socket-path=/tmp/camera0_shm_socket do-timestamp=true is-live=true \
+    ! video/x-raw,width=1280,height=720,framerate=30/1,format=NV12,interlace-mode=progressive \
+    ! queue leaky=downstream ! vaapipostproc \
+    ! video/x-raw,width=320,height=180 \
+    ! tee name=overlay_tee \
+    \
+    # --- Camera 1 Recording Branch --- \
+    shmsrc socket-path=/tmp/camera1_shm_socket do-timestamp=true is-live=true \
+    ! video/x-raw,width=1280,height=720,framerate=30/1,format=NV12,interlace-mode=progressive \
+    ! queue leaky=downstream ! vaapipostproc \
+    ! compositor name=comp1 sink_0::xpos=0 sink_0::ypos=0 sink_1::xpos=10 sink_1::ypos=10 \
+    ! video/x-raw,width=1280,height=720 \
+    ! autovideosink \
+    \
+    # --- Link Scoreboard Overlay to Camera 1 --- \
+    overlay_tee. ! queue ! comp1. \
+    \
+    # --- Camera 2 Recording Branch --- \
+    shmsrc socket-path=/tmp/camera2_shm_socket do-timestamp=true is-live=true \
+    ! video/x-raw,width=1280,height=720,framerate=30/1,format=NV12,interlace-mode=progressive \
+    ! queue leaky=downstream ! vaapipostproc \
+    ! compositor name=comp2 sink_0::xpos=0 sink_0::ypos=0 sink_1::xpos=10 sink_1::ypos=10 \
+    ! video/x-raw,width=1280,height=720 \
+    ! autovideosink \
+    \
+    # --- Link Scoreboard Overlay to Camera 2 --- \
+    overlay_tee. ! queue ! comp2.
+
+gst-launch-1.0 -e \
+    \
+    # --- Scoreboard Input (From SHM) & Prep for Overlay --- \
+    shmsrc socket-path=/tmp/camera0_shm_socket do-timestamp=true is-live=true \
+    ! video/x-raw,width=1280,height=720,framerate=30/1,format=NV12,interlace-mode=progressive \
+    ! queue leaky=downstream ! vaapipostproc \
+    ! video/x-raw,width=320,height=180 \
+    ! tee name=overlay_tee \
+    \
+    # --- Camera 1 Recording Branch --- \
+    shmsrc socket-path=/tmp/camera1_shm_socket do-timestamp=true is-live=true \
+    ! video/x-raw,width=1280,height=720,framerate=30/1,format=NV12,interlace-mode=progressive \
+    ! queue leaky=downstream ! vaapipostproc \
+    ! compositor name=comp2 sink_0::xpos=0 sink_0::ypos=0 sink_1::xpos=10 sink_1::ypos=10 \
+    ! video/x-raw,width=1280,height=720 \
+    ! autovideosink \
+    \
+    # --- Link Scoreboard Overlay to Camera 1 --- \
+    overlay_tee. ! queue ! comp2. \
+    \
+    # --- Camera 2 Recording Branch --- \
+    shmsrc socket-path=/tmp/camera2_shm_socket do-timestamp=true is-live=true \
+    ! video/x-raw,width=1280,height=720,framerate=30/1,format=NV12,interlace-mode=progressive \
+    ! queue leaky=downstream ! vaapipostproc \
+    ! compositor name=comp3 sink_0::xpos=0 sink_0::ypos=0 sink_1::xpos=10 sink_1::ypos=10 \
+    ! video/x-raw,width=1280,height=720 \
+    ! autovideosink \
+    \
+    # --- Link Scoreboard Overlay to Camera 2 --- \
+    overlay_tee. ! queue ! comp3.
+
+"""

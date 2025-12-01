@@ -177,7 +177,7 @@ class CameraManager(QObject):
         print(self.cameras)
         data = {
             "is_scoreboard": self.is_scoreboard,
-            "res": self.res_height,
+            "res_height": self.res_height,
             "vaapi": self.vaapi,
             "debug": self.debug,
             "camera_idx": self.camera_idx,
@@ -207,7 +207,7 @@ class CameraManager(QObject):
                 data = json.load(f)
 
                 self.is_scoreboard = data["is_scoreboard"]
-                self.res_height = data["res"]
+                self.res_height = data["res_height"]
                 self.res_width = self.res_height // 9 * 16
                 self.vaapi = data["vaapi"]
                 self.debug = data["debug"]
