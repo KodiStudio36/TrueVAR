@@ -124,7 +124,7 @@ class CameraManager(SettingsManager, QObject):
             # 2. Branch A: Shared Memory (Always Active)
             pipe_shm = (
                 f"t. ! queue leaky=downstream max-size-buffers=1 "
-                f"! shmsink socket-path={file_path} wait-for-connection=false shm-size=200000000 "
+                f"! shmsink socket-path={file_path} wait-for-connection=false shm-size=200000000 sync=false async=false"
             )
 
             # 3. Branch B: External Screen (Conditional)
@@ -145,7 +145,7 @@ class CameraManager(SettingsManager, QObject):
                 full_pipe += (
                     f"{"videotestsrc" if self.debug else self.get_camera(idx)} ! vaapipostproc "
                     f"! video/x-raw,width=1280,height=720,framerate=/1,format=NV12 ! queue leaky=downstream max-size-buffers=1 "
-                    f"! shmsink socket-path=/tmp/camera{idx}_shm_socket wait-for-connection=false shm-size=200000000 "
+                    f"! shmsink socket-path=/tmp/camera{idx}_shm_socket wait-for-connection=false shm-size=200000000 sync=false async=false"
                 )
 
             print(f"Pipeline: {full_pipe}")
