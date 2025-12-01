@@ -144,7 +144,7 @@ class CameraManager(SettingsManager, QObject):
 
                 full_pipe += (
                     f"{"videotestsrc" if self.debug else self.get_camera(idx)} ! vaapipostproc "
-                    f"! video/x-raw,width=1280,height=720,framerate=30/1,format=NV12 ! queue leaky=downstream max-size-buffers=1 "
+                    f"! video/x-raw,width=1280,height=720,framerate=30/1,format=NV12 ! queue leaky=downstream "
                     f"! shmsink socket-path=/tmp/camera{idx}_shm_socket wait-for-connection=false shm-size=200000000 sync=false async=false "
                 )
 
