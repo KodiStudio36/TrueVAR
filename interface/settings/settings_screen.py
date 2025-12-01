@@ -482,13 +482,8 @@ class SettingsScreen(QWidget):
                 height = self.camera_manager.res_height
                 
             # Construct the final pipeline string for the preview
-            pipeline_desc = (
-                f"{source_pipe} ! video/x-raw,width={width},height={height},framerate={self.camera_manager.fps}/1,format=NV12 ! "
-                f"videoconvert ! videoscale ! video/x-raw,format=RGB,width=272,height=153 ! "
-                f"queue ! appsink name=sink emit-signals=True sync=True drop=False"
-            )
+            preview_label = VideoStreamWidget(f"{self.camera_manager.get_shmsink(idx)} ! video/x-raw,width={"1280" if idx == 0 else self.camera_manager.res_width},height={"720" if idx == 0 else self.camera_manager.res_height},framerate={self.camera_manager.fps}/1,format=NV12 ! videoconvert ! videoscale ! video/x-raw,format=RGB,width=272,height=153 ! queue ! appsink name=sink emit-signals=True sync=True drop=False", 272, 153)
 
-            preview_label = VideoStreamWidget(pipeline_desc, 272, 153)
             self.video_widgets.append(preview_label)
             cam_layout.addWidget(preview_label)
             cam_frame.setLayout(cam_layout)
