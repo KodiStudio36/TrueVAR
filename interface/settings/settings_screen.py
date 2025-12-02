@@ -468,18 +468,6 @@ class SettingsScreen(QWidget):
                 header_layout.addWidget(remove_button, alignment=Qt.AlignRight)
 
             cam_layout.addLayout(header_layout)
-
-            # Camera preview
-            if idx == 0:
-                # Scoreboard (SHM Source)
-                source_pipe = self.camera_manager.get_shmsink(0)
-                width = 1280
-                height = 720
-            else:
-                # RTSP Cameras (Direct Source, needs full pipeline)
-                source_pipe = f"{"videotestsrc" if self.camera_manager.debug else self.camera_manager.get_camera(idx)} ! vaapipostproc"
-                width = self.camera_manager.res_width
-                height = self.camera_manager.res_height
                 
             # Construct the final pipeline string for the preview
             preview_label = VideoStreamWidget(f"{self.camera_manager.get_shmsink(idx)} ! video/x-raw,width={"1280" if idx == 0 else self.camera_manager.res_width},height={"720" if idx == 0 else self.camera_manager.res_height},framerate={self.camera_manager.fps}/1,format=NV12 ! videoconvert ! videoscale ! video/x-raw,format=RGB,width=272,height=153 ! queue ! appsink name=sink emit-signals=True sync=True drop=False", 272, 153)
