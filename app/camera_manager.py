@@ -178,7 +178,6 @@ class CameraManager(QObject):
         data = {
             "is_scoreboard": self.is_scoreboard,
             "res_height": self.res_height,
-            "vaapi": self.vaapi,
             "debug": self.debug,
             "camera_idx": self.camera_idx,
             "live_camera_idx": self.live_camera_idx,
@@ -209,7 +208,6 @@ class CameraManager(QObject):
                 self.is_scoreboard = data["is_scoreboard"]
                 self.res_height = data["res_height"]
                 self.res_width = self.res_height // 9 * 16
-                self.vaapi = data["vaapi"]
                 self.debug = data["debug"]
                 self.camera_idx = data["camera_idx"]
                 self.live_camera_idx = data["live_camera_idx"]
