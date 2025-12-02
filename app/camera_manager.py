@@ -123,8 +123,8 @@ class CameraManager(SettingsManager, QObject):
 
             # 2. Branch A: Shared Memory (Always Active)
             pipe_shm = (
-                f"t. ! queue "
-                f"! shmsink socket-path={file_path} wait-for-connection=false shm-size=200000000 "
+                f"t. ! queue max-size-buffers=30 max-size-bytes=0 max-size-time=0 leaky=upstream "
+                f"! shmsink socket-path={file_path} wait-for-connection=false shm-size=200000000 buffer-time=0 "
             )
 
             # 3. Branch B: External Screen (Conditional)
@@ -133,7 +133,7 @@ class CameraManager(SettingsManager, QObject):
                 # Using xvimagesink as requested. 
                 # force-aspect-ratio=true helps with fullscreen stretching issues
                 pipe_screen = (
-                    f"t. ! queue "
+                    f"t. ! queue max-size-buffers=2 max-size-bytes=0 max-size-time=0 leaky=downstream "
                     f"! xvimagesink name=extsink force-aspect-ratio=true sync=false "
                 )
 
