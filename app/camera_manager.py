@@ -115,8 +115,8 @@ class CameraManager(SettingsManager, QObject):
             # Note: Added 'tee name=t' at the end of the source block
             pipe_source = (
                 f"{self.get_scoreboard()} "
-                f"! vaapijpegdec " 
-                f"! vaapipostproc " 
+                f"! jpegdec " 
+                f"! videoconvert " 
                 f"! video/x-raw,width=1280,height=720,framerate=30/1,format=NV12 "
                 f"! tee name=t "
             )
