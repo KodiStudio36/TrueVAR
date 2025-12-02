@@ -133,7 +133,7 @@ class CameraManager(SettingsManager, QObject):
                 # Using xvimagesink as requested. 
                 # force-aspect-ratio=true helps with fullscreen stretching issues
                 pipe_screen = (
-                    f"t. ! queue leaky=downstream max-size-buffers=1 "
+                    f"t. ! queue "
                     f"! xvimagesink name=extsink force-aspect-ratio=true sync=false "
                 )
 
