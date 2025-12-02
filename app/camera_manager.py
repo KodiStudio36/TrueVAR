@@ -120,7 +120,7 @@ class CameraManager(QObject):
                 print(f"Removed: {file_path}")
 
             print("here", self.camera_idx)
-            pipe += f"{self.get_scoreboard()} ! {self.videoconvert} ! video/x-raw,width=640,height=480,framerate={self.fps}/1,format=NV12 ! capsfilter ! queue ! shmsink socket-path={file_path} wait-for-connection=false shm-size=200000000 "
+            pipe += f"v4l2src device=/dev/video{self.camera_idx} ! image/jpeg,width=1280,height=720,framerate=30/1 ! jpegdec ! videoconvert ! video/x-raw,width=640,height=480,framerate={self.fps}/1,format=NV12 ! capsfilter ! queue ! shmsink socket-path={file_path} wait-for-connection=false shm-size=200000000 "
 
             for idx in range(1, self.camera_count +1):
                 file_path = f"/tmp/camera{idx}_shm_socket"
