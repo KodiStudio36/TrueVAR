@@ -137,6 +137,13 @@ class CameraManager(SettingsManager, QObject):
                     f"! xvimagesink name=extsink force-aspect-ratio=true sync=false "
                 )
 
+                pipe_screen += (
+                    f"alsasrc device='hw:0,0' ! "
+                    f"audioconvert ! "
+                    f"audioresample ! "
+                    f"autoaudiosink "
+                )
+
             full_pipe = pipe_source + pipe_shm + pipe_screen
 
             for idx in range(1, self.camera_count + 1):
