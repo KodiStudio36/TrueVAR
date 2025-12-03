@@ -138,10 +138,7 @@ class CameraManager(SettingsManager, QObject):
                 )
 
                 pipe_screen += (
-                    f"alsasrc device='hw:0,0' ! "
-                    f"audioconvert ! "
-                    f"audioresample ! "
-                    f"autoaudiosink "
+                    f"alsasrc device=hw:2,0 ! audio/x-raw,rate=48000,channels=2 ! audioconvert ! audioresample ! queue max-size-buffers=2 max-size-bytes=0 max-size-time=0 leaky=downstream ! pulsesink sync=false "
                 )
 
             full_pipe = pipe_source + pipe_shm + pipe_screen
