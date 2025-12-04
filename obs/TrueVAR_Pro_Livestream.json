@@ -1,6 +1,6 @@
 {
-    "current_scene": "IVR Closeup Scene",
-    "current_program_scene": "IVR Closeup Scene",
+    "current_scene": "Start Soon Scene",
+    "current_program_scene": "Start Soon Scene",
     "scene_order": [
         {
             "name": "Start Soon Scene"
@@ -212,12 +212,12 @@
             "id": "pulse_input_capture",
             "versioned_id": "pulse_input_capture",
             "settings": {
-                "device_id": "alsa_input.pci-0000_05_00.6.analog-stereo"
+                "device_id": "alsa_input.usb-MACROSILICON_USB_Video-02.analog-stereo"
             },
             "mixers": 255,
             "sync": 0,
             "flags": 0,
-            "volume": 0.12001021206378937,
+            "volume": 0.3134102523326874,
             "balance": 0.5,
             "enabled": true,
             "muted": false,
@@ -337,7 +337,7 @@
             "volume": 0.0,
             "balance": 0.5,
             "enabled": true,
-            "muted": false,
+            "muted": true,
             "push-to-mute": false,
             "push-to-mute-delay": 0,
             "push-to-talk": false,
@@ -366,7 +366,7 @@
                     {
                         "name": "Main View \\w scoreboard- Tool",
                         "source_uuid": "269247ee-6228-4fa0-9fbc-0b9d247c9e63",
-                        "visible": false,
+                        "visible": true,
                         "locked": false,
                         "rot": 0.0,
                         "scale_ref": {
@@ -439,11 +439,11 @@
                         "id": 5,
                         "group_item_backup": false,
                         "pos": {
-                            "x": -295.0,
+                            "x": -305.0,
                             "y": 21.0
                         },
                         "pos_rel": {
-                            "x": -2.597222328186035,
+                            "x": -2.625,
                             "y": -0.9416666626930237
                         },
                         "scale": {
@@ -549,20 +549,20 @@
                         "id": 2,
                         "group_item_backup": false,
                         "pos": {
-                            "x": 68.0,
-                            "y": 61.0
+                            "x": 32.0,
+                            "y": 41.0
                         },
                         "pos_rel": {
-                            "x": -1.5888888835906982,
-                            "y": -0.8305555582046509
+                            "x": -1.6888889074325562,
+                            "y": -0.8861111402511597
                         },
                         "scale": {
-                            "x": 0.6060445308685303,
-                            "y": 0.6058763861656189
+                            "x": 0.6458112597465515,
+                            "y": 0.6460446119308472
                         },
                         "scale_rel": {
-                            "x": 0.6060445308685303,
-                            "y": 0.6058763861656189
+                            "x": 0.6458112597465515,
+                            "y": 0.6460446119308472
                         },
                         "bounds": {
                             "x": 0.0,
@@ -669,7 +669,8 @@
             "monitoring_type": 0,
             "canvas_uuid": "6c69626f-6273-4c00-9d88-c5136d61696e",
             "private_settings": {
-                "transition": "Move"
+                "transition": "Move",
+                "transition_duration": 700
             }
         },
         {
@@ -923,11 +924,11 @@
                         "id": 11,
                         "group_item_backup": false,
                         "pos": {
-                            "x": -295.0,
+                            "x": -305.0,
                             "y": 21.0
                         },
                         "pos_rel": {
-                            "x": -2.597222328186035,
+                            "x": -2.625,
                             "y": -0.9416666626930237
                         },
                         "scale": {
@@ -1046,7 +1047,7 @@
             "canvas_uuid": "6c69626f-6273-4c00-9d88-c5136d61696e",
             "private_settings": {
                 "transition": "Move",
-                "transition_duration": 300
+                "transition_duration": 700
             }
         },
         {
@@ -1061,10 +1062,10 @@
             "mixers": 255,
             "sync": 0,
             "flags": 0,
-            "volume": 1.0,
+            "volume": 0.0,
             "balance": 0.5,
             "enabled": true,
-            "muted": false,
+            "muted": true,
             "push-to-mute": false,
             "push-to-mute-delay": 0,
             "push-to-talk": false,
@@ -1510,7 +1511,8 @@
             "monitoring_type": 0,
             "canvas_uuid": "6c69626f-6273-4c00-9d88-c5136d61696e",
             "private_settings": {
-                "transition": "Move"
+                "transition": "Move",
+                "transition_duration": 1000
             }
         },
         {
@@ -1987,7 +1989,7 @@
             "id": "scene",
             "versioned_id": "scene",
             "settings": {
-                "id_counter": 14,
+                "id_counter": 15,
                 "custom_size": false,
                 "items": [
                     {
@@ -2080,6 +2082,61 @@
                         "scale_rel": {
                             "x": 1.0,
                             "y": 1.0
+                        },
+                        "bounds": {
+                            "x": 0.0,
+                            "y": 0.0
+                        },
+                        "bounds_rel": {
+                            "x": 0.0,
+                            "y": 0.0
+                        },
+                        "scale_filter": "disable",
+                        "blend_method": "default",
+                        "blend_type": "normal",
+                        "show_transition": {
+                            "duration": 0
+                        },
+                        "hide_transition": {
+                            "duration": 0
+                        },
+                        "private_settings": {}
+                    },
+                    {
+                        "name": "Background",
+                        "source_uuid": "c8a042b7-e636-4e0b-9c1b-d854b496dc00",
+                        "visible": true,
+                        "locked": false,
+                        "rot": 0.0,
+                        "scale_ref": {
+                            "x": 1280.0,
+                            "y": 720.0
+                        },
+                        "align": 5,
+                        "bounds_type": 0,
+                        "bounds_align": 0,
+                        "bounds_crop": false,
+                        "crop_left": 0,
+                        "crop_top": 0,
+                        "crop_right": 0,
+                        "crop_bottom": 0,
+                        "id": 15,
+                        "group_item_backup": false,
+                        "pos": {
+                            "x": 0.0,
+                            "y": 0.0
+                        },
+                        "pos_rel": {
+                            "x": -1.7777777910232544,
+                            "y": -1.0
+                        },
+                        "scale": {
+                            "x": 0.6666666865348816,
+                            "y": 0.6666666865348816
+                        },
+                        "scale_rel": {
+                            "x": 0.6666666865348816,
+                            "y": 0.6666666865348816
                         },
                         "bounds": {
                             "x": 0.0,
@@ -2289,7 +2346,9 @@
                 "libobs.show_scene_item.14": [],
                 "libobs.hide_scene_item.14": [],
                 "libobs.show_scene_item.13": [],
-                "libobs.hide_scene_item.13": []
+                "libobs.hide_scene_item.13": [],
+                "libobs.show_scene_item.15": [],
+                "libobs.hide_scene_item.15": []
             },
             "deinterlace_mode": 0,
             "deinterlace_field_order": 0,

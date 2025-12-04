@@ -106,7 +106,7 @@ class CameraManager(SettingsManager, QObject):
             # We use 'tee' if screen is enabled, otherwise we might not strictly need it, 
             # but using it consistently is safer.
             
-            file_path = f"/tmp/camera0_shm_socket"
+            file_path = f"/tmp/camera*"
             if os.path.exists(file_path):
                 os.remove("/tmp/camera*")
 
