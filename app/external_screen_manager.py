@@ -28,6 +28,7 @@ class ExternalScreenManager(SettingsManager, QObject):
     external_display = Setting("HDMI-1")
     target_workspace = Setting(6)
     window_title = Setting("python")
+    audio_device = Setting("hw:0,0")
 
     def __init__(self):
         SettingsManager.__init__(self, external_screen_settings_file)
@@ -59,7 +60,7 @@ class ExternalScreenManager(SettingsManager, QObject):
             # 2. Tell CameraManager to include the screen branch
             # This will trigger a pipeline reload inside CameraManager
             print("Requesting CameraManager to enable screen branch...")
-            self.camera_manager.set_external_screen_enabled(True, self.window_title)
+            self.camera_manager.set_external_screen_enabled(True, self.window_title, self.audio_device)
             
             self.screen_state_changed.emit(True)
             self.is_mirror = False

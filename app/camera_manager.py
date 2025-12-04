@@ -51,6 +51,7 @@ class CameraManager(SettingsManager, QObject):
         # State to track if external screen branch should be added
         self.enable_external_screen_branch = False 
         self.window_title = "python" # Default title for xdotool/wmctrl
+        self.audio_device = "hw:0,0"
 
         if not Gst.is_initialized():
             Gst.init(None)
@@ -79,12 +80,13 @@ class CameraManager(SettingsManager, QObject):
             print("End of Stream reached.")
 
     # --- CONTROL METHODS FOR EXTERNAL SCREEN MANAGER ---
-    def set_external_screen_enabled(self, enabled: bool, window_title="python"):
+    def set_external_screen_enabled(self, enabled: bool, window_title="python", audio_device="hw:0,0"):
         """Called by ExternalScreenManager to toggle the screen branch."""
         if self.enable_external_screen_branch != enabled:
             print(f"CameraManager: Switching External Screen to {enabled}")
             self.enable_external_screen_branch = enabled
             self.window_title = window_title
+            self.audio_device = audio_device
             self.reload_shmsink()
             # Emit signal so ExternalScreenManager knows to run the 'move' script
             if enabled:
@@ -138,7 +140,7 @@ class CameraManager(SettingsManager, QObject):
                 )
 
                 pipe_screen += (
-                    f"alsasrc device=hw:0,0 ! audio/x-raw,rate=48000,channels=2 ! audioconvert ! audioresample ! queue max-size-buffers=2 max-size-bytes=0 max-size-time=0 leaky=downstream ! pulsesink sync=false "
+                    f"alsasrc device={self.audio_device} ! audio/x-raw,rate=48000,channels=2 ! audioconvert ! audioresample ! queue max-size-buffers=2 max-size-bytes=0 max-size-time=0 leaky=downstream ! pulsesink sync=false "
                 )
 
             full_pipe = pipe_source + pipe_shm + pipe_screen
