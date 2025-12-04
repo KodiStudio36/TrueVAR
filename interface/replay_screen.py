@@ -293,7 +293,7 @@ class ReplayScreen(QWidget):
         # if self.isFirstOpen:
         #     self.isFirstOpen = False
         #     print(self.videoWidget.mediaPlayer.duration())
-        self.set_position(self.duration-5000)
+        self.set_position(self.duration-10000)
         #self.position_changed(self.duration-2000)
 
 

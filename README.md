@@ -182,4 +182,5 @@ The End
 ```
 yay -S obs-studio-browser
 sudo pacman -S obs-gstreamer
+yay -S obs-move-transition
 ```
