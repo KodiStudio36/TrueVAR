@@ -102,7 +102,6 @@ class MainScreen(QWidget):
 
         # connect recording status
         self.camera_manager.is_recording_stream.connect(self.update_status)
-        self.obs_manager.connected.connect(self.update_status)
 
     def update_status(self, is_recording):
         if is_recording:
