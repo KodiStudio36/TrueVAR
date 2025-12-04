@@ -51,7 +51,6 @@ class CameraManager(SettingsManager, QObject):
         # State to track if external screen branch should be added
         self.enable_external_screen_branch = False 
         self.window_title = "python" # Default title for xdotool/wmctrl
-        self.audio_device = "hw:0,0"
 
         if not Gst.is_initialized():
             Gst.init(None)
@@ -137,10 +136,6 @@ class CameraManager(SettingsManager, QObject):
                 pipe_screen = (
                     f"t. ! queue max-size-buffers=2 max-size-bytes=0 max-size-time=0 leaky=downstream "
                     f"! xvimagesink name=extsink force-aspect-ratio=true sync=false "
-                )
-
-                pipe_screen += (
-                    f"alsasrc device={self.audio_device} ! audio/x-raw,rate=48000,channels=2 ! audioconvert ! audioresample ! queue max-size-buffers=2 max-size-bytes=0 max-size-time=0 leaky=downstream ! pulsesink sync=false "
                 )
 
             full_pipe = pipe_source + pipe_shm + pipe_screen

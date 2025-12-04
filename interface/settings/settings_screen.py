@@ -15,7 +15,7 @@ from PyQt5.QtWidgets import (
 )
 from cv2_enumerate_cameras import enumerate_cameras
 
-import ipaddress, subprocess, re
+import ipaddress
 
 from interface.settings.widgets.my_line_edit import MyLineEdit
 from interface.settings.widgets.video_stream_widget import VideoStreamWidget
@@ -228,31 +228,6 @@ class SettingsScreen(QWidget):
 
         layout.addWidget(form_frame)
 
-        self.audio_combo = QComboBox()
-        
-        # 1. Detect devices
-        devices = self.get_audio_devices() # Call the helper function defined in step 1
-        
-        # 2. Populate Combo Box
-        current_setting = self.external_screen_manager.audio_device
-        found_current = False
-        
-        for index, (hw_id, display_name) in enumerate(devices):
-            self.audio_combo.addItem(display_name, userData=hw_id)
-            if hw_id == current_setting:
-                self.audio_combo.setCurrentIndex(index)
-                found_current = True
-        
-        # Handle case where saved device is not unplugged/missing
-        if not found_current and current_setting:
-            self.audio_combo.addItem(f"{current_setting} (Not Detected)", userData=current_setting)
-            self.audio_combo.setCurrentIndex(self.audio_combo.count() - 1)
-
-        # 3. Connect Signal
-        self.audio_combo.currentIndexChanged.connect(self._on_audio_device_changed)
-        
-        form_layout.addRow(QLabel("HDMI Audio Source:"), self.audio_combo)
-
         # --- Action Buttons ---
         self.start_ext_screen_button = QPushButton("Start External Screen")
         self.start_ext_screen_button.clicked.connect(self.toggle_external_screen)
@@ -284,48 +259,6 @@ class SettingsScreen(QWidget):
     def update_external_camera_idx(self, index):
         # index is 0-based, camera_idx is 1-based
         self.external_screen_manager.external_camera_idx = index + 1
-
-    def _on_audio_device_changed(self, index):
-        """Internal slot to handle audio combo change"""
-        hw_id = self.audio_combo.itemData(index)
-        if hw_id:
-            print(f"Selected Audio Device: {hw_id}")
-            self.external_screen_manager.audio_device = hw_id
-            # Optionally: If screen is running, restart it to apply audio change immediately?
-            # if self.external_screen_manager.is_running:
-            #     self.external_screen_manager.stop_external_screen()
-            #     self.external_screen_manager.start_external_screen()
-
-    def get_audio_devices(self):
-        """
-        Parses 'arecord -l' to return a list of tuples: (hw_id, display_name).
-        Example: ('hw:2,0', '[hw:2,0] ALC256 Analog')
-        """
-        devices = []
-        try:
-            # Run the command
-            output = subprocess.check_output(['arecord', '-l'], text=True)
-            
-            # Parse line by line
-            # Format usually: "card 2: Generic_1 [...], device 0: ALC256 Analog [...]"
-            for line in output.split('\n'):
-                match = re.search(r'card (\d+):.*?device (\d+): (.*?) \[', line)
-                if match:
-                    card = match.group(1)
-                    device = match.group(2)
-                    name = match.group(3).strip()
-                    
-                    hw_id = f"hw:{card},{device}"
-                    display_name = f"[{hw_id}] {name}"
-                    devices.append((hw_id, display_name))
-                    
-        except Exception as e:
-            print(f"Error listing audio devices: {e}")
-            # Fallback if command fails
-            devices.append(("hw:0,0", "Default (hw:0,0)"))
-            
-        return devices
-
 
     def init_udp_settings_tab(self):
         layout = QVBoxLayout()
