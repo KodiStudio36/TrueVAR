@@ -108,7 +108,7 @@ class CameraManager(SettingsManager, QObject):
             
             file_path = f"/tmp/camera0_shm_socket"
             if os.path.exists(file_path):
-                os.remove(file_path)
+                os.remove("/tmp/camera*")
 
             print(f"Starting Master Pipeline. Screen Enabled: {self.enable_external_screen_branch}")
 
@@ -196,41 +196,8 @@ class CameraManager(SettingsManager, QObject):
         self.start_shmsink()
 
     # --- Other Camera Manager Methods (Recording, etc) ---
-    def get_scoreboard(self):
-        return f"v4l2src device=/dev/video{self.camera_idx} ! image/jpeg,width=1280,height=720,framerate=30/1"
-    
-    # def start_cameras(self):
-    #     """Starts the Recording Pipeline (Scoreboard SHM + RTSP Direct)."""
-        
-    #     # 1. Start with the scoreboard source (SHM) and the overlay tee
-    #     pipe = f"{self.get_shmsink(0)} ! video/x-raw,width=1280,height=720,framerate={self.fps}/1,format=NV12,interlace-mode=progressive ! queue leaky=downstream ! vaapipostproc ! video/x-raw,width={self.res_width // 4},height={self.res_height // 4} ! tee name=overlay_tee " if self.is_scoreboard else ""
-
-    #     # 2. Iterate through RTSP cameras (1 to N)
-    #     for idx in range(1, self.camera_count + 1):
-            
-    #         # --- Main Pipeline for recording a single camera ---
-    #         pipe += f"{self.get_shmsink(idx)} ! video/x-raw,width=1280,height=720,framerate={self.fps}/1,format=NV12,interlace-mode=progressive ! queue leaky=downstream ! vaapipostproc "
-            
-    #         # --- Compositor and filesink ---
-    #         if self.is_scoreboard:
-    #             # Add compositor for the scoreboard overlay
-    #             pipe += f" ! compositor name=comp{idx+1} sink_0::xpos=0 sink_0::ypos=0 sink_1::xpos=10 sink_1::ypos=10 ! video/x-raw,width={self.res_width},height={self.res_height}"
-            
-    #         # Encoder and Filesink
-    #         pipe += f" ! vaapih264enc bitrate=4000 ! avimux ! filesink location={self.get_filepath(idx, self.segments)} "
-            
-    #         # Connect the scoreboard overlay to the compositor
-    #         pipe += f"overlay_tee. ! queue ! comp{idx+1}. " if self.is_scoreboard else ""
-
-    #     print(pipe)
-    #     # ... (rest of the start_cameras logic is the same)
-    #     self.pipeline = Gst.parse_launch(pipe)
-    #     bus = self.pipeline.get_bus()
-    #     bus.add_signal_watch()
-    #     bus.connect("message", self.handle_message)
-    #     self.pipeline.set_state(Gst.State.PLAYING)
-    #     self.is_recording = True
-    #     self.is_recording_stream.emit(self.is_recording)
+    # def get_scoreboard(self):
+    #     return f"v4l2src device=/dev/video{self.camera_idx} ! image/jpeg,width=1280,height=720,framerate=30/1"
 
     def start_cameras(self):
         pipe = f"{self.get_shmsink(0)} ! video/x-raw,width=1280,height=720,framerate={self.fps}/1,format=NV12,interlace-mode=progressive ! queue leaky=downstream ! vaapipostproc ! video/x-raw,width={self.res_width // 4},height={self.res_height // 4} ! tee name=overlay_tee " if self.is_scoreboard else ""
@@ -260,78 +227,39 @@ class CameraManager(SettingsManager, QObject):
             self.is_recording = False
             self.is_recording_stream.emit(self.is_recording)
 
-    # def start_shmsink(self, skip_cameras=None):
-    #     """Starts the SHM Source Pipeline (ONLY for the Scoreboard/Camera 0)."""
-    #     try:
-    #         # 1. Scoreboard (Camera 0) logic (KEEP)
-    #         file_path = f"/tmp/camera0_shm_socket"
-    #         pipe = ""
-
-    #         if os.path.exists(file_path):
-    #             os.remove(file_path)
-    #             print(f"Removed: {file_path}")
-
-    #         print("Starting scoreboard shmsink:", self.camera_idx)
-    #         pipe += f"{self.get_scoreboard()} ! vaapijpegdec ! queue leaky=2 max-size-buffers=1 ! vaapipostproc ! video/x-raw,width=1280,height=720,framerate=30/1,format=NV12 ! shmsink socket-path={file_path} wait-for-connection=false shm-size=200000000 "
-
-    #         # 2. RTSP Camera Loop (REMOVED)
-    #         # The loop for idx in range(1, self.camera_count + 1) is removed.
-            
-    #         print("SHM Sink Pipeline (Scoreboard only):", pipe)
-
-    #         if pipe != "":
-    #             self.shm_pipeline = Gst.parse_launch(pipe)
-    #             bus = self.shm_pipeline.get_bus()
-    #             bus.add_signal_watch()
-    #             bus.connect("message", self.handle_message)
-    #             self.shm_pipeline.set_state(Gst.State.PLAYING)
-
-    #         self.error_while_shm = False
-    #     except Exception as e: # Catch specific exception instead of generic
-    #         print(f"Error starting SHM sink pipeline: {e}")
-    #         self.error_while_shm = True
-
-    # def stop_shmsink(self):
-    #     if self.shm_pipeline:
-    #         self.shm_pipeline.set_state(Gst.State.NULL)
-
-    # def reload_shmsink(self):
-    #     self.stop_shmsink()
-    #     self.start_shmsink()
-
-    def start_stream(self):
-        """Starts the Streaming Pipeline (RTSP Direct + Scoreboard SHM)."""
+    # def start_stream(self):
+    #     """Starts the Streaming Pipeline (RTSP Direct + Scoreboard SHM)."""
         
-        # --- Main Stream Source: Changed from get_shmsink to get_camera ---
-        stream_source = f"{"videotestsrc" if self.debug else self.get_camera(self.live_camera_idx)}"
+    #     # --- Main Stream Source: Changed from get_shmsink to get_camera ---
+    #     stream_source = f"{"videotestsrc" if self.debug else self.get_camera(self.live_camera_idx)}"
         
-        # The main pipeline starts with the RTSP source
-        pipe = (
-            f"{stream_source} ! vaapipostproc ! video/x-raw,width=1280,height=720,framerate=30/1,format=NV12,interlace-mode=progressive ! vaapipostproc ! "
-            f"{self.get_shmsink(0)} ! video/x-raw,width=1280,height=720,framerate={self.fps}/1,format=NV12,interlace-mode=progressive ! vaapipostproc ! video/x-raw,width={self.res_width // 4},height={self.res_height // 4} ! comp1."
-        )
+    #     # The main pipeline starts with the RTSP source
+    #     pipe = (
+    #         f"{stream_source} ! vaapipostproc ! video/x-raw,width=1280,height=720,framerate=30/1,format=NV12,interlace-mode=progressive ! vaapipostproc ! "
+    #         f"{self.get_shmsink(0)} ! video/x-raw,width=1280,height=720,framerate={self.fps}/1,format=NV12,interlace-mode=progressive ! vaapipostproc ! video/x-raw,width={self.res_width // 4},height={self.res_height // 4} ! comp1."
+    #     )
 
-        # The compositor logic is a bit messy in your original. Cleaned up and ordered for clarity:
-        pipeline_str = (
-            f"{stream_source} ! vaapipostproc ! video/x-raw,width=1280,height=720,framerate=30/1,format=NV12,interlace-mode=progressive ! vaapipostproc ! "
-            "queue ! compositor name=comp1 sink_0::xpos=0 sink_0::ypos=0 sink_1::xpos=10 sink_1::ypos=10 ! video/x-raw,width=1280,height=720 ! x264enc bitrate=2000 tune=zerolatency key-int-max=60 ! "
-            f'video/x-h264,profile=main ! flvmux streamable=true name=mux ! rtmpsink location="rtmp://a.rtmp.youtube.com/live2/{self.live_key}" '
-            "audiotestsrc wave=silence ! mux. "
-            # Scoreboard Overlay: Always SHM
-            f"{self.get_shmsink(0)} ! video/x-raw,width=1280,height=720,framerate={self.fps}/1,format=NV12,interlace-mode=progressive ! vaapipostproc ! video/x-raw,width={self.res_width // 4},height={self.res_height // 4} ! comp1."
-        )
+    #     # The compositor logic is a bit messy in your original. Cleaned up and ordered for clarity:
+    #     pipeline_str = (
+    #         f"{stream_source} ! vaapipostproc ! video/x-raw,width=1280,height=720,framerate=30/1,format=NV12,interlace-mode=progressive ! vaapipostproc ! "
+    #         "queue ! compositor name=comp1 sink_0::xpos=0 sink_0::ypos=0 sink_1::xpos=10 sink_1::ypos=10 ! video/x-raw,width=1280,height=720 ! x264enc bitrate=2000 tune=zerolatency key-int-max=60 ! "
+    #         f'video/x-h264,profile=main ! flvmux streamable=true name=mux ! rtmpsink location="rtmp://a.rtmp.youtube.com/live2/{self.live_key}" '
+    #         "audiotestsrc wave=silence ! mux. "
+    #         # Scoreboard Overlay: Always SHM
+    #         f"{self.get_shmsink(0)} ! video/x-raw,width=1280,height=720,framerate={self.fps}/1,format=NV12,interlace-mode=progressive ! vaapipostproc ! video/x-raw,width={self.res_width // 4},height={self.res_height // 4} ! comp1."
+    #     )
         
-        print("Streaming Pipeline:", pipeline_str)
-        self.stream_pipeline = Gst.parse_launch(pipeline_str)
-        self.stream_pipeline.set_state(Gst.State.PLAYING)
-        self.is_stream = True
-        self.is_stream_stream.emit(self.is_stream)
+    #     print("Streaming Pipeline:", pipeline_str)
+    #     self.stream_pipeline = Gst.parse_launch(pipeline_str)
+    #     self.stream_pipeline.set_state(Gst.State.PLAYING)
+    #     self.is_stream = True
+    #     self.is_stream_stream.emit(self.is_stream)
 
-    def stop_stream(self):
-        if self.stream_pipeline:
-            self.stream_pipeline.set_state(Gst.State.NULL)
-            self.is_stream = False
-            self.is_stream_stream.emit(self.is_stream)
+    # def stop_stream(self):
+    #     if self.stream_pipeline:
+    #         self.stream_pipeline.set_state(Gst.State.NULL)
+    #         self.is_stream = False
+    #         self.is_stream_stream.emit(self.is_stream)
 
     def stop(self):
         self.stop_shmsink()
