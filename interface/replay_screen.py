@@ -153,8 +153,9 @@ class ZoomableVideoWidget(QGraphicsView):
     def load_video(self, filename, position=None):
         self.filename = filename
         self.mediaPlayer.setMedia(QMediaContent(QUrl.fromLocalFile(self.camera_manager.get_filepath(filename, self.segments))))
-        if position:
-            self.set_position(position)
+        # if position:
+        #     # self.set_position(position)
+            
 
         self.mediaPlayer.play()
         print("eee")
@@ -261,8 +262,9 @@ class ReplayScreen(QWidget):
         self.videoWidget.mediaPlayer.seekableChanged.connect(self.seekable_changed)
 
         self.isPlaying = False
-        self.isFirstOpen = False
         self.duration = 0
+        self.position = None
+
     # Method to play or pause the video
     def play_video(self):
         if self.videoWidget.mediaPlayer.state() == QMediaPlayer.PlayingState:
@@ -290,11 +292,13 @@ class ReplayScreen(QWidget):
 
     def seekable_changed(self):
         print("vidavail")
-        # if self.isFirstOpen:
-        #     self.isFirstOpen = False
-        #     print(self.videoWidget.mediaPlayer.duration())
-        self.set_position(self.duration-10000)
-        #self.position_changed(self.duration-2000)
+        if self.position:
+            print("aaa")
+            self.set_position(self.position)
+
+        else:
+            print("bbb")
+            self.set_position(self.duration-10000)
 
 
     # Method to handle changes in video duration
@@ -334,6 +338,7 @@ class ReplayScreen(QWidget):
         self.current_page += 1 
         if self.current_page == self.camera_manager.camera_count +1: self.current_page = 1
         print("from here")
+        self.position = self.videoWidget.mediaPlayer.position()
         self.videoWidget.load_video(self.current_page, self.videoWidget.mediaPlayer.position())
         if self.isPlaying:
             self.videoWidget.play_video()
@@ -350,6 +355,7 @@ class ReplayScreen(QWidget):
         self.segmentBack.setDisabled(segments <= 0)
         self.videoWidget.set_segments(segments)
         print("from hereeee")
+        self.position = None
         self.videoWidget.load_video(1, position)
         self.current_page = 1
         self.update_label()
@@ -358,7 +364,7 @@ class ReplayScreen(QWidget):
         self.label.setText(f"Camera {self.current_page}, Segment {self.videoWidget.segments}")
 
     def start(self):
-        self.isFirstOpen = True
+        self.position = None
         self.update_seg(self.camera_manager.segments)
 
     def stop_video(self):

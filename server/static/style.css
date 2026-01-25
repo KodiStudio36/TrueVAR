@@ -1,0 +1,89 @@
+* {
+    --height: 48px;
+    --data-width: 300px;
+    --results-width: 1000px;
+    --timer-width: 110px;
+    --names-width: 600px;
+    --ver-gap: 4px;
+    --hor-gap: 10px;
+
+    --white-color: white;
+    --black--color: black;
+    --primary-color: #b0d7d9;
+    --primary-dark-color: #0c606b;
+    --primary-dark-dark-color: #00112d;
+    --accent-color: #f7ed04;
+    --blue-color: #0c5f9c;
+    --red-color: #b5051b;
+
+    margin: 0;
+    padding: 0;
+    background: transparent;
+    overflow: hidden;
+    box-sizing: border-box;
+    color: var(--white-color);
+    font-size: 1.4rem;
+    font-family: 100;
+    font-family: "Leto", sans-serif;
+}
+
+body {
+    margin: 0;
+    overflow: hidden;
+    font-family: Arial, sans-serif;
+}
+
+/* --- Banner container --- */
+.replay-banner {
+    position: absolute;
+    bottom: 20px;
+    left: -600px;
+    opacity: 0;
+    transition: all 0.6s ease;
+    display: inline-block;
+    /* ← parent shrinks to largest child */
+}
+
+.title-bar {
+    background: var(--primary-dark-color);
+    padding: 6px 12px;
+    font-size: 18px;
+    display: block;
+    width: fit-content;
+    /* ← shrink to text width */
+}
+
+.main {
+    background: #0e2546;
+    padding: 10px 14px;
+    display: flex;
+    align-items: center;
+    width: fit-content;
+    /* ← shrink to its content */
+}
+
+/* Slide in */
+.replay-banner.show {
+    left: 20px;
+    opacity: 1;
+}
+
+/* Flag can be toggled separately */
+.flag {
+    width: 36px;
+    height: 24px;
+    background-size: cover;
+    background-position: center;
+    margin-right: 12px;
+    border: 1px solid #ffffff66;
+}
+
+.code {
+    font-size: 18px;
+    font-weight: bold;
+    margin-right: 10px;
+}
+
+.name {
+    font-size: 18px;
+}
