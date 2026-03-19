@@ -21,11 +21,9 @@ from interface.settings.widgets.my_line_edit import MyLineEdit
 from interface.settings.widgets.video_stream_widget import VideoStreamWidget
 
 from app.injector import Injector
-from app.webserver_manager import WebServerManager
 from app.key_bind_manager import KeyBindManager
 from app.camera_manager import CameraManager
 from app.udp_manager import UdpManager
-from app.licence_manager import LicenceManager
 from app.external_screen_manager import ExternalScreenManager
 from app.obs_manager import OBSManager
 
@@ -33,18 +31,13 @@ class SettingsScreen(QWidget):
     def __init__(self):
         super().__init__()
         self.key_bind_manager: KeyBindManager = Injector.find(KeyBindManager)
-        self.webserver_manager: WebServerManager = Injector.find(WebServerManager)
         self.camera_manager: CameraManager = Injector.find(CameraManager)
         self.udp_manager: UdpManager = Injector.find(UdpManager)
-        self.licence_manager: LicenceManager = Injector.find(LicenceManager)
         self.external_screen_manager: ExternalScreenManager = Injector.find(ExternalScreenManager)
         self.obs_manager: OBSManager = Injector.find(OBSManager)
         self.video_widgets = []
         self.is_update = False
         self.init_ui()
-
-        # self.licence_manager.licence_valid.connect(self.on_licence_valid)
-        # self.licence_manager.licence_invalid.connect(self.on_licence_invalid)
 
     def init_ui(self):
         # Main layout with tabs
@@ -82,10 +75,6 @@ class SettingsScreen(QWidget):
         self.key_bind_settings_tab = QWidget()
         self.init_key_binding_tab()
         self.tabs.addTab(self.key_bind_settings_tab, "Key Binds")
-
-        self.licence_tab = QWidget()
-        self.init_licence_tab()
-        self.tabs.addTab(self.licence_tab, "Licence")
 
     def init_stream_tab(self):
         layout = QVBoxLayout()
@@ -327,12 +316,6 @@ class SettingsScreen(QWidget):
         else:
             self.set_live(key)
             self.camera_manager.start_stream()
-
-    def toggle_webserver(self):
-        if self.webserver_manager.thread.isRunning():
-            self.webserver_manager.stop_servers()
-        else:
-            self.webserver_manager.start_servers()
 
 
     def init_key_binding_tab(self):
@@ -582,86 +565,6 @@ class SettingsScreen(QWidget):
             self.network_ip_input.setStyleSheet("border: 2px solid red;")
 
         self.network_ip_input.clearFocus()
-
-    def init_licence_tab(self):
-        """Creates the UI for the Licence & API Settings tab."""
-        layout = QVBoxLayout()
-        layout.setSpacing(15)
-
-        title = QLabel("Licence & API Settings")
-        title.setStyleSheet("font-weight: bold; font-size: 16px;")
-        layout.addWidget(title)
-
-        form_frame = QFrame()
-        form_layout = QFormLayout(form_frame)
-        form_layout.setSpacing(10)
-        form_layout.setHorizontalSpacing(20)
-
-        # --- Licence Key Input ---
-        self.licence_key_input = MyLineEdit()
-        self.licence_key_input.setPlaceholderText("Enter your licence key")
-        self.licence_key_input.setText(self.licence_manager.licence_key)
-        self.licence_key_input.editingFinished.connect(self.update_licence_key)
-        form_layout.addRow(QLabel("Licence Key:"), self.licence_key_input)
-
-        # --- Licence Status Label ---
-        self.licence_status_label = QLabel("Status: Unknown")
-        self.licence_status_label.setStyleSheet("font-weight: bold;")
-        form_layout.addRow(QLabel(""), self.licence_status_label)
-        
-        layout.addWidget(form_frame)
-
-        # --- Verify Button ---
-        self.verify_licence_button = QPushButton("Verify Licence Key")
-        self.verify_licence_button.clicked.connect(self.on_verify_licence_clicked)
-        # Set a max width so it doesn't look too wide
-        self.verify_licence_button.setSizePolicy(QSizePolicy.Maximum, QSizePolicy.Fixed) 
-        layout.addWidget(self.verify_licence_button, alignment=Qt.AlignLeft)
-        
-        layout.addStretch(1)
-        self.licence_tab.setLayout(layout)
-
-        # Trigger an initial validation check when the app loads
-        # Use a small delay to ensure everything is initialized
-        # QMetaObject.invokeMethod(self, "on_verify_licence_clicked", Qt.QueuedConnection)
-
-    def update_licence_key(self):
-        """Called when the licence key text field loses focus."""
-        key = self.licence_key_input.text()
-        self.licence_manager.set_licence_key(key)
-        self.licence_key_input.clearFocus()
-        self.licence_status_label.setText("Status: Changed. Click Verify.")
-        self.licence_status_label.setStyleSheet("font-weight: bold; color: #FFA500;") # Orange
-
-    def on_verify_licence_clicked(self):
-        """Triggers the API validation call in the LicenceManager."""
-        # Ensure a key is actually entered before trying
-        if not self.licence_manager.licence_key:
-            self.licence_status_label.setText("Status: Please enter a key.")
-            self.licence_status_label.setStyleSheet("font-weight: bold; color: red;")
-            return
-
-        self.licence_status_label.setText("Status: Verifying...")
-        self.licence_status_label.setStyleSheet("font-weight: bold; color: #FFA500;") # Orange
-        
-        # This assumes you will add the 'validate_licence' method (Step 2 below)
-        # to your LicenceManager
-        self.licence_manager.validate_licence() 
-
-    @pyqtSlot(dict)
-    def on_licence_valid(self, validation_data):
-        """Slot for the 'licence_valid' signal from LicenceManager."""
-        # API call was a success!
-        message = validation_data.get('message', 'Valid')
-        self.licence_status_label.setText(f"Status: {message}")
-        self.licence_status_label.setStyleSheet("font-weight: bold; color: green;")
-        
-    @pyqtSlot(str)
-    def on_licence_invalid(self, error_message):
-        """Slot for the 'licence_invalid' (or 'api_error') signal."""
-        # API call failed (auth error, connection error, etc.)
-        self.licence_status_label.setText(f"Status: Invalid ({error_message})")
-        self.licence_status_label.setStyleSheet("font-weight: bold; color: red;")
 
     def clear_layout(self):
         while self.tabs.count() > 0:

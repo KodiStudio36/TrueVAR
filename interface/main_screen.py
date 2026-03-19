@@ -44,7 +44,7 @@ class MainScreen(QWidget):
         toolbar_layout.addStretch()
 
         self.recording_btn = QPushButton("Start Recording")
-        self.recording_btn.clicked.connect(lambda: Injector.find(MainManager).toggle_recording())
+        self.recording_btn.clicked.connect(lambda: Injector.find(MainManager).toggle_recording_signal.emit())
         toolbar_layout.addWidget(self.recording_btn, alignment=Qt.AlignRight)
 
         # Stretch before settings
@@ -52,7 +52,7 @@ class MainScreen(QWidget):
         # Right settings button
         settings_btn = QPushButton("⚙")
         settings_btn.setFixedWidth(30)
-        settings_btn.clicked.connect(lambda: Injector.find(MainManager).show_settings())
+        settings_btn.clicked.connect(lambda: Injector.find(MainManager).show_settings_signal.emit())
         toolbar_layout.addWidget(settings_btn, alignment=Qt.AlignRight)
 
         vertical.addWidget(toolbar, stretch=0)

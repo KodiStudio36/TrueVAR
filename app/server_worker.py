@@ -2,95 +2,77 @@
 import os
 from flask import Flask, render_template
 from flask_socketio import SocketIO
-from obswebsocket import obsws, requests
 from PyQt5.QtCore import QObject, pyqtSignal, pyqtSlot
 
 class ServerWorker(QObject):
-    # These signals are not used here, but kept for consistency if needed later
-    on_fight_start = pyqtSignal()
-    on_fight_stop = pyqtSignal()
-
-    def __init__(self, manager):
+    """
+    Handles the Flask and SocketIO server in a separate thread.
+    Strictly handles data broadcasting to the frontend (Scoreboard).
+    """
+    def __init__(self, host="0.0.0.0", port=8000):
         super().__init__()
-        self.manager = manager
+        self.host = host
+        self.port = port
         self._is_running = False
         self.flask_app = None
         self.socketio = None
-        self.obs_ws = None
 
-    def start_servers(self):
+    def start_server(self):
         if self._is_running:
             return
 
         self._is_running = True
-        print("Starting web and OBS servers...")
+        print(f"Starting Web Server on port {self.port}...")
 
+        # Initialize Flask
         self.flask_app = Flask(__name__)
+        # Adjust paths if your folder structure differs
         self.flask_app.template_folder = os.path.join(os.getcwd(), 'server/templates')
         self.flask_app.static_folder = os.path.join(os.getcwd(), 'server/static')
+        
+        # Initialize SocketIO
         self.socketio = SocketIO(self.flask_app, cors_allowed_origins="*", async_mode='threading')
 
         self._setup_routes()
 
-        try:
-            self.obs_ws = obsws("localhost", self.manager.obs_port, self.manager.obs_pass)
-            self.obs_ws.connect()
-            print(f"Connected to OBS on port {self.manager.obs_port}")
-        except Exception as e:
-            print(f"Failed to connect to OBS: {e}")
-            self.obs_ws = None
-        
-        print(f"Web server running on http://0.0.0.0:{self.manager.webserver_port}")
-        # Use allow_unsafe_werkzeug for development compatibility with SocketIO's threading
-        self.socketio.run(self.flask_app, host="0.0.0.0", port=self.manager.webserver_port, allow_unsafe_werkzeug=True)
+        # Run the server
+        # allow_unsafe_werkzeug is needed because we are running inside a PyQt thread
+        self.socketio.run(self.flask_app, host=self.host, port=self.port, allow_unsafe_werkzeug=True)
 
-        print("Web server has stopped.")
-        self._cleanup()
+    def stop_server(self):
+        """Stops the SocketIO server."""
+        if self._is_running and self.socketio:
+            print("Stopping Web Server...")
+            self.socketio.stop()
+            self._is_running = False
 
-    def stop_servers(self):
-        if not self._is_running:
-            return
-        print("Stopping web server...")
-        self._is_running = False
-        self.socketio.stop()
+    # @pyqtSlot(dict)
+    # def broadcast_data(self, data):
+    #     """Receives data from UDPManager (via WebServerManager) and sends to Browser."""
+    #     if self.socketio and self._is_running:
+    #         self.socketio.emit("udp_message", data)
 
-    @pyqtSlot(dict)
-    def broadcast_data(self, data):
-        """Receives a parsed dictionary and broadcasts it via Socket.IO."""
-        if self.socketio:
-            self.socketio.emit("udp_message", data)
+    def show_ivr_widget(self):
+        if self.socketio and self._is_running:
+            self.socketio.emit("show_ivr", None)
 
-    def _cleanup(self):
-        if self.obs_ws and self.obs_ws.is_connected():
-            print("Disconnecting from OBS...")
-            self.obs_ws.disconnect()
-            self.obs_ws = None
-        print("Web server connections are shut down.")
+    def hide_ivr_widget(self):
+        if self.socketio and self._is_running:
+            self.socketio.emit("hide_ivr", None)
 
     def _setup_routes(self):
         @self.flask_app.route('/')
         def index():
-            return "Server is running..."
+            return "TrueVAR Scoreboard Server Running..."
 
         @self.flask_app.route("/scoreboard")
         def scoreboard():
-            return render_template("scoreboard.html")
+            return render_template("aaa.html")
 
-        @self.flask_app.route("/bottom")
-        def bottom_nav():
-            return render_template("stats.html")
-    
-    # --- OBS control methods remain unchanged ---
-    def go_to_main_scene(self):
-        if self.obs_ws:
-            self.obs_ws.call(requests.SetCurrentProgramScene(sceneName="Main Scene")) 
+        # @self.flask_app.route("/scoreboard")
+        # def scoreboard():
+        #     return render_template("scoreboard.html")
 
-    def start_ivr_scene(self):
-        self.socketio.emit("udp_message", {"event": "IVRStart"})
-        if self.obs_ws:
-            self.obs_ws.call(requests.SetCurrentProgramScene(sceneName="IVR Scene")) 
-
-    def end_ivr_scene(self):
-        self.socketio.emit("udp_message", {"event": "IVREnd"})
-        if self.obs_ws:
-            self.obs_ws.call(requests.SetCurrentProgramScene(sceneName="Main Scene"))
+        # @self.flask_app.route("/bottom")
+        # def bottom_nav():
+        #     return render_template("stats.html")

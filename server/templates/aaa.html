@@ -1,0 +1,284 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Livestream Match Results Graphic</title>
+    <script src="https://cdn.socket.io/4.5.4/socket.io.min.js"></script>
+
+    <style>
+        /* Base reset and font for livestream */
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            font-family: 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+        }
+
+        body {
+            /* Transparent background for OBS/Livestream */
+            background-color: transparent;
+            height: 100vh;
+            box-sizing: border-box;
+        }
+
+        .instant-video-replay {
+            position: absolute;
+            bottom: 2vw;
+            padding-left: 2vw;
+            height: 38px;
+            width: 96vw;
+            display: grid;
+            grid-template-columns: 14px auto 1fr;
+            gap: 2px;
+        }
+
+        /* Main Container */
+        .previous-results {
+            position: absolute;
+            bottom: 2vw;
+            width: 100vw;
+            padding: 0vw 16vw 0vw 16vw;
+        }
+
+        /* Top Label: "PREVIOUS RESULTS" */
+        .header-label {
+            display: inline-flex;
+            align-items: center;
+            background-color: #043640;
+            color: #A1C6CC;
+            font-size: .9rem;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            padding: 6px 10px;
+            margin-bottom: 2px;
+        }
+
+        /* Main Athlete Info Header */
+        .header {
+            height: 62px;
+            display: grid;
+            grid-template-columns: 16px 1fr;
+            gap: 2px;
+        }
+
+        .color {
+            height: 100%;
+        }
+
+        .color.blue {
+            background-color: rgb(0, 110, 255);
+        }
+
+        .color.red {
+            background-color: red;
+        }
+
+        .color.green {
+            background-color: #043640;
+        }
+
+        .athlete-header {
+            display: flex;
+            align-items: center;
+            background: linear-gradient(100deg, #02102A 85%, #0B6B67 85.2%);
+            color: white;
+            padding: 8px 15px;
+            position: relative;
+        }
+
+        .header-country-code {
+            font-size: 24px;
+            margin-right: 12px;
+            font-weight: 400;
+        }
+
+        .header-flag {
+            height: 46px;
+            width: 70px;
+            object-fit: cover;
+            margin-right: 15px;
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            background: white;
+        }
+
+        .header-name {
+            font-size: 26px;
+            font-weight: 500;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            flex-grow: 1;
+        }
+
+        .seed {
+            font-size: 14px;
+            color: #8da1b5;
+            margin-left: 5px;
+            font-weight: normal;
+        }
+
+        .header-logo {
+            height: 44px;
+            width: 50px;
+        }
+
+        /* Faux Olympic Rings (SVG right side) */
+        .rings-logo {
+            position: absolute;
+            right: 20px;
+            top: 50%;
+            transform: translateY(-50%);
+            width: 60px;
+            opacity: 0.9;
+        }
+
+        /* Individual Result Row Layout */
+        .row {
+            height: 38px;
+            background-color: #DDECF0;
+            align-items: center;
+            padding: 8px 16px;
+            color: #083344;
+            font-size: 18px;
+            font-weight: 600;
+        }
+
+        .result-row {
+            display: grid;
+            grid-template-columns: 34px auto 1fr auto auto auto;
+            gap: 16px;
+            margin-top: 2px;
+        }
+
+        /* Row Elements */
+        .row-country-code {
+            font-weight: 500;
+        }
+
+        .row-flag {
+            width: 32px;
+            height: 22px;
+            object-fit: cover;
+            border: 1px solid rgba(0, 0, 0, 0.1);
+        }
+
+        .row-name {
+            text-transform: uppercase;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            padding-right: 15px;
+        }
+
+        .row-round {
+            text-align: right;
+            font-weight: 500;
+            color: #124B5A;
+        }
+
+        .row-score {
+            text-align: center;
+            letter-spacing: 1px;
+        }
+
+        .row-outcome {
+            text-align: right;
+            font-weight: bold;
+        }
+
+        /* Row Seed Styling */
+        .row-name .seed {
+            font-size: 13px;
+            color: #638B95;
+        }
+
+        .hidden {
+            display: none;
+        }
+    </style>
+</head>
+
+<body>
+
+    <div class="previous-results hidden">
+        <div class="header-label">Previous Results</div>
+
+        <div class="header">
+            <div class="color blue"></div>
+            <div class="athlete-header">
+                <div class="header-country-code">KOR</div>
+                <img class="header-flag" src="https://flagcdn.com/w80/kr.png" alt="South Korea Flag">
+                <div class="header-name">PARK Taejoon</div>
+                <!-- <svg class="rings-logo" viewBox="0 0 100 45" fill="none" stroke="white" stroke-width="4">
+                    <circle cx="20" cy="15" r="10"></circle>
+                    <circle cx="50" cy="15" r="10"></circle>
+                    <circle cx="80" cy="15" r="10"></circle>
+                    <circle cx="35" cy="25" r="10"></circle>
+                    <circle cx="65" cy="25" r="10"></circle>
+                </svg> -->
+                <img class="header-logo" src="../static/wattermark.png" alt="">
+            </div>
+        </div>
+
+        <div class="results-container">
+            <div class="row result-row">
+                <div class="row-country-code">VEN</div>
+                <img class="row-flag" src="https://flagcdn.com/w40/ve.png" alt="Venezuela Flag">
+                <div class="row-name">YOHANDRI GRANADO</div>
+                <div class="row-round">RD OF 16</div>
+                <div class="row-score">2-0</div>
+                <div class="row-outcome">101</div>
+            </div>
+
+            <div class="row result-row">
+                <div class="row-country-code">FRA</div>
+                <img class="row-flag" src="https://flagcdn.com/w40/fr.png" alt="France Flag">
+                <div class="row-name">CYRIAN RAVET</div>
+                <div class="row-round">QF</div>
+                <div class="row-score">2-1</div>
+                <div class="row-outcome">221</div>
+            </div>
+
+            <div class="row result-row">
+                <div class="row-country-code">TUN</div>
+                <img class="row-flag" src="https://flagcdn.com/w40/tn.png" alt="Tunisia Flag">
+                <div class="row-name">MOHAMED KHALIL JENDOUBI</div>
+                <div class="row-round">SF</div>
+                <div class="row-score">2-0</div>
+                <div class="row-outcome">243</div>
+            </div>
+        </div>
+    </div>
+
+    <div class="instant-video-replay hidden" id="ivr">
+        <div class="color green"></div>
+        <div class="row">Instant Video Replay</div>
+        <div></div>
+    </div>
+
+    <script>
+        const ivr = document.getElementById("ivr");
+
+        const socket = io("ws://localhost:8000");  // Replace with OBS IP if needed
+
+        socket.on("connect", () => {
+            console.log("WebSocket Connect");
+        });
+
+        socket.on("udp_message", (data) => {
+            console.log("aaa");
+        });
+
+        socket.on("show_ivr", (data) => {
+            ivr.classList.remove("hidden");
+        });
+
+        socket.on("hide_ivr", (data) => {
+            ivr.classList.add("hidden");
+        });
+    </script>
+
+</body>
+
+</html>

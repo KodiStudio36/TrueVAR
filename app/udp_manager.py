@@ -13,7 +13,7 @@ from app.settings_manager import SettingsManager, Setting # <-- Import new base 
 class UdpManager(SettingsManager, QObject): # <-- Inherit from QObject (first) and SettingsManager
     """Manages the UDP listener thread and settings."""
     # Signal to forward parsed UDP messages from the worker
-    message_parsed = pyqtSignal(dict)
+    # message_parsed = pyqtSignal(dict)
     # Signal to update UI about the listener's state (running/stopped)
     listener_state_changed = pyqtSignal(bool)
 
@@ -43,12 +43,12 @@ class UdpManager(SettingsManager, QObject): # <-- Inherit from QObject (first) a
         self.worker.moveToThread(self.thread)
 
         # Connect signals between manager and worker
-        self.screen_manager: MainManager = Injector.find(MainManager)
+        # self.screen_manager: MainManager = Injector.find(MainManager)
 
         self.thread.started.connect(self.worker.start_listener)
-        self.worker.message_parsed.connect(self.message_parsed.emit) # Directly forward the signal
-        self.worker.fight_started.connect(self.screen_manager.start_recording) # Directly forward the signal
-        self.worker.fight_stopped.connect(self.screen_manager.stop_recording) # Directly forward the signal
+        # self.worker.message_parsed.connect(self.message_parsed.emit) # Directly forward the signal
+        # self.worker.start_fight_siqnal.connect(self.screen_manager.start_recording) # Directly forward the signal
+        # self.worker.start_break_signal.connect(self.screen_manager.stop_recording) # Directly forward the signal
         self.thread.finished.connect(self.on_listener_stopped)
 
         self.thread.start()

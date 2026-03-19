@@ -1,0 +1,351 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sports Broadcast Graphic</title>
+</head>
+
+<body>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Roboto+Condensed:wght@400;500;700&display=swap');
+
+        :root {
+            /* Color Palette */
+            --navy-bg: #010a1f;
+            --dark-teal: #083b42;
+            --darker-teal: #05262c;
+            --neon-teal: #68d8c9;
+            --light-bg: #e2ebf0;
+            --blue-corner: #0060a8;
+            --red-corner: #cd1228;
+            --text-dark: #1a2a3a;
+
+            /* Layout Variables */
+            --graphic-width: 800px;
+            --scores-width: 200px;
+            /* Width for the 1-2-3 columns */
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            /* Green screen background for easy keying in OBS, or change as needed */
+            background-color: #00ff00;
+            font-family: 'Roboto Condensed', sans-serif;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+        }
+
+        /* --- Main Container --- */
+        .scoreboard-container {
+            width: var(--graphic-width);
+            position: relative;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
+        }
+
+        /* --- Top Tabs --- */
+        .top-tabs {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-end;
+            margin-bottom: 2px;
+            padding: 0 10px;
+            color: white;
+            font-size: 14px;
+            letter-spacing: 1.5px;
+            text-transform: uppercase;
+        }
+
+        .tab-sport {
+            background-color: var(--dark-teal);
+            padding: 6px 15px;
+            display: flex;
+            align-items: center;
+            position: relative;
+            margin-left: 80px;
+            /* Aligns with the main content beside the left icon */
+        }
+
+        .tab-sport .accent-bar {
+            position: absolute;
+            right: -5px;
+            top: 0;
+            height: 100%;
+            width: 5px;
+            background-color: var(--neon-teal);
+        }
+
+        .tab-event {
+            padding: 5px 10px;
+            background-color: rgba(1, 10, 31, 0.8);
+        }
+
+        /* --- Header Section --- */
+        .header-section {
+            display: flex;
+            height: 80px;
+        }
+
+        .sport-icon-box {
+            width: 90px;
+            background-color: var(--darker-teal);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            border-right: 2px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .sport-icon-box svg {
+            width: 60%;
+            height: 60%;
+        }
+
+        .header-info {
+            flex-grow: 1;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .title-bar {
+            flex-grow: 1;
+            background-color: var(--navy-bg);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding-left: 20px;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .weight-class {
+            color: white;
+            font-size: 28px;
+            font-weight: 500;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        .event-graphics {
+            width: 250px;
+            height: 100%;
+            background: linear-gradient(135deg, #11626a 30%, #46bdac 30%, #46bdac 70%, #11626a 70%);
+            display: flex;
+            align-items: center;
+            padding-left: 20px;
+        }
+
+        .event-graphics .circles {
+            width: 60px;
+            opacity: 0.9;
+        }
+
+        .subtitle-bar {
+            height: 30px;
+            background-color: var(--dark-teal);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding-left: 20px;
+            color: white;
+            font-size: 14px;
+            letter-spacing: 1px;
+        }
+
+        /* --- Scores/Rounds Grid Alignment --- */
+        .rounds-header,
+        .scores {
+            width: var(--scores-width);
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            text-align: center;
+            height: 100%;
+        }
+
+        .round-num {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            font-weight: 400;
+        }
+
+        /* --- Competitors Section --- */
+        .competitors-section {
+            display: flex;
+            flex-direction: column;
+            gap: 2px;
+            /* Slight gap between rows */
+            background-color: #bbc7cf;
+            /* Border color peeking through */
+            padding-bottom: 2px;
+        }
+
+        .player-row {
+            background-color: var(--light-bg);
+            height: 40px;
+            display: flex;
+            align-items: center;
+            position: relative;
+        }
+
+        .corner-color {
+            width: 8px;
+            height: 100%;
+        }
+
+        .blue-corner .corner-color {
+            background-color: var(--blue-corner);
+        }
+
+        .red-corner .corner-color {
+            background-color: var(--red-corner);
+        }
+
+        .player-info {
+            flex-grow: 1;
+            display: flex;
+            align-items: center;
+            padding-left: 15px;
+            font-size: 18px;
+            color: var(--text-dark);
+        }
+
+        .country {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            width: 80px;
+            /* Fixed width to align names perfectly */
+        }
+
+        .ioc {
+            font-weight: 400;
+        }
+
+        .flag {
+            font-size: 18px;
+            line-height: 1;
+        }
+
+        .name {
+            font-weight: 500;
+            letter-spacing: 0.5px;
+        }
+
+        .seed {
+            font-size: 12px;
+            color: #666;
+            margin-left: 4px;
+            font-weight: 400;
+        }
+
+        .scores {
+            font-size: 20px;
+            font-weight: 700;
+            color: var(--text-dark);
+        }
+
+        .score {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+    </style>
+
+    <div class="scoreboard-container">
+
+        <div class="top-tabs">
+            <div class="tab-sport">
+                <span class="accent-bar"></span>
+                TAEKWONDO
+            </div>
+            <div class="tab-event">OLYMPIC GAMES</div>
+        </div>
+
+        <div class="header-section">
+            <div class="sport-icon-box">
+                <svg viewBox="0 0 100 100" fill="none" stroke="var(--neon-teal)" stroke-width="2">
+                    <path d="M20 20 L80 80 M80 20 L20 80" />
+                    <circle cx="50" cy="50" r="15" />
+                    <path d="M10 50 L90 50 M50 10 L50 90" stroke-opacity="0.5" />
+                </svg>
+            </div>
+
+            <div class="header-info">
+                <div class="title-bar">
+                    <div class="weight-class">MEN'S -58KG</div>
+                    <div class="event-graphics">
+                        <div class="circles">
+                            <svg viewBox="0 0 50 20" fill="none" stroke="white" stroke-width="1.5">
+                                <circle cx="10" cy="10" r="4" />
+                                <circle cx="20" cy="10" r="4" />
+                                <circle cx="30" cy="10" r="4" />
+                                <circle cx="15" cy="14" r="4" />
+                                <circle cx="25" cy="14" r="4" />
+                            </svg>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="subtitle-bar">
+                    <div class="match-stage">GOLD MEDAL CONTEST</div>
+                    <div class="rounds-header">
+                        <div class="round-num">1</div>
+                        <div class="round-num">2</div>
+                        <div class="round-num">3</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="competitors-section">
+
+            <div class="player-row blue-corner">
+                <div class="corner-color"></div>
+                <div class="player-info">
+                    <div class="country">
+                        <span class="ioc">KOR</span>
+                        <span class="flag">🇰🇷</span>
+                    </div>
+                    <div class="name">
+                        PARK TAEJOON <span class="seed">(5)</span>
+                    </div>
+                </div>
+                <div class="scores">
+                    <div class="score">9</div>
+                    <div class="score"></div>
+                    <div class="score"></div>
+                </div>
+            </div>
+
+            <div class="player-row red-corner">
+                <div class="corner-color"></div>
+                <div class="player-info">
+                    <div class="country">
+                        <span class="ioc">AZE</span>
+                        <span class="flag">🇦🇿</span>
+                    </div>
+                    <div class="name">
+                        GASHIM MAGOMEDOV <span class="seed">(10)</span>
+                    </div>
+                </div>
+                <div class="scores">
+                    <div class="score">0</div>
+                    <div class="score"></div>
+                    <div class="score"></div>
+                </div>
+            </div>
+
+        </div>
+    </div>
+
+</body>
+
+</html>

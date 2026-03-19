@@ -152,7 +152,7 @@ class CameraManager(SettingsManager, QObject):
 
 
                 full_pipe += (
-                    f"{"videotestsrc" if self.debug else self.get_camera(idx)} ! vaapipostproc "
+                    f"{"videotestsrc" if self.debug else self.get_camera(idx)} ! vapostproc "
                     f"! video/x-raw,width=1280,height=720,framerate=30/1,format=NV12 ! queue "
                     f"! shmsink socket-path=/tmp/camera{idx}_shm_socket wait-for-connection=false shm-size=200000000 "
                 )
@@ -208,10 +208,10 @@ class CameraManager(SettingsManager, QObject):
     #     return f"v4l2src device=/dev/video{self.camera_idx} ! image/jpeg,width=1280,height=720,framerate=30/1"
 
     def start_cameras(self):
-        pipe = f"{self.get_shmsink(0)} ! video/x-raw,width=1280,height=720,framerate={self.fps}/1,format=NV12,interlace-mode=progressive ! queue leaky=downstream ! vaapipostproc ! video/x-raw,width={self.res_width // 4},height={self.res_height // 4} ! tee name=overlay_tee " if self.is_scoreboard else ""
+        pipe = f"{self.get_shmsink(0)} ! video/x-raw,width=1280,height=720,framerate={self.fps}/1,format=NV12,interlace-mode=progressive ! queue leaky=downstream ! vapostproc ! video/x-raw,width={self.res_width // 4},height={self.res_height // 4} ! tee name=overlay_tee " if self.is_scoreboard else ""
 
         for idx in range(1, self.camera_count + 1):
-            pipe += f"{self.get_shmsink(idx)} ! video/x-raw,width={self.res_width},height={self.res_height},framerate={self.fps}/1,format=NV12,interlace-mode=progressive ! queue leaky=downstream ! vaapipostproc{f" ! compositor name=comp{idx+1} sink_0::xpos=0 sink_0::ypos=0 sink_1::xpos=10 sink_1::ypos=10 ! video/x-raw,width={self.res_width},height={self.res_height}" if self.is_scoreboard else ""} ! vaapih264enc bitrate=4000 ! avimux ! filesink location={self.get_filepath(idx, self.segments)} "
+            pipe += f"{self.get_shmsink(idx)} ! video/x-raw,width={self.res_width},height={self.res_height},framerate={self.fps}/1,format=NV12,interlace-mode=progressive ! queue leaky=downstream ! vapostproc{f" ! compositor name=comp{idx+1} sink_0::xpos=0 sink_0::ypos=0 sink_1::xpos=10 sink_1::ypos=10 ! video/x-raw,width={self.res_width},height={self.res_height}" if self.is_scoreboard else ""} ! vah264enc bitrate=4000 ! avimux ! filesink location={self.get_filepath(idx, self.segments)} "
             pipe += f"overlay_tee. ! queue ! comp{idx+1}. " if self.is_scoreboard else ""
 
         print(pipe)
@@ -243,18 +243,18 @@ class CameraManager(SettingsManager, QObject):
         
     #     # The main pipeline starts with the RTSP source
     #     pipe = (
-    #         f"{stream_source} ! vaapipostproc ! video/x-raw,width=1280,height=720,framerate=30/1,format=NV12,interlace-mode=progressive ! vaapipostproc ! "
-    #         f"{self.get_shmsink(0)} ! video/x-raw,width=1280,height=720,framerate={self.fps}/1,format=NV12,interlace-mode=progressive ! vaapipostproc ! video/x-raw,width={self.res_width // 4},height={self.res_height // 4} ! comp1."
+    #         f"{stream_source} ! vapostproc ! video/x-raw,width=1280,height=720,framerate=30/1,format=NV12,interlace-mode=progressive ! vapostproc ! "
+    #         f"{self.get_shmsink(0)} ! video/x-raw,width=1280,height=720,framerate={self.fps}/1,format=NV12,interlace-mode=progressive ! vapostproc ! video/x-raw,width={self.res_width // 4},height={self.res_height // 4} ! comp1."
     #     )
 
     #     # The compositor logic is a bit messy in your original. Cleaned up and ordered for clarity:
     #     pipeline_str = (
-    #         f"{stream_source} ! vaapipostproc ! video/x-raw,width=1280,height=720,framerate=30/1,format=NV12,interlace-mode=progressive ! vaapipostproc ! "
+    #         f"{stream_source} ! vapostproc ! video/x-raw,width=1280,height=720,framerate=30/1,format=NV12,interlace-mode=progressive ! vapostproc ! "
     #         "queue ! compositor name=comp1 sink_0::xpos=0 sink_0::ypos=0 sink_1::xpos=10 sink_1::ypos=10 ! video/x-raw,width=1280,height=720 ! x264enc bitrate=2000 tune=zerolatency key-int-max=60 ! "
     #         f'video/x-h264,profile=main ! flvmux streamable=true name=mux ! rtmpsink location="rtmp://a.rtmp.youtube.com/live2/{self.live_key}" '
     #         "audiotestsrc wave=silence ! mux. "
     #         # Scoreboard Overlay: Always SHM
-    #         f"{self.get_shmsink(0)} ! video/x-raw,width=1280,height=720,framerate={self.fps}/1,format=NV12,interlace-mode=progressive ! vaapipostproc ! video/x-raw,width={self.res_width // 4},height={self.res_height // 4} ! comp1."
+    #         f"{self.get_shmsink(0)} ! video/x-raw,width=1280,height=720,framerate={self.fps}/1,format=NV12,interlace-mode=progressive ! vapostproc ! video/x-raw,width={self.res_width // 4},height={self.res_height // 4} ! comp1."
     #     )
         
     #     print("Streaming Pipeline:", pipeline_str)
@@ -302,8 +302,8 @@ class CameraManager(SettingsManager, QObject):
     
     def get_camera(self, idx):
         # Uses self.network_ip, self.court (now Settings)
-        print(f"rtspsrc location=rtsp://admin:TaekwondoVAR@{self.network_ip}{self.court}{idx}:554 latency=800 ! rtph264depay ! h264parse ! vaapih264dec")
-        return f"rtspsrc location=rtsp://admin:TaekwondoVAR@{self.network_ip}{self.court}{idx}:554 latency=800 ! rtph264depay ! h264parse ! vaapih264dec"
+        print(f"rtspsrc location=rtsp://admin:TaekwondoVAR@{self.network_ip}{self.court}{idx}:554 latency=800 ! rtph264depay ! h264parse ! vah264enc")
+        return f"rtspsrc location=rtsp://admin:TaekwondoVAR@{self.network_ip}{self.court}{idx}:554 latency=800 ! rtph264depay ! h264parse ! vah264enc"
 
     def get_shmsink(self, idx):
         # Only used for idx=0 now

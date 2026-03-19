@@ -8,11 +8,9 @@ from interface.replay_screen import ReplayScreen
 from time import time
 
 from app.injector import Injector
-from app.udp_manager import UdpManager
-from app.obs_manager import OBSManager
 from app.external_screen_manager import ExternalScreenManager
 from app.key_bind_manager import KeyBindManager
-from app.webserver_manager import WebServerManager
+from app.automation_manager import AutomationManager
 from app.camera_manager import CameraManager
 from app.main_manager import MainManager
 
@@ -21,13 +19,9 @@ class MainWindow(QMainWindow):
         super().__init__()
 
         self.key_bind_manager: KeyBindManager = Injector.find(KeyBindManager)
-        self.obs_manager: OBSManager = Injector.find(OBSManager)
+        self.automation_manager: AutomationManager = Injector.find(AutomationManager)
         self.camera_manager: CameraManager = Injector.find(CameraManager)
-        self.udp_manager: UdpManager = Injector.find(UdpManager)
         self.external_screen_manager: ExternalScreenManager = Injector.find(ExternalScreenManager)
-
-        if self.udp_manager.udp_default and not self.udp_manager.thread.isRunning():
-            self.udp_manager.start_listener()
 
         # Create the stacked layout
         self.stacked_widget = QStackedWidget(self)
@@ -44,6 +38,8 @@ class MainWindow(QMainWindow):
         self.screen_manager.show_replay_signal.connect(self.show_replay)
         self.screen_manager.hide_replay_signal.connect(self.hide_replay)
         self.screen_manager.toggle_recording_signal.connect(self.toggle_recording)
+        self.screen_manager.start_recording_signal.connect(self.start_recording)
+        self.screen_manager.stop_recording_signal.connect(self.stop_recording)
 
         # Add screens to the stacked widget
         self.stacked_widget.addWidget(self.main_screen)
@@ -116,7 +112,7 @@ class MainWindow(QMainWindow):
             self.external_screen_manager.toggle_display_mode()
 
         if key_sequence == QKeySequence(self.key_bind_manager.set_troubleshooting_scene):
-            self.obs_manager.set_troubleshooting_scene()
+            self.automation_manager.troubleshooting_flow()
                 
         if key_sequence == QKeySequence(self.key_bind_manager.next_camera_key) and self.current_screen == 2:
             self.replay_screen.next_page()
@@ -160,7 +156,7 @@ class MainWindow(QMainWindow):
             self.current_screen = 2
 
             # pro webserver implementation
-            self.obs_manager.set_ivr_scene()
+            self.automation_manager.start_ivr_flow()
         else:
             self.show_toast_message("Video Replay can't be open without recording")
 
@@ -171,7 +167,7 @@ class MainWindow(QMainWindow):
         self.current_screen = 0
 
         # pro webserver implementation
-        self.obs_manager.set_main_scene()
+        self.automation_manager.post_ivr_flow()
 
     def toggle_recording(self):
         if not self.camera_manager.is_recording:
@@ -210,7 +206,7 @@ class MainWindow(QMainWindow):
         self.screen_indicator_label.setVisible(is_mirror)
         # Repositioning is handled in resizeEvent
         if is_mirror and self.current_screen == 2:
-            self.obs_manager.set_ivr_closeup_scene()
+            self.automation_manager.start_ivr_closeup_flow()
 
     # --- NEW: Override resizeEvent to reposition the indicator ---
     def resizeEvent(self, event):

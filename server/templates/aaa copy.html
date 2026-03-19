@@ -1,0 +1,210 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Livestream Match Results Graphic</title>
+    <style>
+        /* Base reset and font for livestream */
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            font-family: 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+        }
+
+        body {
+            /* Transparent background for OBS/Livestream */
+            background-color: transparent;
+            height: 100vh;
+        }
+
+        /* Main Container */
+        .broadcast-graphic {
+            position: absolute;
+            bottom: 0px;
+            width: 100vw;
+        }
+
+        /* Top Label: "PREVIOUS RESULTS" */
+        .header-label {
+            display: inline-flex;
+            align-items: center;
+            background-color: #043640;
+            color: #A1C6CC;
+            font-size: 14px;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            padding: 4px 15px;
+            border-left: 5px solid #00A69C;
+        }
+
+        /* Main Athlete Info Header */
+        .athlete-header {
+            display: flex;
+            align-items: center;
+            background: linear-gradient(100deg, #02102A 85%, #0B6B67 85.2%);
+            color: white;
+            padding: 8px 15px;
+            position: relative;
+        }
+
+        .header-country-code {
+            font-size: 24px;
+            margin-right: 12px;
+            font-weight: 400;
+        }
+
+        .header-flag {
+            width: 45px;
+            height: 30px;
+            object-fit: cover;
+            margin-right: 15px;
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            background: white;
+        }
+
+        .header-name {
+            font-size: 26px;
+            font-weight: 500;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            flex-grow: 1;
+        }
+
+        .seed {
+            font-size: 14px;
+            color: #8da1b5;
+            margin-left: 5px;
+            font-weight: normal;
+        }
+
+        /* Faux Olympic Rings (SVG right side) */
+        .rings-logo {
+            position: absolute;
+            right: 20px;
+            top: 50%;
+            transform: translateY(-50%);
+            width: 60px;
+            opacity: 0.9;
+        }
+
+        /* Results List Container */
+        .results-container {
+            background-color: #DDECF0;
+            border-top: 2px solid #1E4652;
+        }
+
+        /* Individual Result Row Layout */
+        .result-row {
+            display: grid;
+            grid-template-columns: 50px 45px 1fr 100px 60px 40px;
+            align-items: center;
+            padding: 8px 15px;
+            border-bottom: 1px solid #7FA7B3;
+            color: #083344;
+            font-size: 18px;
+            font-weight: 600;
+        }
+
+        .result-row:last-child {
+            border-bottom: none;
+        }
+
+        /* Row Elements */
+        .row-country-code {
+            font-weight: 500;
+        }
+
+        .row-flag {
+            width: 32px;
+            height: 22px;
+            object-fit: cover;
+            border: 1px solid rgba(0, 0, 0, 0.1);
+        }
+
+        .row-name {
+            text-transform: uppercase;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            padding-right: 15px;
+        }
+
+        .row-round {
+            text-align: right;
+            font-weight: 500;
+            color: #124B5A;
+        }
+
+        .row-score {
+            text-align: center;
+            letter-spacing: 1px;
+        }
+
+        .row-outcome {
+            text-align: right;
+            font-weight: bold;
+        }
+
+        /* Row Seed Styling */
+        .row-name .seed {
+            font-size: 13px;
+            color: #638B95;
+        }
+    </style>
+</head>
+
+<body>
+
+    <div class="broadcast-graphic">
+        <div class="header-label">Previous Results</div>
+
+        <div class="athlete-header">
+            <div class="header-country-code">KOR</div>
+            <img class="header-flag" src="https://flagcdn.com/w80/kr.png" alt="South Korea Flag">
+            <div class="header-name">PARK Taejoon <span class="seed">(5)</span></div>
+
+            <svg class="rings-logo" viewBox="0 0 100 45" fill="none" stroke="white" stroke-width="4">
+                <circle cx="20" cy="15" r="10"></circle>
+                <circle cx="50" cy="15" r="10"></circle>
+                <circle cx="80" cy="15" r="10"></circle>
+                <circle cx="35" cy="25" r="10"></circle>
+                <circle cx="65" cy="25" r="10"></circle>
+            </svg>
+        </div>
+
+        <div class="results-container">
+            <div class="result-row">
+                <div class="row-country-code">VEN</div>
+                <img class="row-flag" src="https://flagcdn.com/w40/ve.png" alt="Venezuela Flag">
+                <div class="row-name">YOHANDRI GRANADO <span class="seed">(12)</span></div>
+                <div class="row-round">RD OF 16</div>
+                <div class="row-score">2-0</div>
+                <div class="row-outcome">W</div>
+            </div>
+
+            <div class="result-row">
+                <div class="row-country-code">FRA</div>
+                <img class="row-flag" src="https://flagcdn.com/w40/fr.png" alt="France Flag">
+                <div class="row-name">CYRIAN RAVET <span class="seed">(4)</span></div>
+                <div class="row-round">QF</div>
+                <div class="row-score">2-1</div>
+                <div class="row-outcome">W</div>
+            </div>
+
+            <div class="result-row">
+                <div class="row-country-code">TUN</div>
+                <img class="row-flag" src="https://flagcdn.com/w40/tn.png" alt="Tunisia Flag">
+                <div class="row-name">MOHAMED KHALIL JENDOUBI <span class="seed">(1)</span></div>
+                <div class="row-round">SF</div>
+                <div class="row-score">2-0</div>
+                <div class="row-outcome">W</div>
+            </div>
+        </div>
+    </div>
+
+</body>
+
+</html>

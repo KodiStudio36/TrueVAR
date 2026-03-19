@@ -1,6 +1,9 @@
 # app/udp_worker.py
 import socket
+from traceback import print_tb
 from PyQt5.QtCore import QObject, pyqtSignal
+from app.injector import Injector
+from app.main_manager import MainManager
 
 # This should be imported from your config file
 from config import alpha3_to_alpha2 
@@ -11,17 +14,20 @@ class UdpWorker(QObject):
     This now contains the full, correct parsing logic.
     """
     # This signal will emit dictionaries for broadcasting via Socket.IO
-    message_parsed = pyqtSignal(dict)
+    # message_parsed = pyqtSignal(dict)
     
     # These signals are for high-level application events (like recording)
-    fight_started = pyqtSignal()
-    fight_stopped = pyqtSignal()
+    # start_fight_siqnal = pyqtSignal()
+    # start_break_signal = pyqtSignal()
+    # start_win_signal = pyqtSignal()
 
     def __init__(self, port):
         super().__init__()
         self.port = port
         self._is_running = False
         self.udp_socket = None
+
+        self.hub: MainManager = Injector.find(MainManager)
 
         # --- State variables moved from global scope into this class ---
         self.round_state = False
@@ -56,7 +62,7 @@ class UdpWorker(QObject):
                     # Parse the message, which updates internal state
                     self._parse_udp_message(message)
                     # After parsing, always emit the main update_data dictionary
-                    self.message_parsed.emit(self.update_data.copy())
+                    # self.message_parsed.emit(self.update_data.copy())
             except socket.timeout:
                 continue
             except Exception as e:
@@ -84,9 +90,10 @@ class UdpWorker(QObject):
             self.update_data["brk"] = False
 
             if len(parts) > 2 and parts[2] == "start" and not self.round_state:
-                self.message_parsed.emit({"event": "RoundStart"})
+                # self.message_parsed.emit({"event": "RoundStart"})
                 self.round_state = True
-                self.fight_started.emit() # Emit signal for application logic
+                # self.start_fight_siqnal.emit() # Emit signal for application logic
+                self.hub.start_recording_signal.emit()
                 if not self.stream_started:
                     self.stream_started = True # Note: this worker can't change OBS scenes
                                                # The main app must listen to the signal.
@@ -112,11 +119,11 @@ class UdpWorker(QObject):
                     "blue_points_3": self.update_data["blue_points_3"], "red_points_1": self.update_data["red_points_1"],
                     "red_points_2": self.update_data["red_points_2"], "red_points_3": self.update_data["red_points_3"],
                 }
-                self.message_parsed.emit(round_end_data)
+                # self.message_parsed.emit(round_end_data)
                 self.round_state = False
                 self.update_data["blue_gam_jeom"] = 0
                 self.update_data["red_gam_jeom"] = 0
-                self.fight_stopped.emit()
+                # self.start_break_signal.emit()
 
         elif command == "mch":
             self.update_data.update({
@@ -124,6 +131,14 @@ class UdpWorker(QObject):
                 "hit_level": parts[14], "blue_points_1": 0, "red_points_1": 0,
                 "blue_points_2": 0, "red_points_2": 0, "blue_points_3": 0,
                 "red_points_3": 0, "blue_gam_jeom": 0, "red_gam_jeom": 0
+            })
+
+            # Importnat!!! New code
+            self.hub.udp_fight_data_signal.emit({
+                "id": parts[1], 
+                "title": parts[2], 
+                "category": parts[3],
+                "hit_level": parts[14]
             })
 
         elif command == "rnd":
@@ -139,7 +154,15 @@ class UdpWorker(QObject):
                 "blue_name": self.update_data["blue_name"], "red_name": self.update_data["red_name"],
                 "blue_flag": self.update_data["blue_flag"], "red_flag": self.update_data["red_flag"],
             }
-            self.message_parsed.emit(fighters_init_data)
+            # self.message_parsed.emit(fighters_init_data)
+
+            # Importnat!!! New code
+            self.hub.udp_athletes_data_signal.emit({
+                "blue_name": parts[1], 
+                "blue_flag": alpha3_to_alpha2.get(parts[3], "UN").lower(), 
+                "red_name": parts[5],
+                "red_flag": alpha3_to_alpha2.get(parts[7], "UN").lower()
+            })
 
         elif command == "sc1":
             round_num = self.update_data["round"]
@@ -158,13 +181,13 @@ class UdpWorker(QObject):
             self.update_data["red_gam_jeom"] = parts[3]
 
         elif command == "win":
-            self.message_parsed.emit({"event": "WinnerColor", "color": parts[1]})
-            if self.round_state:
-                # Re-using logic from 'brk' for ending the round
-                self.round_state = False
-                self.update_data["blue_gam_jeom"] = 0
-                self.update_data["red_gam_jeom"] = 0
-                self.fight_stopped.emit()
+            # self.message_parsed.emit({"event": "WinnerColor", "color": parts[1]})
+            # Re-using logic from 'brk' for ending the round
+            self.round_state = False
+            self.update_data["blue_gam_jeom"] = 0
+            self.update_data["red_gam_jeom"] = 0
+            # self.start_win_signal.emit()
+            self.hub.stop_recording_signal.emit()
         
         # --- One-time hit events ---
         elif command == "pt1": # Blue
@@ -172,11 +195,11 @@ class UdpWorker(QObject):
             elif parts[1] in ["2", "4"]: event_name = "Trunk"
             elif parts[1] in ["3", "5"]: event_name = "Head"
             else: return
-            self.message_parsed.emit({"event": event_name, "color": "blue"})
+            # self.message_parsed.emit({"event": event_name, "color": "blue"})
 
         elif command == "pt2": # Red
             if parts[1] == "1": event_name = "Punch"
             elif parts[1] in ["2", "4"]: event_name = "Trunk"
             elif parts[1] in ["3", "5"]: event_name = "Head"
             else: return
-            self.message_parsed.emit({"event": event_name, "color": "red"})
+            # self.message_parsed.emit({"event": event_name, "color": "red"})

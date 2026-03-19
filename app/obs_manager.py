@@ -5,9 +5,12 @@ import subprocess
 import os
 import time
 from obswebsocket import obsws, requests, events
-from app.injector import singleton
+from app.injector import singleton, Injector
+from app.main_manager import MainManager
 from app.settings_manager import SettingsManager, Setting
 from config import obs_settings_file, launch_obs_script
+
+from app.webserver_manager import WebServerManager
 
 @singleton
 class OBSManager(SettingsManager, QObject):
@@ -28,6 +31,7 @@ class OBSManager(SettingsManager, QObject):
 
     start_soon_scene = Setting("Start Soon Scene")
     main_scene = Setting("Main Scene")
+    main_scene_w_scoreboard = Setting("Main Scene \\w scoreboard")
     ivr_scene = Setting("IVR Scene")
     ivr_closeup_scene = Setting("IVR Closeup Scene")
     troubleshooting_scene = Setting("Troubleshooting Scene")
@@ -35,15 +39,33 @@ class OBSManager(SettingsManager, QObject):
     def __init__(self):
         SettingsManager.__init__(self, obs_settings_file)
         QObject.__init__(self)
+        self.hub = Injector.find(MainManager)
+
         self.client = None
         self.is_connected = False
         self.collection = None
+
+        self.hub.start_obs_signal.connect(lambda : self.launch_obs("pro"))
+        self.hub.start_livestream_signal.connect(self.start_streaming)
+        self.hub.stop_livestream_signal.connect(self.stop_streaming)
 
     def launch_obs(self, mode="basic"):
         """
         Launches OBS Studio.
         :param mode: 'basic' or 'pro' to select the initial scene collection via CLI.
         """
+
+        web_manager = Injector.find(WebServerManager)
+        
+        if mode == "pro" or mode == "olympic":
+            # Start the webserver for overlays
+            if web_manager:
+                print("Pro mode detected: Starting WebServer...")
+                web_manager.start_server()
+        else:
+            # Optional: Stop server if switching back to basic to save resources
+            if web_manager:
+                web_manager.stop_server()
 
         # Determine collection based on mode
         if mode == "basic":
@@ -115,21 +137,43 @@ class OBSManager(SettingsManager, QObject):
 
         elif self.collection == self.pro_collection_name or self.collection == self.olympic_collection_name:
             self.set_scene(self.start_soon_scene)
+            self.set_transition("TrueVAR Stinger")
 
     def set_main_scene(self):
         self.set_scene(self.main_scene)
 
+        if self.collection == self.pro_collection_name or self.collection == self.olympic_collection_name:
+            self.set_transition("Move")
+
+    def set_main_scene_w_scoreboard(self):
+        if self.collection == self.pro_collection_name or self.collection == self.olympic_collection_name:
+            self.set_scene(self.main_scene_w_scoreboard)
+            self.set_transition("Move")
+
     def set_ivr_scene(self):
         if self.collection == self.pro_collection_name or self.collection == self.olympic_collection_name:
             self.set_scene(self.ivr_scene)
+            self.set_transition("Move")
 
     def set_ivr_closeup_scene(self):
         if self.collection == self.pro_collection_name or self.collection == self.olympic_collection_name:
             self.set_scene(self.ivr_closeup_scene)
+            self.set_transition("TrueVAR Stinger")
 
     def set_troubleshooting_scene(self):
         self.set_scene(self.troubleshooting_scene)
 
+    def set_transition(self, transition_name):
+        if not self.is_connected: return
+
+        try:
+            # For the newer v5 libraries (like obs-websocket-py 1.0+)
+            # We use the 'SetCurrentSceneTransition' request
+            self.client.call(requests.SetCurrentSceneTransition(transitionName=transition_name))
+            print(f"Active transition set to: {transition_name}")
+        except Exception as e:
+            # If the above fails, it's likely a library attribute error
+            print(f"Request failed. Check if your library supports v5: {e}")
 
     def start_streaming(self):
         if not self.is_connected: self.connect_to_obs()

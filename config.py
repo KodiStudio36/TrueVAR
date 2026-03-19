@@ -10,11 +10,16 @@ obs_settings_file = settings_path + "/obs_settings.json"
 key_bind_settings_file = settings_path + "/key_bind_settings.json"
 webserver_settings_file = settings_path + "/webserver_settings.json"
 udp_settings_file = settings_path + "/udp_settings.json"
-licence_settings_file = settings_path + "/licence.json"
+licence_settings_file = settings_path + "/license.bin"
 external_screen_settings_file = settings_path + "/external_screen_settings.json"
 
 manage_external_screen_script = scripts_path + "/manage_display.sh"
 launch_obs_script = scripts_path + "/launch_obs.sh"
+
+api_url = "http://0.0.0.0:5000/api/ivr/"
+socketio_url = "http://0.0.0.0:5000/"
+
+api_fetch_url = api_url + "fetch"
 
 alpha3_to_alpha2 = {
     'AFG': 'AF',
