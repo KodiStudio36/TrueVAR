@@ -64,10 +64,10 @@ class FightManager(QObject):
         self.round = 1
         
         self.blue_points = [0, 0, 0]
-        self.blue_gam_jeoms = [0, 0, 0]
+        self.blue_penalty = [0, 0, 0]
 
         self.red_points = [0, 0, 0]
-        self.red_gam_jeoms = [0, 0, 0]
+        self.red_penalty = [0, 0, 0]
 
         self.fight_started = False
 
@@ -84,10 +84,10 @@ class FightManager(QObject):
             "blue_name": self.blue_name,
             "blue_flag": self.blue_flag,
             "blue_points": self.blue_points,
-            "blue_gam_jeoms": self.blue_gam_jeoms,
+            "blue_penalty": self.blue_penalty,
 
             "red_name": self.red_name,
             "red_flag": self.red_flag,
             "red_points": self.red_points,
-            "red_gam_jeoms": self.red_gam_jeoms,
+            "red_penalty": self.red_penalty,
         }

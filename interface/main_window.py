@@ -41,6 +41,8 @@ class MainWindow(QMainWindow):
         self.screen_manager.start_recording_signal.connect(self.start_recording)
         self.screen_manager.stop_recording_signal.connect(self.stop_recording)
 
+        self.screen_manager.start_fight_signal.connect(self.start_recording)
+
         # Add screens to the stacked widget
         self.stacked_widget.addWidget(self.main_screen)
         self.stacked_widget.addWidget(self.settings_screen)

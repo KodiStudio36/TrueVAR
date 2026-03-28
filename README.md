@@ -184,3 +184,34 @@ yay -S obs-studio-browser
 sudo pacman -S obs-gstreamer
 yay -S obs-move-transition
 ```
+
+
+## Reolink Camera Setup
+
+Connect Reolink camera to wifi. Find by official Reolink mobile application.
+
+### Reolink App Setup
+
+1. User
+    - hostname: `Camera X`
+    - username: `admin`
+    - password: `TaekwondoVAR`
+
+### Manual Setup
+
+Find device's ip and connect.
+
+1. Network
+    - Ip Address: `192.168.177.<Court><ID>`
+    - Mask: `255.255.255.0`
+    - Gateway: `192.168.177.1`
+    - Advanced / Server Settings:
+        - RTSP (554)
+2. Stream
+    - Resolution: `lowest`
+3. Display
+    - Camera Name: `Hide`
+    - Date & Time: `Hide`
+    - [ ] `Watermark`
+4. Light
+    - [X] `Stay off`

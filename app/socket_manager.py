@@ -1,5 +1,5 @@
 import socketio
-from PyQt5.QtCore import QObject, pyqtSignal
+from PyQt5.QtCore import QObject, pyqtSignal, QTimer
 from app.main_manager import MainManager
 from app.fight_manager import FightManager
 from app.injector import singleton, Injector
@@ -8,9 +8,10 @@ from config import socketio_url
 @singleton
 class SocketManager(QObject):
     connected = pyqtSignal(bool)
-    tournaments_received = pyqtSignal(list)
+    tournaments_received = pyqtSignal(list, int)
     tournament_data_received = pyqtSignal(dict)
     message_received = pyqtSignal(dict)
+    request_confirmation = pyqtSignal()
 
     def __init__(self):
         super().__init__()
@@ -21,6 +22,9 @@ class SocketManager(QObject):
         
         self.sio = socketio.Client(reconnection=True, reconnection_attempts=5)
         self._setup_handlers()
+        self._pending_confirm = False
+
+        self.request_confirmation.connect(self.confirm_connection)
 
         self.hub.new_fight_signal.connect(self.new_fight)
         self.hub.update_fight_data_signal.connect(self.update_fight_data)
@@ -32,6 +36,10 @@ class SocketManager(QObject):
             print(f"[SocketIO] Connected to {self.socket_url}")
             self.connected.emit(True)
 
+            if self._pending_confirm:
+                self.request_confirmation.emit()
+                self._pending_confirm = False
+
         @self.sio.event
         def disconnect():
             print("[SocketIO] Disconnected")
@@ -40,12 +48,21 @@ class SocketManager(QObject):
         @self.sio.on("tournaments_list")
         def on_tournaments(data):
             names = data.get("tournaments", [])
-            self.tournaments_received.emit(names)
+            court_num = int(data.get("courts", 1))
+            print(f"[SocketIO] Tournaments available. Max courts: {court_num}")
+            self.tournaments_received.emit(names, court_num)
 
         @self.sio.on("tournament_data")
         def on_data(data):
             self.hub.on_tournament_data_signal.emit(data["data"])
             self.tournament_data_received.emit(data)
+
+            # Instead of calling confirm directly, check if we are ready
+            if self.sio.connected:
+                self.request_confirmation.emit()
+            else:
+                print("[SocketIO] Data received during handshake. Delaying confirmation...")
+                self._pending_confirm = True
 
         @self.sio.on("start_livestream")
         def start_livestream(data):
@@ -65,11 +82,16 @@ class SocketManager(QObject):
 
         @self.sio.on("other_fight_started")
         def other_fight_started(data):
+            print(data, "jjjjjjjjjjjjjjjjjjjjjjjjjj")
             self.hub.other_fight_started_signal.emit()
 
+        @self.sio.on("stream_message_broadcast")
+        def stream_message_broadcast(data):
+            self.hub.stream_message_broadcast_signal.emit()
+
         @self.sio.event
-        def connect_error(data):
-            print(f"[SocketIO] Connection failed: {data}")
+        def connect_error(e):
+            print(f"[SocketIO] Connection failed: {e}")
 
     def connect(self, token, license_key):
         """Initializes connection with the specific auth token."""
@@ -92,16 +114,27 @@ class SocketManager(QObject):
         self.sio.emit(event, payload)
         return True
 
-    def select_tournament(self, tournament_name):
-        self.emit_authorized("select_tournament", {"tournament_name": tournament_name})
+    def select_tournament(self, tournament_name, court_number):
+        """Now sends both the name and the specific court assigned to this machine."""
+        payload = {
+            "tournament_name": tournament_name,
+            "court_number": court_number
+        }
+        self.emit_authorized("select_tournament", payload)
+
+    def confirm_connection(self):
+        print(f"[SocketIO] Confirm connection")
+        self.emit_authorized("confirm_connection", {"example": "example"})
 
     def new_fight(self):
+        print("new fight")
         self.emit_authorized("new_fight", {"data": self.fight_manager.to_json()})
 
     def update_fight_data(self):
         self.emit_authorized("update_fight_data", {"data": self.fight_manager.to_json()})
 
     def start_fight(self):
+        print("start fight")
         self.emit_authorized("start_fight", {})
 
     def disconnect(self):

@@ -30,8 +30,6 @@ class UdpWorker(QObject):
         self.hub: MainManager = Injector.find(MainManager)
 
         # --- State variables moved from global scope into this class ---
-        self.round_state = False
-        self.stream_started = False
         self.clk = "02:00" # Default clock
         self.update_data = {
             "event": "Update", "clk": "", "kye_shi": False, "brk": False, "match_id": 0,
@@ -89,14 +87,8 @@ class UdpWorker(QObject):
             self.update_data["kye_shi"] = False
             self.update_data["brk"] = False
 
-            if len(parts) > 2 and parts[2] == "start" and not self.round_state:
-                # self.message_parsed.emit({"event": "RoundStart"})
-                self.round_state = True
-                # self.start_fight_siqnal.emit() # Emit signal for application logic
-                self.hub.start_recording_signal.emit()
-                if not self.stream_started:
-                    self.stream_started = True # Note: this worker can't change OBS scenes
-                                               # The main app must listen to the signal.
+            if len(parts) > 2 and parts[2] == "start":
+                self.hub.udp_start_round_signal.emit()
 
         elif command == "ij0":
             self.update_data["clk"] = parts[1][1:]

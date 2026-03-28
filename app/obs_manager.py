@@ -46,8 +46,8 @@ class OBSManager(SettingsManager, QObject):
         self.collection = None
 
         self.hub.start_obs_signal.connect(lambda : self.launch_obs("pro"))
-        self.hub.start_livestream_signal.connect(self.start_streaming)
-        self.hub.stop_livestream_signal.connect(self.stop_streaming)
+        # self.hub.start_livestream_signal.connect(self.start_streaming)
+        # self.hub.stop_livestream_signal.connect(self.stop_streaming)
 
     def launch_obs(self, mode="basic"):
         """

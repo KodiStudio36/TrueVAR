@@ -63,12 +63,10 @@ class CameraManager(SettingsManager, QObject):
 
     def add_camera(self):
         self.camera_count += 1
-        self.save_settings()
         
     def remove_camera(self):
         if self.camera_count > 0:
             self.camera_count -= 1
-            self.save_settings()
 
     def handle_message(self, bus, message):
         msg_type = message.type
@@ -302,8 +300,8 @@ class CameraManager(SettingsManager, QObject):
     
     def get_camera(self, idx):
         # Uses self.network_ip, self.court (now Settings)
-        print(f"rtspsrc location=rtsp://admin:TaekwondoVAR@{self.network_ip}{self.court}{idx}:554 latency=800 ! rtph264depay ! h264parse ! vah264enc")
-        return f"rtspsrc location=rtsp://admin:TaekwondoVAR@{self.network_ip}{self.court}{idx}:554 latency=800 ! rtph264depay ! h264parse ! vah264enc"
+        print(f"rtspsrc location=rtsp://admin:TaekwondoVAR@{self.network_ip}{self.court}{idx}:554 latency=800 ! rtph264depay ! h264parse ! vah264dec")
+        return f"rtspsrc location=rtsp://admin:TaekwondoVAR@{self.network_ip}{self.court}{idx}:554 latency=800 ! rtph264depay ! h264parse ! vah264dec"
 
     def get_shmsink(self, idx):
         # Only used for idx=0 now
