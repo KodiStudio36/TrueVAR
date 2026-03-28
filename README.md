@@ -175,7 +175,27 @@ and reanable network manager
 sudo systemctl start NetworkManager
 sudo systemctl enable systemd-networkd
 ```
-The End
+
+### External Screen Setup
+
+~/.config/i3/config
+
+```
+set $main_display DP-1
+set $cam_display HDMI-1
+
+workspace 1 output $main_display
+workspace 2 output $main_display
+workspace 3 output $main_display
+workspace 4 output $main_display
+workspace 5 output $main_display
+
+workspace 6 output $cam_display
+workspace 7 output $cam_display
+workspace 8 output $cam_display
+workspace 9 output $cam_display
+workspace 10 output $cam_display
+```
 
 ### OBS
 
