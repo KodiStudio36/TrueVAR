@@ -15,7 +15,6 @@ class TournamentManager(QObject):
         self.location = ""
         self.start_date = ""
         self.courts = 0
-        self.is_streaming = False # Toggle this based on your app logic
         self.stream_key = ""
         
         # Threading
@@ -38,18 +37,29 @@ class TournamentManager(QObject):
         self.location = data.get('location')
         self.start_date = data.get('startDate')
         self.courts = data.get('courts', 1)
-        self.is_streaming = data.get('stream', False)
-        self.stream_key = data.get('stream_key', "")
+        self.stream_key = data.get('stream_key', None)
         
         # 2. Logic: Should we generate assets?
         # Check if 'stream' is in data or if global streaming is enabled
-        if self.is_streaming: # Defaulting to True for now
+        if self.stream_key: # Defaulting to True for now
             self._start_asset_generation(data)
 
     def _start_asset_generation(self, data):
-        if self._thread and self._thread.isRunning():
-            print("[Tournament] Asset generation already in progress. Skipping.")
-            return
+        # 1. Is the Python reference actually holding anything?
+        if self._thread is not None:
+            # 2. Is the underlying C++ object still alive?
+            if sip.isdeleted(self._thread):
+                print("[Tournament] Thread was deleted by C++ - cleaning reference")
+                self._thread = None 
+            else:
+                # 3. Only now is it safe to call methods on it
+                try:
+                    if self._thread.isRunning():
+                        self._thread.quit()
+                        self._thread.wait()
+                except RuntimeError:
+                    # Last ditch effort if it died between the check and the call
+                    self._thread = None
 
         self._thread = QThread()
         self._worker = AssetWorker(data)
@@ -65,6 +75,7 @@ class TournamentManager(QObject):
         self._worker.finished.connect(self._worker.deleteLater)
         self._thread.finished.connect(self._thread.deleteLater)
 
+        self._thread.finished.connect(lambda: setattr(self, '_thread', None))
         self._thread.start()
 
     def _on_assets_ready(self):

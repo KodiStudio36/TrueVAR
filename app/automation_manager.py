@@ -24,7 +24,7 @@ class AutomationManager(QObject):
         # self.udp.message_parsed.connect(self.handle_udp_event)
 
         self.hub.start_livestream_signal.connect(self.pre_tournament_flow)
-        #self.hub.start_tournament_signal.connect(self.pre_fight_flow)
+        self.hub.start_tournament_signal.connect(self.pre_pre_fight_flow)
         self.hub.new_fight_signal.connect(self.pre_fight_flow)
         self.hub.start_fight_signal.connect(self.start_fight_flow)
         self.hub.start_round_signal.connect(self.start_round_flow)
@@ -38,6 +38,12 @@ class AutomationManager(QObject):
     async def _pre_tournament_flow(self):
         print("Starting pre tournament flow")
         self.obs.set_starting_scene()
+
+    async def _pre_pre_fight_flow(self):
+        print("Starting pre pre fight flow")
+        self.web.reset_widgets(["widget-winner", "widget-round-results"])
+
+        self.obs.set_main_scene()
 
     async def _pre_fight_flow(self):
         print("Starting pre fight flow")
@@ -180,6 +186,9 @@ class AutomationManager(QObject):
 
     def pre_fight_flow(self):
         self.start_killable_flow(self._pre_fight_flow())
+
+    def pre_pre_fight_flow(self):
+        self.start_killable_flow(self._pre_pre_fight_flow())
 
     def start_fight_flow(self):
         self.start_async_flow(self._start_fight_flow())

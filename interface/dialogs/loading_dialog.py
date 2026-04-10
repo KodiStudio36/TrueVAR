@@ -4,22 +4,23 @@ from PyQt5.QtWidgets import QDialog, QVBoxLayout, QLabel, QProgressBar, QMessage
 from PyQt5.QtCore import Qt, QThread, pyqtSignal
 
 class NetworkCheckWorker(QThread):
-    finished_check = pyqtSignal(bool) 
+    # Changed signal to 'object' to handle True, False, or "ACTIVATE"
+    finished_check = pyqtSignal(object) 
 
     def __init__(self, license_manager):
         super().__init__()
         self.license_manager = license_manager
 
     def run(self):
-        # Checks if server is reachable AND license is valid for online
-        success = self.license_manager.check_reachability()
-        self.finished_check.emit(success)
+        result = self.license_manager.check_reachability()
+        self.finished_check.emit(result)
 
 class StartupLoaderDialog(QDialog):
     def __init__(self, license_manager, parent=None):
         super().__init__(parent)
         self.license_manager = license_manager
         self.is_offline_mode = False
+        self.needs_activation = False
         
         self.setWindowTitle("Connecting...")
         self.setFixedSize(300, 100)
@@ -41,10 +42,12 @@ class StartupLoaderDialog(QDialog):
     def start_check(self):
         self.worker.start()
 
-    def on_check_done(self, success):
-        if success:
-            # Online & Licensed: Proceed to SocketIO wait
+    def on_check_done(self, result):
+        if result is True:
             self.accept() 
+        elif result == "ACTIVATE":
+            self.needs_activation = True
+            self.accept()
         else:
             # Failed to connect or no license found
             msg = QMessageBox(self)

@@ -15,7 +15,7 @@ class MainManager(QObject):
 
     # --- Server Stream Controls ---
     on_tournament_data_signal = pyqtSignal(dict)
-    start_obs_signal = pyqtSignal()
+    start_obs_signal = pyqtSignal(str)
     start_livestream_signal = pyqtSignal()
     stop_livestream_signal = pyqtSignal()
     start_tournament_signal = pyqtSignal()

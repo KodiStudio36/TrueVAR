@@ -108,19 +108,32 @@ class LicenseManager(QObject):
 
     # Add this inside your LicenseManager class
 
-    def check_reachability(self):
-        """Checks server and validates license for Online Mode."""
+    def is_server_alive(self):
+        """Simple check to see if the server is there."""
         try:
-            # 1. Ping the server
-            requests.head(self.api_url, timeout=5)
+            # Note: Ensure self.api_url doesn't end in a slash 
+            # or use the rsplit logic if api_url is the full /license path
+            ping_url = f"{self.api_url}/ping" 
+            response = requests.get(ping_url, timeout=5)
+            return response.status_code == 200
+        except:
+            return False
+
+    def check_reachability(self):
+        """
+        Returns:
+            - True: Server alive AND License valid.
+            - False: Server unreachable.
+            - "ACTIVATE": Server alive but NO license found.
+        """
+        if not self.is_server_alive():
+            return False
             
-            # 2. Check if we have a license to actually use the online features
-            local_exists = self._load_and_verify_local()
-            if local_exists:
-                # Validate online to get the fresh SocketIO token
-                return self._fetch_online_status() 
-            
-            return False # Reachable, but no license = can't go online
-            
-        except (requests.exceptions.ConnectionError, requests.exceptions.Timeout):
-            return False # Server unreachable
+        local_exists = self._load_and_verify_local()
+        if local_exists:
+            # Server is up and we have a local file, try to refresh
+            success = self._fetch_online_status()
+            return True if success else "ACTIVATE"
+        
+        # Server is up, but no local file exists
+        return "ACTIVATE"

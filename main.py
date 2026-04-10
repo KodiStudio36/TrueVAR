@@ -44,26 +44,30 @@ def main():
     socket_manager.tournaments_received.connect(handle_tournaments)
     socket_manager.tournament_data_received.connect(handle_final_data)
 
-    # 2. Network Check (The Loader Dialog handles everything now)
+    # 2. Network & License Check
     loader = StartupLoaderDialog(license_manager)
     loader.start_check()
-    
-    # This will now always eventually return Accepted 
-    # unless the user closes the app process entirely.
     loader.exec_()
+    
     is_offline_mode = loader.is_offline_mode
+    
+    # NEW: If server is up but no license, force activation
+    if not is_offline_mode and loader.needs_activation:
+        act_dialog = LicenseDialog(license_manager)
+        if act_dialog.exec_() != QDialog.Accepted:
+            # If they cancel activation, we can either exit or force offline
+            print("Activation cancelled. Switching to offline.")
+            is_offline_mode = True
 
-    # 3. Wait for Tournament Data
+    # 3. Wait for Tournament Data (Only if Online)
     if is_offline_mode:
         print("Starting in FREE OFFLINE mode.")
-        # Logic for offline: Perhaps load a 'default' tournament or empty state
     else:
-        # ONLINE MODE: We must wait for the server to send tournament data
+        # ONLINE MODE
         wait_loop = QtNativeLoop()
+        # socket_manager.connect() is triggered by license_manager.connection_ready
         if not hasattr(socket_manager, 'tournament_data') or socket_manager.tournament_data is None:
             print("Waiting for server response...")
-            # We add a small safety timeout here so it doesn't hang forever 
-            # if the socket connection fails after the initial check.
             wait_loop.exec_() 
 
     # 4. Proceed to Main Window

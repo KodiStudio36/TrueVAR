@@ -46,8 +46,18 @@ class OBSManager(SettingsManager, QObject):
         self.collection = None
 
         self.hub.start_obs_signal.connect(lambda stream_key: self.launch_obs("pro", stream_key))
-        # self.hub.start_livestream_signal.connect(self.start_streaming)
-        # self.hub.stop_livestream_signal.connect(self.stop_streaming)
+        self.hub.start_livestream_signal.connect(self.start_streaming)
+        self.hub.stop_livestream_signal.connect(self.stop_streaming)
+
+    def is_obs_running(self):
+        """Checks if there is an active OBS process on the system."""
+        try:
+            # 'pgrep -x' looks for an exact match of the process name
+            subprocess.check_output(["pgrep", "-x", "obs"])
+            return True
+        except subprocess.CalledProcessError:
+            # pgrep returns a non-zero exit code if no process is found
+            return False
 
     def launch_obs(self, mode="basic", stream_key=None):
         """
@@ -78,22 +88,26 @@ class OBSManager(SettingsManager, QObject):
             self.collection = self.olympic_collection_name
 
 
-        # try:
-            # OBS requires the working directory to be its own bin folder usually
-        subprocess.run([launch_obs_script, self.collection], check=True)
-        print(f"Launching OBS with collection: {self.collection}")
+        if self.is_obs_running():
+            print("OBS is already running. Skipping launch script and connecting...")
+        else:
+            print(f"OBS not detected. Launching with collection: {self.collection}")
+            # try:
+                # OBS requires the working directory to be its own bin folder usually
+            subprocess.run([launch_obs_script, self.collection], check=True)
+            print(f"Launching OBS with collection: {self.collection}")
 
-        self.connect_to_obs()
+            self.connect_to_obs()
 
-        if stream_key:
-            self.set_stream_key(stream_key)
+            if stream_key:
+                self.set_stream_key(stream_key)
 
-        self.set_starting_scene()
+            self.set_starting_scene()
 
-            # Attempt to connect after a short delay to let OBS start
-            # In a real app, you might want a retry loop in a separate thread
-        # except Exception as e:
-        #     self.error_occurred.emit(str(e))
+                # Attempt to connect after a short delay to let OBS start
+                # In a real app, you might want a retry loop in a separate thread
+            # except Exception as e:
+            #     self.error_occurred.emit(str(e))
 
     def connect_to_obs(self):
         """Establishes WebSocket connection to OBS."""
