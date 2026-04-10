@@ -2,9 +2,9 @@
 from PyQt5.QtCore import QThread, QObject, pyqtSignal
 from app.server_worker import ServerWorker
 from app.injector import singleton, Injector
-from app.udp_manager import UdpManager
 from config import webserver_settings_file
 from app.settings_manager import SettingsManager, Setting
+from app.main_manager import MainManager
 
 @singleton
 class WebServerManager(SettingsManager, QObject):
@@ -36,30 +36,61 @@ class WebServerManager(SettingsManager, QObject):
         self.thread.started.connect(self.worker.start_server)
         self.thread.finished.connect(self.worker.stop_server)
 
-        # # 3. Wire Data Flow (UDP -> WebServer)
-        # # We find the existing UDP Manager instance
-        # self.udp_manager = Injector.find(UdpManager)
-        
-        # if self.udp_manager:
-        #     # Connect UDP parsed messages to our internal broadcast signal
-        #     self.udp_manager.message_parsed.connect(self._broadcast_signal.emit)
-        #     # Connect internal signal to the worker's slot (Thread-Safe)
-        #     self._broadcast_signal.connect(self.worker.broadcast_data)
-        # else:
-        #     print("WARNING: UdpManager not found. Scoreboard will not update.")
-
         # 4. Start
         self.thread.start()
         self.server_state_changed.emit(True)
         print(f"WebServerManager started on port {self.webserver_port}")
 
+        self.hub = Injector.find(MainManager)
+        self.hub.listener_stable_signal.connect(self.listener_update)
+
+    def show_next_round_widget(self):
+        if self.worker:
+            self.worker.show_next_round_widget()
+
+    def hide_next_round_widget(self):
+        if self.worker:
+            self.worker.hide_next_round_widget()
+
+    def show_fighter_bars_widget(self):
+        if self.worker:
+            self.worker.show_fighter_bars_widget()
+
+    def hide_fighter_bars_widget(self):
+        if self.worker:
+            self.worker.hide_fighter_bars_widget()
+
     def show_ivr_widget(self):
         if self.worker:
-            self.worker.show_ivr()
+            self.worker.show_ivr_widget()
 
     def hide_ivr_widget(self):
         if self.worker:
-            self.worker.hide_ivr()
+            self.worker.hide_ivr_widget()
+
+    def show_round_results_widget(self):
+        if self.worker:
+            self.worker.show_round_results_widget()
+
+    def hide_round_results_widget(self):
+        if self.worker:
+            self.worker.hide_round_results_widget()
+
+    def show_win_widget(self):
+        if self.worker:
+            self.worker.show_win_widget()
+
+    def hide_win_widget(self):
+        if self.worker:
+            self.worker.hide_win_widget()
+
+    def reset_widgets(self, data=None):
+        if self.worker:
+            self.worker.reset_widgets(data)    
+
+    def listener_update(self, data):
+        if self.worker:
+            self.worker.listener_update(data)
 
     def stop_server(self):
         if self.thread.isRunning():

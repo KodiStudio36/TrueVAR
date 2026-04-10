@@ -250,4 +250,5 @@ alpha3_to_alpha2 = {
     'ALA': 'AX',
     'GBR': 'GB',
     'USA': 'US',
+    'KOR': 'KR',
 }

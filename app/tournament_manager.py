@@ -16,6 +16,7 @@ class TournamentManager(QObject):
         self.start_date = ""
         self.courts = 0
         self.is_streaming = False # Toggle this based on your app logic
+        self.stream_key = ""
         
         # Threading
         self._thread = None
@@ -37,10 +38,12 @@ class TournamentManager(QObject):
         self.location = data.get('location')
         self.start_date = data.get('startDate')
         self.courts = data.get('courts', 1)
+        self.is_streaming = data.get('stream', False)
+        self.stream_key = data.get('stream_key', "")
         
         # 2. Logic: Should we generate assets?
         # Check if 'stream' is in data or if global streaming is enabled
-        if data.get('stream', True): # Defaulting to True for now
+        if self.is_streaming: # Defaulting to True for now
             self._start_asset_generation(data)
 
     def _start_asset_generation(self, data):
@@ -66,7 +69,7 @@ class TournamentManager(QObject):
 
     def _on_assets_ready(self):
         print("[Tournament] Assets generated and ready for OBS.")
-        self.hub.start_obs_signal.emit()
+        self.hub.start_obs_signal.emit(self.stream_key)
 
     def get_summary(self):
         """Helper for UI components."""

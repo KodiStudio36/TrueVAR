@@ -9,11 +9,11 @@ class UdpTester(QWidget):
     def __init__(self):
         super().__init__()
         self.setWindowTitle("TrueVAR UDP Protocol Tester")
-        self.resize(450, 700)
+        self.resize(450, 750) # Increased height slightly
 
         # Network Settings
         self.ip = "127.0.0.1"
-        self.port = 9998
+        self.port = 8000 # Adjusted to match your server default
         self.sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
 
         self.init_ui()
@@ -26,10 +26,7 @@ class UdpTester(QWidget):
         conn_layout = QHBoxLayout()
         
         self.ip_input = QLineEdit(self.ip)
-        self.ip_input.setPlaceholderText("IP Address")
-        
         self.port_input = QLineEdit(str(self.port))
-        self.port_input.setPlaceholderText("Port")
         
         conn_layout.addWidget(QLabel("IP:"))
         conn_layout.addWidget(self.ip_input)
@@ -69,8 +66,15 @@ class UdpTester(QWidget):
         round_group = QGroupBox("2. Round Control")
         round_layout = QGridLayout()
 
+        # Added Round Number Control
+        self.rnd_spin = QSpinBox()
+        self.rnd_spin.setRange(1, 10)
+        self.rnd_spin.setValue(1)
+        
+        btn_set_rnd = QPushButton("Set Round (rnd)")
+        btn_set_rnd.clicked.connect(self.send_round_number)
+
         self.time_input = QLineEdit("02:00")
-        self.time_input.setPlaceholderText("MM:SS")
         self.time_input.setAlignment(Qt.AlignCenter)
 
         btn_start = QPushButton("Start Round")
@@ -84,11 +88,17 @@ class UdpTester(QWidget):
         btn_end.setStyleSheet("background-color: #f8d7da; color: red;")
         btn_end.clicked.connect(self.send_round_end)
 
-        round_layout.addWidget(QLabel("Clock Time:"), 0, 0)
-        round_layout.addWidget(self.time_input, 0, 1)
-        round_layout.addWidget(btn_start, 1, 0)
-        round_layout.addWidget(btn_pause, 1, 1)
-        round_layout.addWidget(btn_end, 1, 2)
+        # Layout organization
+        round_layout.addWidget(QLabel("Round #:"), 0, 0)
+        round_layout.addWidget(self.rnd_spin, 0, 1)
+        round_layout.addWidget(btn_set_rnd, 0, 2)
+        
+        round_layout.addWidget(QLabel("Clock Time:"), 1, 0)
+        round_layout.addWidget(self.time_input, 1, 1)
+        
+        round_layout.addWidget(btn_start, 2, 0)
+        round_layout.addWidget(btn_pause, 2, 1)
+        round_layout.addWidget(btn_end, 2, 2)
         
         round_group.setLayout(round_layout)
         main_layout.addWidget(round_group)
@@ -97,47 +107,38 @@ class UdpTester(QWidget):
         score_group = QGroupBox("3. Scoring Simulation")
         score_layout = QGridLayout()
 
-        # Blue Controls
-        btn_blue_punch = QPushButton("Blue Punch (pt1;1)")
+        btn_blue_punch = QPushButton("Blue Punch")
         btn_blue_punch.clicked.connect(lambda: self.send_hit("blue", 1))
-        
-        btn_blue_trunk = QPushButton("Blue Trunk (pt1;2)")
+        btn_blue_trunk = QPushButton("Blue Trunk")
         btn_blue_trunk.setStyleSheet("background-color: #cce5ff;")
         btn_blue_trunk.clicked.connect(lambda: self.send_hit("blue", 2))
-
-        btn_blue_head = QPushButton("Blue Head (pt1;3)")
+        btn_blue_head = QPushButton("Blue Head")
         btn_blue_head.clicked.connect(lambda: self.send_hit("blue", 3))
         
-        # Red Controls
-        btn_red_punch = QPushButton("Red Punch (pt2;1)")
+        btn_red_punch = QPushButton("Red Punch")
         btn_red_punch.clicked.connect(lambda: self.send_hit("red", 1))
-
-        btn_red_trunk = QPushButton("Red Trunk (pt2;2)")
+        btn_red_trunk = QPushButton("Red Trunk")
         btn_red_trunk.setStyleSheet("background-color: #f8d7da;")
         btn_red_trunk.clicked.connect(lambda: self.send_hit("red", 2))
-
-        btn_red_head = QPushButton("Red Head (pt2;3)")
+        btn_red_head = QPushButton("Red Head")
         btn_red_head.clicked.connect(lambda: self.send_hit("red", 3))
 
-        # Score Updates
         self.blue_score_spin = QSpinBox()
         self.red_score_spin = QSpinBox()
+        self.blue_score_spin.setRange(0, 99)
+        self.red_score_spin.setRange(0, 99)
+        
         btn_update_score = QPushButton("Update Score (sc1)")
         btn_update_score.clicked.connect(self.send_score_update)
 
-        # Layout
         score_layout.addWidget(QLabel("<b>Blue</b>"), 0, 0)
         score_layout.addWidget(QLabel("<b>Red</b>"), 0, 1)
-        
         score_layout.addWidget(btn_blue_punch, 1, 0)
         score_layout.addWidget(btn_red_punch, 1, 1)
-        
         score_layout.addWidget(btn_blue_trunk, 2, 0)
         score_layout.addWidget(btn_red_trunk, 2, 1)
-
         score_layout.addWidget(btn_blue_head, 3, 0)
         score_layout.addWidget(btn_red_head, 3, 1)
-        
         score_layout.addWidget(QLabel("Points:"), 4, 0)
         score_layout.addWidget(self.blue_score_spin, 5, 0)
         score_layout.addWidget(self.red_score_spin, 5, 1)
@@ -146,18 +147,15 @@ class UdpTester(QWidget):
         score_group.setLayout(score_layout)
         main_layout.addWidget(score_group)
 
-        # --- Winner ---
+        # --- Match Result ---
         win_group = QGroupBox("4. Match Result")
         win_layout = QHBoxLayout()
-
         btn_win_blue = QPushButton("Blue Wins")
         btn_win_blue.setStyleSheet("background-color: blue; color: white; font-weight: bold;")
         btn_win_blue.clicked.connect(lambda: self.send_winner("blue"))
-
         btn_win_red = QPushButton("Red Wins")
         btn_win_red.setStyleSheet("background-color: red; color: white; font-weight: bold;")
         btn_win_red.clicked.connect(lambda: self.send_winner("red"))
-
         win_layout.addWidget(btn_win_blue)
         win_layout.addWidget(btn_win_red)
         win_group.setLayout(win_layout)
@@ -176,8 +174,8 @@ class UdpTester(QWidget):
 
     def send_packet(self, message):
         target_ip = self.ip_input.text()
-        target_port = int(self.port_input.text())
         try:
+            target_port = int(self.port_input.text())
             self.sock.sendto(message.encode('utf-8'), (target_ip, target_port))
             self.log_output.append(f"-> {message}")
             sb = self.log_output.verticalScrollBar()
@@ -185,10 +183,16 @@ class UdpTester(QWidget):
         except Exception as e:
             self.log_output.append(f"Error: {e}")
 
+    def send_round_number(self):
+        """Sends the current value of the round spinbox."""
+        msg = f"rnd;{self.rnd_spin.value()}"
+        self.send_packet(msg)
+
     def send_init_match(self):
+        # Now uses the current spinbox value instead of hardcoded 1
         msg = "mch;101;Test Match;Men-80kg;0;0;0;0;0;0;0;0;0;0;2" 
         self.send_packet(msg)
-        self.send_packet("rnd;1")
+        self.send_round_number()
 
     def send_fighters(self):
         b_name = self.blue_name.text()
@@ -213,7 +217,6 @@ class UdpTester(QWidget):
         self.send_packet(msg)
 
     def send_hit(self, color, level):
-        # level: 1=punch, 2=trunk, 3=head
         cmd = "pt1" if color == "blue" else "pt2"
         msg = f"{cmd};{level}"
         self.send_packet(msg)
@@ -225,7 +228,6 @@ class UdpTester(QWidget):
         self.send_packet(msg)
 
     def send_winner(self, color):
-        # Sends 'win;blue' or 'win;red'
         msg = f"win;{color}"
         self.send_packet(msg)
 

@@ -8,7 +8,46 @@
     <script src="https://cdn.socket.io/4.5.4/socket.io.min.js"></script>
 
     <style>
-        /* Base reset and font for livestream */
+        /* =========================================
+           1. DESIGN SYSTEM (Variables)
+           ========================================= */
+        :root {
+            /* Colors */
+            --bg-row: #DDECF0;
+            --bg-label: #043640;
+            --bg-sketch-block: #02102A;
+            /* Dark background for sketch style blocks */
+            --bg-sketch-timeout: #800000;
+            /* Dark red for timeout block */
+
+            --text-primary: #083344;
+            --text-light: #A1C6CC;
+            --text-white: #ffffff;
+            --text-muted: #8da1b5;
+            --text-seed: #638B95;
+            --text-round: #124B5A;
+
+            /* Accents */
+            --color-blue: #006eff;
+            --color-red: #ff0000;
+            --color-green: #043640;
+
+            /* Gradients & Borders */
+            --grad-header: linear-gradient(100deg, #02102A 85%, #0B6B67 85.2%);
+            --grad-round-results: linear-gradient(180deg, #02102A 70%, #0B6B67 100%);
+            --border-flag: 1px solid rgba(0, 0, 0, 0.1);
+
+            /* Layout */
+            --default-offset: 2vw;
+            --bottom-offset: var(--default-offset);
+            --top-offset: var(--default-offset);
+            --left-offset: var(--default-offset);
+            --side-padding: 16vw;
+        }
+
+        /* =========================================
+           2. BASE STYLES & UTILITIES
+           ========================================= */
         * {
             box-sizing: border-box;
             margin: 0;
@@ -17,105 +56,182 @@
         }
 
         body {
-            /* Transparent background for OBS/Livestream */
             background-color: transparent;
+            /* For OBS */
             height: 100vh;
-            box-sizing: border-box;
+            overflow: hidden;
         }
 
-        .instant-video-replay {
+        .hidden {
+            display: none !important;
+        }
+
+        /* Color Bar Utilities */
+        .color-bar {
+            height: 100%;
+        }
+
+        .bg-blue {
+            background-color: var(--color-blue);
+        }
+
+        .bg-red {
+            background-color: var(--color-red);
+        }
+
+        .bg-green {
+            background-color: var(--color-green);
+        }
+
+        /* Flag Styles */
+        .flag-lg {
+            height: 46px;
+            width: 70px;
+            object-fit: cover;
+            margin-right: 15px;
+            border: var(--border-flag);
+            background: white;
+        }
+
+        .flag-sm {
+            width: 32px;
+            height: 22px;
+            object-fit: cover;
+            border: var(--border-flag);
+        }
+
+        /* =========================================
+           3. GENERIC WIDGET LAYOUTS
+           ========================================= */
+
+        /* Container for bottom-centered widgets (Match Results) */
+        .widget-container {
             position: absolute;
-            bottom: 2vw;
-            padding-left: 2vw;
-            height: 38px;
+            bottom: var(--bottom-offset);
+            width: 100vw;
+            max-width: 1300px;
+            left: 50%;
+            transform: translate(-50%, 0%);
+            padding: 0 var(--side-padding);
+        }
+
+        .widget-center {
+            position: absolute;
+            bottom: var(--bottom-offset);
+            width: 100vw;
+            left: 50%;
+            transform: translate(-50%, 0%);
+        }
+
+        /* Generic top-left absolute positioning (e.g., Scoreboard, IVR) */
+        .top-left {
+            position: absolute;
+            top: var(--top-offset);
+            left: var(--left-offset);
+            width: auto;
+            /* max-width: 100vw; */
+        }
+
+        /* Full width footer-style widget (original IVR) */
+        .widget-full {
+            position: absolute;
+            bottom: var(--bottom-offset);
+            left: var(--left-offset);
             width: 96vw;
+            height: 36px;
             display: grid;
             grid-template-columns: 14px auto 1fr;
             gap: 2px;
         }
 
-        /* Main Container */
-        .previous-results {
-            position: absolute;
-            bottom: 2vw;
-            width: 100vw;
-            padding: 0vw 16vw 0vw 16vw;
-        }
+        /* =========================================
+           4. WIDGET COMPONENTS
+           ========================================= */
 
-        /* Top Label: "PREVIOUS RESULTS" */
+        /* The header title above widgets */
         .header-label {
             display: inline-flex;
             align-items: center;
-            background-color: #043640;
-            color: #A1C6CC;
-            font-size: .9rem;
+            background-color: var(--bg-label);
+            color: var(--text-light);
+            font-size: 1rem;
             text-transform: uppercase;
             letter-spacing: 1px;
             padding: 6px 10px;
             margin-bottom: 2px;
         }
 
-        /* Main Athlete Info Header */
-        .header {
+        /* Standard Main Header Grid (Color bar + gradient info block) */
+        .header-grid {
+            position: relative;
             height: 62px;
+        }
+
+        .header-grid.with-color {
             display: grid;
             grid-template-columns: 16px 1fr;
             gap: 2px;
         }
 
-        .color {
+        .scoreboard-content .header-grid {
+            display: grid;
+            height: 36px;
+            grid-template-columns: auto auto 1fr;
+        }
+
+        .round-results .header-grid {
+            position: relative;
+            height: calc(62px + 16px);
+        }
+
+        /* Gradient Info Block content */
+        .header-content {
             height: 100%;
-        }
-
-        .color.blue {
-            background-color: rgb(0, 110, 255);
-        }
-
-        .color.red {
-            background-color: red;
-        }
-
-        .color.green {
-            background-color: #043640;
-        }
-
-        .athlete-header {
             display: flex;
             align-items: center;
-            background: linear-gradient(100deg, #02102A 85%, #0B6B67 85.2%);
-            color: white;
+            background: var(--grad-header);
+            color: var(--text-white);
             padding: 8px 15px;
             position: relative;
         }
 
-        .header-country-code {
-            font-size: 24px;
+        .round-results .header-content {
+            flex-direction: column;
+            align-items: start;
+            background: var(--bg-sketch-block);
+            color: var(--text-white);
+            padding: 12px 15px;
+            position: relative;
+        }
+
+        /* Existing component header detail classes */
+        .header-country {
+            font-size: 26px;
             margin-right: 12px;
             font-weight: 400;
         }
 
-        .header-flag {
-            height: 46px;
-            width: 70px;
-            object-fit: cover;
-            margin-right: 15px;
-            border: 1px solid rgba(255, 255, 255, 0.2);
-            background: white;
-        }
-
         .header-name {
-            font-size: 26px;
+            font-size: 28px;
             font-weight: 500;
             text-transform: uppercase;
             letter-spacing: 1px;
+        }
+
+        .header-seed {
+            font-size: 20px;
+            color: var(--text-muted);
+            margin-left: 8px;
+            margin-top: 7px;
             flex-grow: 1;
         }
 
-        .seed {
-            font-size: 14px;
-            color: #8da1b5;
-            margin-left: 5px;
-            font-weight: normal;
+        .round-results .header-seed {
+            font-size: 20px;
+            color: var(--text-muted);
+            margin-left: 0px;
+            margin-top: -2px;
+            flex-grow: 1;
         }
 
         .header-logo {
@@ -123,162 +239,600 @@
             width: 50px;
         }
 
-        /* Faux Olympic Rings (SVG right side) */
-        .rings-logo {
+        .header-legend {
             position: absolute;
-            right: 20px;
-            top: 50%;
-            transform: translateY(-50%);
-            width: 60px;
-            opacity: 0.9;
+            display: grid;
+            grid-template-columns: 1fr 38px 38px 38px 38px 38px;
+            gap: 2px;
+            width: 200px;
+            height: 30px;
+            right: 0px;
+            bottom: 0px;
         }
 
-        /* Individual Result Row Layout */
-        .row {
-            height: 38px;
-            background-color: #DDECF0;
+        .legend-box {
+            position: relative;
+            display: flex;
+            height: 100%;
+            width: 38px;
             align-items: center;
-            padding: 8px 16px;
-            color: #083344;
-            font-size: 18px;
+            justify-content: center;
+            color: var(--text-white);
+            font-size: 19px;
             font-weight: 600;
         }
 
-        .result-row {
+        .scoreboard-content .header-round {
+            font-size: 19px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background-color: var(--bg-label);
+            color: var(--text-white);
+            padding: 0px 10px;
+            font-weight: bold;
+        }
+
+        .scoreboard-content .header-text {
+            font-size: 19px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background-color: var(--bg-row);
+            color: var(--text-primary);
+            padding: 0px 10px;
+            font-weight: bold;
+        }
+
+        /* A universal data row layout */
+        .data-row {
+            position: relative;
+            height: 38px;
+            background-color: var(--bg-row);
+            align-items: center;
+            padding: 8px 16px;
+            color: var(--text-primary);
+            font-size: 19px;
+            font-weight: 600;
+        }
+
+        /* Specific grid structure within a data row (Results) */
+        .result-grid {
             display: grid;
             grid-template-columns: 34px auto 1fr auto auto auto;
             gap: 16px;
+        }
+
+        .name-grid {
+            display: grid;
+            grid-template-columns: auto auto auto;
+            gap: 16px;
+            padding: 8px 12px;
+        }
+
+        .round-grid {
+            display: grid;
+            grid-template-columns: 34px auto 1fr auto auto auto;
+            gap: 16px;
+        }
+
+        .point-box {
+            position: relative;
+            display: block;
+            height: 38px;
+            width: 38px;
+            background-color: var(--bg-row);
+            align-items: center;
+            justify-content: center;
+            color: var(--text-primary);
+            font-size: 19px;
+            font-weight: 600;
+        }
+
+        .point-box.penalty {
+            background-color: #fff47e;
+        }
+
+        .point-box.winner {
+            background-color: var(--bg-label);
+            color: var(--text-white);
+        }
+
+        .point-box .main {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+        }
+
+        .point-box.composed .main {
+            position: absolute;
+            top: 50%;
+            left: 40%;
+            transform: translate(-50%, -50%);
+        }
+
+        .point-box .small {
+            font-size: 16px;
+            position: absolute;
+            top: 65%;
+            left: 70%;
+            transform: translate(-50%, -50%);
+        }
+
+        .data-row .main {
+            position: absolute;
+            top: 50%;
+            right: 19px;
+            text-align: end;
+            transform: translate(0%, -50%);
+        }
+
+        .data-row .small {
+            font-size: 16px;
+            position: absolute;
+            top: 65%;
+            right: 9px;
+            transform: translate(0%, -50%);
+        }
+
+        /* Wrapper that adds a color bar to a data row */
+        .row-wrapper.with-color {
+            width: 100%;
+            display: grid;
+            grid-template-columns: 12px 1fr;
+            gap: 2px;
             margin-top: 2px;
         }
 
-        /* Row Elements */
-        .row-country-code {
+        .row-wrapper.standard {
+            margin-top: 2px;
+        }
+
+        .row-wrapper.results {
+            width: 100%;
+            display: grid;
+            grid-template-columns: 12px 1fr auto auto auto auto;
+            gap: 2px;
+            margin-top: 2px;
+        }
+
+        /* Specific data element classes within a row */
+        .res-country {
             font-weight: 500;
         }
 
-        .row-flag {
-            width: 32px;
-            height: 22px;
-            object-fit: cover;
-            border: 1px solid rgba(0, 0, 0, 0.1);
-        }
-
-        .row-name {
+        .res-name {
             text-transform: uppercase;
             white-space: nowrap;
             overflow: hidden;
             text-overflow: ellipsis;
-            padding-right: 15px;
+            /* padding-right: 15px; */
         }
 
-        .row-round {
-            text-align: right;
+        .res-round {
             font-weight: 500;
-            color: #124B5A;
+            color: var(--text-round);
         }
 
-        .row-score {
+        .res-score {
             text-align: center;
             letter-spacing: 1px;
         }
 
-        .row-outcome {
+        .res-outcome {
             text-align: right;
             font-weight: bold;
         }
 
-        /* Row Seed Styling */
-        .row-name .seed {
+        .res-seed {
             font-size: 13px;
-            color: #638B95;
+            color: var(--text-seed);
         }
 
-        .hidden {
-            display: none;
+        /* Fighter Bars Layout (Bottom overlay) */
+        .fighter-bars-layout {
+            display: flex;
+            justify-content: space-around;
+            width: 100%;
+        }
+
+        .fighter-bar {
+            width: auto;
+            min-width: 380px;
+            display: grid;
+            grid-template-columns: 8px 1fr;
+            /* Thin accent line */
+            gap: 2px;
+        }
+
+        .fighter-content {
+            display: flex;
+            align-items: center;
+            background-color: var(--bg-row);
+            height: 38px;
+            padding: 8px 16px;
+            color: var(--text-primary);
+            font-size: 19px;
+            gap: 12px;
+        }
+
+        .fighter-content .res-seed {
+            margin-left: -4px;
+            /* Pulls the seed slightly closer to the name */
         }
     </style>
 </head>
 
 <body>
 
-    <div class="previous-results hidden">
+    <!-- Show Next Fight -->
+    <div class="top-left hidden" id="widget-scoreboard-system">
+        <div class="scoreboard-content">
+
+            <div class="header-grid">
+                <div class="header-round" id="nr-match-id">103</div>
+                <div class="header-text">Next Round</div>
+            </div>
+
+            <div class="row-wrapper with-color">
+                <div class="color-bar bg-green"></div>
+                <div class="data-row name-grid">
+                    <div class="res-name" id="nr-blue-name">Park Taejoon</div>
+                    <div class="res-round">vs</div>
+                    <div class="res-name" id="nr-red-name">Park Taejoon</div>
+                </div>
+            </div>
+
+        </div>
+    </div>
+
+    <!-- Previous Fights Results -->
+    <div class="widget-container hidden" id="widget-previous-results">
         <div class="header-label">Previous Results</div>
 
-        <div class="header">
-            <div class="color blue"></div>
-            <div class="athlete-header">
-                <div class="header-country-code">KOR</div>
-                <img class="header-flag" src="https://flagcdn.com/w80/kr.png" alt="South Korea Flag">
+        <div class="header-grid with-color">
+            <div class="color-bar bg-blue"></div>
+            <div class="header-content">
+                <div class="header-country">KOR</div>
+                <img class="flag-lg" src="https://flagcdn.com/w80/kr.png" alt="South Korea">
                 <div class="header-name">PARK Taejoon</div>
-                <!-- <svg class="rings-logo" viewBox="0 0 100 45" fill="none" stroke="white" stroke-width="4">
-                    <circle cx="20" cy="15" r="10"></circle>
-                    <circle cx="50" cy="15" r="10"></circle>
-                    <circle cx="80" cy="15" r="10"></circle>
-                    <circle cx="35" cy="25" r="10"></circle>
-                    <circle cx="65" cy="25" r="10"></circle>
-                </svg> -->
-                <img class="header-logo" src="../static/wattermark.png" alt="">
+                <div class="header-seed"></div>
+                <img class="header-logo" src="../static/wattermark.png" alt="Logo">
             </div>
         </div>
 
         <div class="results-container">
-            <div class="row result-row">
-                <div class="row-country-code">VEN</div>
-                <img class="row-flag" src="https://flagcdn.com/w40/ve.png" alt="Venezuela Flag">
-                <div class="row-name">YOHANDRI GRANADO</div>
-                <div class="row-round">RD OF 16</div>
-                <div class="row-score">2-0</div>
-                <div class="row-outcome">101</div>
+            <div class="row-wrapper standard">
+                <div class="data-row result-grid">
+                    <div class="res-country">VEN</div>
+                    <img class="flag-sm" src="https://flagcdn.com/w40/ve.png" alt="Venezuela">
+                    <div class="res-name">YOHANDRI GRANADO</div>
+                    <div class="res-round">RD OF 16</div>
+                    <div class="res-score">2-0</div>
+                    <div class="res-outcome">101</div>
+                </div>
             </div>
 
-            <div class="row result-row">
-                <div class="row-country-code">FRA</div>
-                <img class="row-flag" src="https://flagcdn.com/w40/fr.png" alt="France Flag">
-                <div class="row-name">CYRIAN RAVET</div>
-                <div class="row-round">QF</div>
-                <div class="row-score">2-1</div>
-                <div class="row-outcome">221</div>
-            </div>
-
-            <div class="row result-row">
-                <div class="row-country-code">TUN</div>
-                <img class="row-flag" src="https://flagcdn.com/w40/tn.png" alt="Tunisia Flag">
-                <div class="row-name">MOHAMED KHALIL JENDOUBI</div>
-                <div class="row-round">SF</div>
-                <div class="row-score">2-0</div>
-                <div class="row-outcome">243</div>
+            <div class="row-wrapper standard">
+                <div class="data-row result-grid">
+                    <div class="res-country">FRA</div>
+                    <img class="flag-sm" src="https://flagcdn.com/w40/fr.png" alt="France">
+                    <div class="res-name">CYRIAN RAVET</div>
+                    <div class="res-round">QF</div>
+                    <div class="res-score">2-1</div>
+                    <div class="res-outcome">221</div>
+                </div>
             </div>
         </div>
     </div>
 
-    <div class="instant-video-replay hidden" id="ivr">
-        <div class="color green"></div>
-        <div class="row">Instant Video Replay</div>
-        <div></div>
+    <!-- Fighter Introduction -->
+    <div class="widget-center hidden" id="widget-fighter-bars">
+        <div class="fighter-bars-layout">
+            <div class="fighter-bar">
+                <div class="color-bar bg-blue"></div>
+                <div class="fighter-content">
+                    <div class="res-country" id="fb-blue-country">KOR</div>
+                    <img class="flag-sm" id="fb-blue-flag" src="https://flagcdn.com/w40/kr.png" alt="South Korea">
+                    <div class="res-name" id="fb-blue-name">PARK TAEJOON</div>
+                </div>
+            </div>
+
+            <div class="fighter-bar">
+                <div class="color-bar bg-red"></div>
+                <div class="fighter-content">
+                    <div class="res-country" id="fb-red-country">AZE</div>
+                    <img class="flag-sm" id="fb-red-flag" src="https://flagcdn.com/w40/az.png" alt="Azerbaijan">
+                    <div class="res-name" id="fb-red-name">GASHIM MAGOMEDOV</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Round Results -->
+    <div class="widget-container round-results" id="widget-round-results">
+        <div class="header-label" id="rr-header">Result Round 3</div>
+
+        <div class="header-grid">
+            <div class="header-content">
+                <div class="header-name" id="rr-category">Man's -58KG</div>
+                <div class="header-seed" id="rr-title">Quarterfinals</div>
+                <div class="header-legend">
+                    <i></i>
+                    <div class="legend-box">P</div>
+                    <div class="legend-box">T</div>
+                    <div class="legend-box">H</div>
+                    <div class="legend-box">P</div>
+                    <div class="legend-box">P</div>
+                </div>
+            </div>
+        </div>
+
+        <div class="results-container">
+            <div class="row-wrapper results">
+                <div class="color-bar bg-blue"></div>
+                <div class="data-row round-grid">
+                    <div class="res-country" id="rr-blue-country">KOR</div>
+                    <img class="flag-sm" id="rr-blue-flag" src="https://flagcdn.com/w40/gr.png" alt="South Korea">
+                    <div class="res-name" id="rr-blue-name">Andrej Hornak</div>
+                    <i class="main" id="rr-blue-points">8</i>
+                    <i class="small" id="rr-blue-hits">5</i>
+                </div>
+                <div class="point-box composed">
+                    <i class="main" id="rr-blue-trunk">2</i>
+                    <i class="small" id="rr-blue-rotation-trunk">0</i>
+                </div>
+                <div class="point-box composed">
+                    <i class="main" id="rr-blue-head">0</i>
+                    <i class="small" id="rr-blue-rotation-head">0</i>
+                </div>
+                <div class="point-box"><i class="main" id="rr-blue-punch">2</i></div>
+                <div class="point-box penalty"><i class="main" id="rr-blue-penalties">0</i></div>
+            </div>
+        </div>
+        <div class="results-container">
+            <div class="row-wrapper results">
+                <div class="color-bar bg-red"></div>
+                <div class="data-row round-grid">
+                    <div class="res-country" id="rr-red-country">KOR</div>
+                    <img class="flag-sm" id="rr-red-flag" src="https://flagcdn.com/w40/sk.png" alt="South Korea">
+                    <div class="res-name" id="rr-red-name">Matúš Matejka</div>
+                    <i class="main" id="rr-red-points">16</i>
+                    <i class="small" id="rr-red-hits">2</i>
+                </div>
+                <div class="point-box composed">
+                    <i class="main" id="rr-red-trunk">2</i>
+                    <i class="small" id="rr-red-rotation-trunk">0</i>
+                </div>
+                <div class="point-box composed">
+                    <i class="main" id="rr-red-head">3</i>
+                    <i class="small" id="rr-red-rotation-head">2</i>
+                </div>
+                <div class="point-box"><i class="main" id="rr-red-punch">1</i></div>
+                <div class="point-box penalty"><i class="main" id="rr-red-penalties">2</i></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Show Winner -->
+    <div class="widget-container hidden" id="widget-winner">
+        <div class="header-label" id="win-header">101 Man's -58kg</div>
+
+        <div class="header-grid">
+            <div class="header-content">
+                <div class="header-name">Winner</div>
+                <div class="header-seed" id="win-title">Quarterfinals</div>
+                <img class="header-logo" src="../static/wattermark.png" alt="Logo">
+            </div>
+        </div>
+
+        <div class="results-container">
+            <div class="row-wrapper with-color">
+                <div class="color-bar bg-blue" id="win-color"></div>
+                <div class="data-row result-grid">
+                    <div class="res-country" id="win-country">KOR</div>
+                    <img class="flag-sm" id="win-flag" src="https://flagcdn.com/w40/kr.png" alt="South Korea">
+                    <div class="res-name" id="win-name">Park Taejoon</div>
+                    <div class="res-round">WINNER</div>
+                    <div class="res-score">2-0</div>
+                    <div class="res-outcome">101</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="widget-full hidden" id="widget-ivr">
+        <div class="color-bar bg-green"></div>
+        <div class="data-row">Instant Video Replay</div>
     </div>
 
     <script>
-        const ivr = document.getElementById("ivr");
+        // --- Core Widget Management ---
+        function toggleWidget(widgetId, show) {
+            const widget = document.getElementById(widgetId);
+            if (widget) {
+                show ? widget.classList.remove("hidden") : widget.classList.add("hidden");
+            }
+        }
 
-        const socket = io("ws://localhost:8000");  // Replace with OBS IP if needed
+        // --- DOM Manipulation Helpers ---
+        // Safely updates text content if the element exists
+        function updateText(elementId, text) {
+            const el = document.getElementById(elementId);
+            if (el && text !== undefined && text !== null) {
+                el.innerText = text;
+            }
+        }
+
+        // Safely updates image sources (for flags)
+        function updateImage(elementId, flagCode) {
+            const el = document.getElementById(elementId);
+            // Assuming flagCode is an alpha2 code like "kr" or "sk"
+            if (el && flagCode && flagCode !== "un") {
+                el.src = `https://flagcdn.com/w80/${flagCode}.png`;
+            }
+        }
+
+        function updateColor(elementId, color) {
+            const el = document.getElementById(elementId);
+            // Assuming flagCode is an alpha2 code like "kr" or "sk"
+            if (color == "blue") {
+                el.classList.remove("bg-red")
+                el.classList.add("bg-blue")
+            } else if (color == "red") {
+                el.classList.remove("bg-blue")
+                el.classList.add("bg-red")
+            }
+        }
+
+        // --- Specific Widget Updaters ---
+        // Break your updates into logical blocks so it's easy to read and maintain
+        function updateNextRoundWidget(data) {
+            updateText("nr-match-id", data.id);
+            updateText("nr-blue-name", data.blue_name);
+            updateText("nr-red-name", data.red_name);
+        }
+
+        function updateWinnerWidget(data) {
+            // Example: Combining ID and Category for the header
+            updateText("win-header", `${data.id} ${data.category}`);
+            updateText("win-title", `${data.title}`);
+
+            // Note: You'll need logic to determine IF blue or red won.
+            // For now, let's assume we are just filling in placeholders.
+            if (data.win == "blue") {
+                updateText("win-name", data.blue_name);
+                updateImage("win-flag", data.blue_flag2);
+                updateText("win-country", data.blue_flag3.toUpperCase());
+            } else if (data.win == "red") {
+                updateText("win-name", data.red_name);
+                updateImage("win-flag", data.red_flag2);
+                updateText("win-country", data.red_flag3.toUpperCase());
+            }
+
+            updateColor("win-color", data.win)
+        }
+
+        function updateRoundResultsWidget(data) {
+            updateText("rr-header", "RESULTS ROUND " + data.round);
+            updateText("rr-category", data.category);
+            updateText("rr-title", data.title);
+
+            // Blue Athlete
+            updateText("rr-blue-name", data.blue_name);
+            updateImage("rr-blue-flag", data.blue_flag2);
+            updateText("rr-blue-country", data.blue_flag3.toUpperCase());
+
+            updateText("rr-blue-points", data.blue_points[data.round - 1].points);
+            updateText("rr-blue-hits", data.blue_points[data.round - 1].hits);
+            updateText("rr-blue-trunk", data.blue_points[data.round - 1].trunk);
+            updateText("rr-blue-rotation-trunk", data.blue_points[data.round - 1].rotation_trunk);
+            updateText("rr-blue-head", data.blue_points[data.round - 1].head);
+            updateText("rr-blue-rotation-head", data.blue_points[data.round - 1].rotation_head);
+            updateText("rr-blue-punch", data.blue_points[data.round - 1].punch);
+            updateText("rr-blue-penalties", data.blue_points[data.round - 1].penalties);
+
+            // Red Athlete
+            updateText("rr-red-name", data.red_name);
+            updateImage("rr-red-flag", data.red_flag2);
+            updateText("rr-red-country", data.red_flag3.toUpperCase());
+
+            updateText("rr-red-points", data.red_points[data.round - 1].points);
+            updateText("rr-red-hits", data.red_points[data.round - 1].hits);
+            updateText("rr-red-trunk", data.red_points[data.round - 1].trunk);
+            updateText("rr-red-rotation-trunk", data.red_points[data.round - 1].rotation_trunk);
+            updateText("rr-red-head", data.red_points[data.round - 1].head);
+            updateText("rr-red-rotation-head", data.red_points[data.round - 1].rotation_head);
+            updateText("rr-red-punch", data.red_points[data.round - 1].punch);
+            updateText("rr-red-penalties", data.red_points[data.round - 1].penalties);
+
+            // You can expand this to map through data.blue_points array to update point boxes
+        }
+
+        function updateFighterBarsWidget(data) {
+            // Blue Athlete
+            updateText("fb-blue-name", data.blue_name);
+            updateImage("fb-blue-flag", data.blue_flag2);
+            if (data.blue_flag3) updateText("fb-blue-country", data.blue_flag3.toUpperCase());
+            updateText("fb-blue-seed", data.blue_seed ? `(${data.blue_seed})` : "");
+
+            // Red Athlete
+            updateText("fb-red-name", data.red_name);
+            updateImage("fb-red-flag", data.red_flag2);
+            if (data.red_flag3) updateText("fb-red-country", data.red_flag3.toUpperCase());
+            updateText("fb-red-seed", data.red_seed ? `(${data.red_seed})` : "");
+        }
+
+        // --- Main Data Dispatcher ---
+        function handleDataUpdate(payload) {
+            // In Python, you emit: {"event": "update", "data": self.data}
+            // So we need to access payload.data
+            const data = payload.data;
+            if (!data) return;
+
+            // Call individual updaters
+            updateNextRoundWidget(data);
+            updateWinnerWidget(data);
+            updateRoundResultsWidget(data);
+            updateFighterBarsWidget(data);
+
+            console.log("UI Updated with match ID:", data.id);
+        }
+
+        function resetWidgets(payload) {
+            console.log(payload)
+            const data = payload.data;
+            if (!data) {
+                toggleWidget("widget-scoreboard-system", false)
+                toggleWidget("widget-ivr", false)
+                toggleWidget("widget-round-results", false)
+                toggleWidget("widget-winner", false)
+                toggleWidget("widget-fighter-bars")
+            } else {
+                data.forEach(element => {
+                    toggleWidget(element, false)
+                });
+            }
+
+        }
+
+        // --- Socket Connection & Listeners ---
+        const socket = io("ws://localhost:8000");
 
         socket.on("connect", () => {
-            console.log("WebSocket Connect");
+            console.log("WebSocket Connected");
         });
 
-        socket.on("udp_message", (data) => {
-            console.log("aaa");
+        // Display Listeners
+        socket.on("show_next_round", () => toggleWidget("widget-scoreboard-system", true));
+        socket.on("hide_next_round", () => toggleWidget("widget-scoreboard-system", false));
+
+        socket.on("show_ivr", () => toggleWidget("widget-ivr", true));
+        socket.on("hide_ivr", () => toggleWidget("widget-ivr", false));
+
+        socket.on("show_fighter_bars", () => toggleWidget("widget-fighter-bars", true));
+        socket.on("hide_fighter_bars", () => toggleWidget("widget-fighter-bars", false));
+
+        socket.on("show_round_results", () => toggleWidget("widget-round-results", true));
+        socket.on("hide_round_results", () => toggleWidget("widget-round-results", false));
+
+        socket.on("show_win", () => toggleWidget("widget-winner", true));
+        socket.on("hide_win", () => toggleWidget("widget-winner", false));
+
+        socket.on("reset_widgets", (payload) => {
+            if (payload.event === "reset") {
+                resetWidgets(payload);
+            }
         });
 
-        socket.on("show_ivr", (data) => {
-            ivr.classList.remove("hidden");
-        });
-
-        socket.on("hide_ivr", (data) => {
-            ivr.classList.add("hidden");
+        // Data Listener
+        socket.on("listener_update", (payload) => {
+            if (payload.event === "update") {
+                handleDataUpdate(payload);
+            }
         });
     </script>
-
 </body>
 
 </html>

@@ -1,7 +1,7 @@
 import socketio
 from PyQt5.QtCore import QObject, pyqtSignal, QTimer
 from app.main_manager import MainManager
-from app.fight_manager import FightManager
+from app.udp_manager import UdpManager
 from app.injector import singleton, Injector
 from config import socketio_url
 
@@ -16,7 +16,7 @@ class SocketManager(QObject):
     def __init__(self):
         super().__init__()
         self.hub = Injector.find(MainManager)
-        self.fight_manager = Injector.find(FightManager)
+        self.udp_manager = Injector.find(UdpManager)
         self.socket_url = socketio_url
         self.license_key = None  # Stored here for authorized emits
         
@@ -27,7 +27,7 @@ class SocketManager(QObject):
         self.request_confirmation.connect(self.confirm_connection)
 
         self.hub.new_fight_signal.connect(self.new_fight)
-        self.hub.update_fight_data_signal.connect(self.update_fight_data)
+        self.hub.listener_stable_signal.connect(self.update_fight_data)
         self.hub.start_fight_signal.connect(self.start_fight)
 
     def _setup_handlers(self):
@@ -82,7 +82,6 @@ class SocketManager(QObject):
 
         @self.sio.on("other_fight_started")
         def other_fight_started(data):
-            print(data, "jjjjjjjjjjjjjjjjjjjjjjjjjj")
             self.hub.other_fight_started_signal.emit()
 
         @self.sio.on("stream_message_broadcast")
@@ -127,15 +126,16 @@ class SocketManager(QObject):
         self.emit_authorized("confirm_connection", {"example": "example"})
 
     def new_fight(self):
-        print("new fight")
-        self.emit_authorized("new_fight", {"data": self.fight_manager.to_json()})
+        self.emit_authorized("new_fight", {"data": self.udp_manager.worker.data})
+        print("[SocketIO] New fight emited")
 
     def update_fight_data(self):
-        self.emit_authorized("update_fight_data", {"data": self.fight_manager.to_json()})
+        self.emit_authorized("update_fight_data", {"data": self.udp_manager.worker.data})
+        print("[SocketIO] Data Update Emited")
 
     def start_fight(self):
-        print("start fight")
         self.emit_authorized("start_fight", {})
+        print("[SocketIO] Start match emited")
 
     def disconnect(self):
         self.sio.disconnect()

@@ -19,13 +19,17 @@ class AutomationManager(QObject):
         # self.udp: UdpManager = Injector.find(UdpManager)
 
         self.current_task: asyncio.Task | None = None
-        self.current_priority = 0
-
+        self.async_tasks: set[asyncio.Task] = set()
         # # Subscribe to UDP events
         # self.udp.message_parsed.connect(self.handle_udp_event)
 
         self.hub.start_livestream_signal.connect(self.pre_tournament_flow)
-        self.hub.start_tournament_signal.connect(self.pre_fight_flow)
+        #self.hub.start_tournament_signal.connect(self.pre_fight_flow)
+        self.hub.new_fight_signal.connect(self.pre_fight_flow)
+        self.hub.start_fight_signal.connect(self.start_fight_flow)
+        self.hub.start_round_signal.connect(self.start_round_flow)
+        self.hub.start_break_signal.connect(self.post_round_flow)
+        self.hub.win_signal.connect(self.post_fight_flow)
 
     # ------------------------
     # FLOWS
@@ -33,33 +37,62 @@ class AutomationManager(QObject):
 
     async def _pre_tournament_flow(self):
         print("Starting pre tournament flow")
-
         self.obs.set_starting_scene()
 
     async def _pre_fight_flow(self):
         print("Starting pre fight flow")
+        self.web.reset_widgets(["widget-winner", "widget-round-results"])
 
         self.obs.set_main_scene()
+
+        await asyncio.sleep(.5)
+
+        self.web.show_next_round_widget()
 
     async def _start_fight_flow(self):
         print("Starting start fight flow")
+        self.web.reset_widgets()
+        
+        self.web.show_fighter_bars_widget()
 
-        await self._start_round_flow()
+        await asyncio.sleep(8)
+
+        self.web.hide_fighter_bars_widget()
 
     async def _start_round_flow(self):
         print("Starting start round flow")
+        self.web.reset_widgets(["widget-winner", "widget-round-results"])
 
         self.obs.set_main_scene_w_scoreboard()
 
+        await asyncio.sleep(.2)
+
+        self.web.hide_next_round_widget()
+
     async def _post_round_flow(self):
         print("Starting post round flow")
+        self.web.reset_widgets()
 
         self.obs.set_main_scene()
+
+        await asyncio.sleep(2)
+
+        self.web.show_round_results_widget()
+
+        await asyncio.sleep(10)
+
+        self.web.hide_round_results_widget()
+
 
     async def _post_fight_flow(self):
         print("Starting post fight flow")
+        self.web.reset_widgets()
 
         self.obs.set_main_scene()
+        await asyncio.sleep(2)
+        self.web.show_win_widget()
+        await asyncio.sleep(8)
+        self.web.hide_win_widget()
 
         await self._post_round_flow()
 
@@ -82,81 +115,92 @@ class AutomationManager(QObject):
 
     async def _troubleshooting_flow(self):
         print("Starting troubleshooting flow")
+        self.web.reset_widgets()
 
         self.obs.set_troubleshooting_scene()
 
 
     # ------------------------
-    # CONTROL
+    # EXECUTION CONTROLLERS
     # ------------------------
 
-    def start_flow(self, coro, priority=1):
-        # If new flow has higher priority → interrupt
-        if self.current_task:
-            if priority < self.current_priority:
-                return  # ignore lower priority
+    def start_killable_flow(self, coro):
+        """Starts an exclusive flow. Kills the currently running killable flow (if any)."""
+        if self.current_task and not self.current_task.done():
             self.current_task.cancel()
 
-        self.current_priority = priority
-
         loop = asyncio.get_running_loop()
-        self.current_task = loop.create_task(self._run_flow(coro))
+        self.current_task = loop.create_task(self._run_killable(coro))
 
-    async def _run_flow(self, coro):
+    async def _run_killable(self, coro):
         try:
             await coro
         except asyncio.CancelledError:
-            print("Flow cancelled")
+            print(f"Killable flow cancelled: {coro.__name__}")
         finally:
-            self.current_priority = 0
             self.current_task = None
+
+    def start_async_flow(self, coro):
+        """Starts a fully independent background flow. Cannot be killed except by a nuke."""
+        loop = asyncio.get_running_loop()
+        task = loop.create_task(self._run_async(coro))
+        
+        self.async_tasks.add(task)
+        # Automatically remove task from the set when it finishes to prevent memory leaks
+        task.add_done_callback(self.async_tasks.discard)
+
+    async def _run_async(self, coro):
+        try:
+            await coro
+        except asyncio.CancelledError:
+            print(f"Async flow cancelled (Nuked): {coro.__name__}")
+
+    def start_nuke_flow(self, coro):
+        """Kills EVERYTHING (current killable + all async flows), then runs."""
+        # 1. Kill standard killable task
+        if self.current_task and not self.current_task.done():
+            self.current_task.cancel()
+        
+        # 2. Kill all background async tasks
+        for task in self.async_tasks:
+            if not task.done():
+                task.cancel()
+        
+        # 3. Start the new flow as the main killable task
+        loop = asyncio.get_running_loop()
+        self.current_task = loop.create_task(self._run_killable(coro))
 
     # ------------------------
     # PUBLIC AUTOMATIONS
     # ------------------------
 
+    # Standard exclusive flows (kill other killables)
     def pre_tournament_flow(self):
-        self.start_flow(self._pre_tournament_flow(), priority=1)
+        self.start_killable_flow(self._pre_tournament_flow())
 
     def pre_fight_flow(self):
-        self.start_flow(self._pre_fight_flow(), priority=1)
+        self.start_killable_flow(self._pre_fight_flow())
 
     def start_fight_flow(self):
-        self.start_flow(self._start_fight_flow(), priority=1)
+        self.start_async_flow(self._start_fight_flow())
 
     def start_round_flow(self):
-        self.start_flow(self._start_round_flow(), priority=1)
+        self.start_killable_flow(self._start_round_flow())
 
     def post_round_flow(self):
-        self.start_flow(self._post_round_flow(), priority=1)
+        self.start_killable_flow(self._post_round_flow())
 
     def post_fight_flow(self):
-        self.start_flow(self._post_fight_flow(), priority=1)
+        self.start_killable_flow(self._post_fight_flow())
 
     def start_ivr_flow(self):
-        self.start_flow(self._start_ivr_flow(), priority=1)
+        self.start_killable_flow(self._start_ivr_flow())
 
     def start_ivr_closeup_flow(self):
-        self.start_flow(self._start_ivr_closeup_flow(), priority=1)
+        self.start_killable_flow(self._start_ivr_closeup_flow())
 
     def post_ivr_flow(self):
-        self.start_flow(self._post_ivr_flow(), priority=1)
+        self.start_killable_flow(self._post_ivr_flow())
     
     def troubleshooting_flow(self):
-        self.start_flow(self._troubleshooting_flow(), priority=1)
-
-    # ------------------------
-    # UDP EVENT HANDLER
-    # ------------------------
-
-    def handle_udp_event(self, data: dict):
-        event = data.get("event")
-
-        if event == "RoundStart":
-            self.start_round_flow()
-
-        elif event == "RoundEnd":
-            self.post_round_flow()
-
-        elif event == "WinnerColor":
-            self.post_fight_flow()
+        self.start_nuke_flow(self._troubleshooting_flow())

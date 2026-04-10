@@ -45,11 +45,11 @@ class OBSManager(SettingsManager, QObject):
         self.is_connected = False
         self.collection = None
 
-        self.hub.start_obs_signal.connect(lambda : self.launch_obs("pro"))
+        self.hub.start_obs_signal.connect(lambda stream_key: self.launch_obs("pro", stream_key))
         # self.hub.start_livestream_signal.connect(self.start_streaming)
         # self.hub.stop_livestream_signal.connect(self.stop_streaming)
 
-    def launch_obs(self, mode="basic"):
+    def launch_obs(self, mode="basic", stream_key=None):
         """
         Launches OBS Studio.
         :param mode: 'basic' or 'pro' to select the initial scene collection via CLI.
@@ -85,6 +85,9 @@ class OBSManager(SettingsManager, QObject):
 
         self.connect_to_obs()
 
+        if stream_key:
+            self.set_stream_key(stream_key)
+
         self.set_starting_scene()
 
             # Attempt to connect after a short delay to let OBS start
@@ -109,6 +112,35 @@ class OBSManager(SettingsManager, QObject):
             self.connected.emit(False)
             print(f"Failed to connect to OBS: {e}")
             self.error_occurred.emit(f"Connection failed: {e}")
+
+    def set_stream_key(self, stream_key):
+        """Sets the OBS stream key using WebSocket v5."""
+        if not self.is_connected:
+            self.connect_to_obs()
+            
+        if not self.is_connected:
+            print("Cannot set stream key: OBS not connected.")
+            return
+
+        try:
+            # 1. Get current settings so we don't overwrite the Server URL/Service type
+            current_settings = self.client.call(requests.GetStreamServiceSettings())
+            service_type = current_settings.getStreamServiceType()
+            service_settings = current_settings.getStreamServiceSettings()
+
+            # 2. Update only the key
+            service_settings["key"] = stream_key
+
+            # 3. Push the updated settings back to OBS
+            self.client.call(requests.SetStreamServiceSettings(
+                streamServiceType=service_type,
+                streamServiceSettings=service_settings
+            ))
+            print("Stream key has been successfully updated.")
+            
+        except Exception as e:
+            print(f"Error setting stream key: {e}")
+            self.error_occurred.emit(f"Failed to set stream key: {e}")
 
     def disconnect_obs(self):
         if self.client:
@@ -137,28 +169,21 @@ class OBSManager(SettingsManager, QObject):
 
         elif self.collection == self.pro_collection_name or self.collection == self.olympic_collection_name:
             self.set_scene(self.start_soon_scene)
-            self.set_transition("TrueVAR Stinger")
 
     def set_main_scene(self):
         self.set_scene(self.main_scene)
 
-        if self.collection == self.pro_collection_name or self.collection == self.olympic_collection_name:
-            self.set_transition("Move")
-
     def set_main_scene_w_scoreboard(self):
         if self.collection == self.pro_collection_name or self.collection == self.olympic_collection_name:
             self.set_scene(self.main_scene_w_scoreboard)
-            self.set_transition("Move")
 
     def set_ivr_scene(self):
         if self.collection == self.pro_collection_name or self.collection == self.olympic_collection_name:
             self.set_scene(self.ivr_scene)
-            self.set_transition("Move")
 
     def set_ivr_closeup_scene(self):
         if self.collection == self.pro_collection_name or self.collection == self.olympic_collection_name:
             self.set_scene(self.ivr_closeup_scene)
-            self.set_transition("TrueVAR Stinger")
 
     def set_troubleshooting_scene(self):
         self.set_scene(self.troubleshooting_scene)

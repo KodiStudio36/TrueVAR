@@ -105,3 +105,22 @@ class LicenseManager(QObject):
     def _save_blob(self, blob):
         with open(self.license_file, 'w') as f:
             json.dump(blob, f)
+
+    # Add this inside your LicenseManager class
+
+    def check_reachability(self):
+        """Checks server and validates license for Online Mode."""
+        try:
+            # 1. Ping the server
+            requests.head(self.api_url, timeout=5)
+            
+            # 2. Check if we have a license to actually use the online features
+            local_exists = self._load_and_verify_local()
+            if local_exists:
+                # Validate online to get the fresh SocketIO token
+                return self._fetch_online_status() 
+            
+            return False # Reachable, but no license = can't go online
+            
+        except (requests.exceptions.ConnectionError, requests.exceptions.Timeout):
+            return False # Server unreachable

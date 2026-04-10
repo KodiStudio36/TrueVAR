@@ -46,11 +46,26 @@ class ServerWorker(QObject):
             self.socketio.stop()
             self._is_running = False
 
-    # @pyqtSlot(dict)
-    # def broadcast_data(self, data):
-    #     """Receives data from UDPManager (via WebServerManager) and sends to Browser."""
-    #     if self.socketio and self._is_running:
-    #         self.socketio.emit("udp_message", data)
+    def listener_update(self, data):
+        """Receives data from UDPManager (via WebServerManager) and sends to Browser."""
+        if self.socketio and self._is_running:
+            self.socketio.emit("listener_update", data)
+
+    def show_next_round_widget(self):
+        if self.socketio and self._is_running:
+            self.socketio.emit("show_next_round", None)
+
+    def hide_next_round_widget(self):
+        if self.socketio and self._is_running:
+            self.socketio.emit("hide_next_round", None)
+
+    def show_fighter_bars_widget(self):
+        if self.socketio and self._is_running:
+            self.socketio.emit("show_fighter_bars", None)
+
+    def hide_fighter_bars_widget(self):
+        if self.socketio and self._is_running:
+            self.socketio.emit("hide_fighter_bars", None)
 
     def show_ivr_widget(self):
         if self.socketio and self._is_running:
@@ -59,6 +74,26 @@ class ServerWorker(QObject):
     def hide_ivr_widget(self):
         if self.socketio and self._is_running:
             self.socketio.emit("hide_ivr", None)
+
+    def show_round_results_widget(self):
+        if self.socketio and self._is_running:
+            self.socketio.emit("show_round_results", None)
+
+    def hide_round_results_widget(self):
+        if self.socketio and self._is_running:
+            self.socketio.emit("hide_round_results", None)
+
+    def show_win_widget(self):
+        if self.socketio and self._is_running:
+            self.socketio.emit("show_win", None)
+
+    def hide_win_widget(self):
+        if self.socketio and self._is_running:
+            self.socketio.emit("hide_win", None)
+
+    def reset_widgets(self, data):
+        if self.socketio and self._is_running:
+            self.socketio.emit("reset_widgets", {"event": "reset", "data": data})
 
     def _setup_routes(self):
         @self.flask_app.route('/')

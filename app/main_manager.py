@@ -6,7 +6,7 @@ class MainManager(QObject):
     # --- In App Navigation ---
     show_settings_signal = pyqtSignal()
     hide_settings_signal = pyqtSignal()
-    show_replay_signal = pyqtSignal() # Used for ivr automation
+    show_replay_signal = pyqtSignal()
     hide_replay_signal = pyqtSignal()
 
     toggle_recording_signal = pyqtSignal()
@@ -25,23 +25,15 @@ class MainManager(QObject):
     stream_message_broadcast_signal = pyqtSignal()
 
     # --- Udp Signals ---
-    udp_fight_data_signal = pyqtSignal(dict)
-    udp_athletes_data_signal = pyqtSignal(dict)
-    udp_update_fight_data_signal = pyqtSignal()
-    udp_update_clock_signal = pyqtSignal()
-
-    udp_start_round_signal = pyqtSignal()
-    # udp_start_break_signal = pyqtSignal()
-    # udp_start_win_signal = pyqtSignal()
-
-    udp_punch_signal = pyqtSignal()
-    udp_trunk_signal = pyqtSignal()
-    udp_head_signal = pyqtSignal()
+    listener_stable_signal = pyqtSignal(dict)
+    listener_fast_signal = pyqtSignal(dict)
 
     # --- Fight Manager Signals ---
     new_fight_signal = pyqtSignal()
-    update_fight_data_signal = pyqtSignal()
     start_fight_signal = pyqtSignal()
+    start_round_signal = pyqtSignal()
+    start_break_signal = pyqtSignal()
+    win_signal = pyqtSignal()
 
     def __init__(self):
         super().__init__()
