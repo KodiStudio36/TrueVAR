@@ -93,6 +93,7 @@ class SocketManager(QObject):
     def connect(self, token, license_key):
         """Initializes connection with the specific auth token."""
         self.license_key = license_key
+        print(token, license_key)
         if self.sio.connected:
             self.sio.disconnect()
         

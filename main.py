@@ -30,7 +30,7 @@ def main():
 
     license_manager.connection_ready.connect(socket_manager.connect)
 
-    def handle_tournaments(tournaments_list, _):
+    def handle_tournaments(tournaments_list):
         # If tournaments_list is a list of objects like [{"name": "A", "courts": 4}, ...]
         # we convert it to a dict: {"A": 4, "B": 2}
         mapping = {t['name']: int(t['courts']) for t in tournaments_list}
