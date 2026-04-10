@@ -30,13 +30,15 @@ def main():
 
     license_manager.connection_ready.connect(socket_manager.connect)
 
-    def handle_tournaments(names, max_courts):
-        sel_dialog = TournamentSelectionDialog(names, max_courts)
+    def handle_tournaments(tournaments_list, _):
+        # If tournaments_list is a list of objects like [{"name": "A", "courts": 4}, ...]
+        # we convert it to a dict: {"A": 4, "B": 2}
+        mapping = {t['name']: int(t['courts']) for t in tournaments_list}
+        
+        sel_dialog = TournamentSelectionDialog(mapping)
         if sel_dialog.exec_() == QDialog.Accepted:
             choice_name, choice_court = sel_dialog.get_selection()
             socket_manager.select_tournament(choice_name, choice_court)
-        else:
-            sys.exit(0)
 
     def handle_final_data(_):
         wait_loop.quit() 

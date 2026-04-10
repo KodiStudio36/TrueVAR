@@ -8,7 +8,7 @@ from config import socketio_url
 @singleton
 class SocketManager(QObject):
     connected = pyqtSignal(bool)
-    tournaments_received = pyqtSignal(list, int)
+    tournaments_received = pyqtSignal(list)
     tournament_data_received = pyqtSignal(dict)
     message_received = pyqtSignal(dict)
     request_confirmation = pyqtSignal()
@@ -48,9 +48,7 @@ class SocketManager(QObject):
         @self.sio.on("tournaments_list")
         def on_tournaments(data):
             names = data.get("tournaments", [])
-            court_num = int(data.get("courts", 1))
-            print(f"[SocketIO] Tournaments available. Max courts: {court_num}")
-            self.tournaments_received.emit(names, court_num)
+            self.tournaments_received.emit(names)
 
         @self.sio.on("tournament_data")
         def on_data(data):
