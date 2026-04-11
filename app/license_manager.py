@@ -7,7 +7,7 @@ import os
 import requests
 from PyQt5.QtCore import QObject, pyqtSignal
 from app.injector import singleton
-from config import licence_settings_file, api_fetch_url
+from config import licence_settings_file, api_fetch_url, api_ping_url
 
 @singleton
 class LicenseManager(QObject):
@@ -19,7 +19,6 @@ class LicenseManager(QObject):
     def __init__(self):
         super().__init__()
         self.license_file = licence_settings_file
-        self.api_url = api_fetch_url
         
         self.current_blob = None
         self.machine_id = self._generate_machine_id()
@@ -49,7 +48,7 @@ class LicenseManager(QObject):
                 "app_version": "1.0.0",
                 "client_time": int(time.time())
             }
-            response = requests.post(self.api_url, json=payload, timeout=5)
+            response = requests.post(api_fetch_url, json=payload, timeout=5)
             
             if response.status_code == 200:
                 data = response.json()
@@ -77,7 +76,7 @@ class LicenseManager(QObject):
         try:
             key = self.current_blob['data']['license_key']
             payload = {"license_key": key, "machine_id": self.machine_id, "app_version": "1.0.0"}
-            response = requests.post(self.api_url, json=payload, timeout=3)
+            response = requests.post(api_fetch_url, json=payload, timeout=3)
             if response.status_code == 200:
                 data = response.json()
                 if data.get("status") == "OK":
@@ -111,9 +110,7 @@ class LicenseManager(QObject):
     def is_server_alive(self):
         """Simple check to see if the server is there."""
         try:
-            # Note: Ensure self.api_url doesn't end in a slash 
-            # or use the rsplit logic if api_url is the full /license path
-            ping_url = f"{self.api_url}/ping" 
+            ping_url = api_ping_url
             response = requests.get(ping_url, timeout=5)
             return response.status_code == 200
         except:

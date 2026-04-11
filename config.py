@@ -16,10 +16,12 @@ external_screen_settings_file = settings_path + "/external_screen_settings.json"
 manage_external_screen_script = scripts_path + "/manage_display.sh"
 launch_obs_script = scripts_path + "/launch_obs.sh"
 
-api_url = "http://192.168.177.237:5000/api/ivr/"
-socketio_url = "http://192.168.177.237:5000/"
+server_url = "http://192.168.177.200:5000/"
+api_url = server_url + "api/ivr/"
+socketio_url = server_url
 
 api_fetch_url = api_url + "fetch"
+api_ping_url = api_url + "fetch/ping"
 
 alpha3_to_alpha2 = {
     'AFG': 'AF',

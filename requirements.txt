@@ -10,3 +10,5 @@ flask_socketio
 obs-websocket-py
 
 PyMuPDF
+
+mitmproxy
