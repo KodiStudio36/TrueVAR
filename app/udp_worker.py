@@ -65,6 +65,7 @@ class UdpWorker(QObject):
                 data, addr = self.udp_socket.recvfrom(2048)
                 message = data.decode(errors='ignore').strip()
                 if message:
+                    self.hub.listener_log.emit(f"[{addr[0]}] {message}")
                     print(f"[UDP] Received: {message} from {addr}")
                     # Parse the message, which updates internal state
                     self._parse_udp_message(message)

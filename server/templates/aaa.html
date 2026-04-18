@@ -43,6 +43,10 @@
             --top-offset: var(--default-offset);
             --left-offset: var(--default-offset);
             --side-padding: 16vw;
+
+            --ticker-height: 40px;
+            --ticker-bg: linear-gradient(to top, rgba(0, 0, 0, .7) 0%, rgba(0, 0, 0, 0.0) 100%);
+            --ticker-speed: 15s;
         }
 
         /* =========================================
@@ -461,6 +465,58 @@
             margin-left: -4px;
             /* Pulls the seed slightly closer to the name */
         }
+
+        #widget-ticker {
+            position: absolute;
+            bottom: -60px;
+            /* Start hidden below screen */
+            left: 0;
+            width: 100%;
+            height: var(--ticker-height);
+            background: var(--ticker-bg);
+            display: flex;
+            align-items: end;
+            overflow: hidden;
+            transition: bottom 0.5s cubic-bezier(0.18, 0.89, 0.32, 1.28);
+            z-index: 9999;
+            /* border-top: 2px solid var(--bg-label); */
+        }
+
+        #widget-ticker.active {
+            bottom: 0;
+            /* Rise up */
+        }
+
+        .ticker-content {
+            margin-bottom: 2px;
+            white-space: nowrap;
+            display: inline-block;
+            padding-left: 100%;
+            /* Start off-screen to the right */
+            will-change: transform;
+        }
+
+        .ticker-text {
+            color: white;
+            font-size: 20px;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        @keyframes ticker-scroll {
+            0% {
+                transform: translateX(0);
+            }
+
+            100% {
+                transform: translateX(-100%);
+            }
+        }
+
+        .scrolling {
+            animation: ticker-scroll var(--ticker-speed) linear;
+        }
     </style>
 </head>
 
@@ -642,6 +698,14 @@
         </div>
     </div>
 
+    <div id="widget-ticker" class="active">
+        <div class="ticker-content scrolling" id="ticker-wrapper">
+            <span class="ticker-text" id="ticker-msg">
+                BREAKING NEWS: MATCH DELAYED DUE TO TECHNICAL DIFFICULTIES...
+            </span>
+        </div>
+    </div>
+
     <div class="widget-full hidden" id="widget-ivr">
         <div class="color-bar bg-green"></div>
         <div class="data-row">Instant Video Replay</div>
@@ -797,6 +861,62 @@
 
         }
 
+        let tickerCount = 0;
+        let maxTickerRounds = 3;
+
+        function startTicker(message, rounds = 3) {
+            const ticker = document.getElementById('widget-ticker');
+            const wrapper = document.getElementById('ticker-wrapper');
+            const text = document.getElementById('ticker-msg');
+
+            // Set content and reset counters
+            text.innerText = message;
+            tickerCount = 0;
+            maxTickerRounds = rounds;
+
+            // Show the bar (Rise animation)
+            ticker.classList.add('active');
+
+            // Start the scroll animation after a short delay
+            setTimeout(() => {
+                wrapper.classList.add('scrolling');
+            }, 500);
+
+            // Listener for when one full scroll finishes
+            wrapper.onanimationiteration = () => {
+                tickerCount++;
+                if (tickerCount >= maxTickerRounds) {
+                    stopTicker();
+                }
+            };
+
+            // Fallback for single-run mode
+            wrapper.onanimationend = () => {
+                tickerCount++;
+                if (tickerCount >= maxTickerRounds) {
+                    stopTicker();
+                } else {
+                    // Restart animation if more rounds needed
+                    wrapper.classList.remove('scrolling');
+                    void wrapper.offsetWidth; // Trigger reflow
+                    wrapper.classList.add('scrolling');
+                }
+            };
+        }
+
+        function stopTicker() {
+            const ticker = document.getElementById('widget-ticker');
+            const wrapper = document.getElementById('ticker-wrapper');
+
+            // Sink the bar
+            ticker.classList.remove('active');
+
+            // Wait for sink animation to finish before removing scroll
+            setTimeout(() => {
+                wrapper.classList.remove('scrolling');
+            }, 500);
+        }
+
         // --- Socket Connection & Listeners ---
         const socket = io("ws://localhost:8000");
 
@@ -819,6 +939,9 @@
 
         socket.on("show_win", () => toggleWidget("widget-winner", true));
         socket.on("hide_win", () => toggleWidget("widget-winner", false));
+
+        socket.on("show_ticker", (data) => { startTicker(data.message, data.count); });
+        socket.on("hide_ticker", () => { stopTicker(); });
 
         socket.on("reset_widgets", (payload) => {
             if (payload.event === "reset") {

@@ -23,6 +23,9 @@ class MainWindow(QMainWindow):
         self.camera_manager: CameraManager = Injector.find(CameraManager)
         self.external_screen_manager: ExternalScreenManager = Injector.find(ExternalScreenManager)
 
+        self.last_replay_time = 0.0
+        self.last_record_time = 0.0
+
         # Create the stacked layout
         self.stacked_widget = QStackedWidget(self)
 
@@ -87,6 +90,8 @@ class MainWindow(QMainWindow):
     def keyPressEvent(self, event):
         key_sequence = QKeySequence(event.modifiers() | event.key())
 
+        current_time = time()
+
         if key_sequence == QKeySequence("F11"):
             self.toggle_fullscreen()
 
@@ -99,16 +104,22 @@ class MainWindow(QMainWindow):
                 self.hide_settings()
 
         if key_sequence == QKeySequence(self.key_bind_manager.replay_key):
-            if self.current_screen == 0:
-                self.show_replay()
+            if current_time - self.last_replay_time >= 2.0:
+                if self.current_screen == 0:
+                    self.show_replay()
 
-            elif self.current_screen == 2:
-                self.hide_replay()
-                if self.external_screen_manager.is_mirror:
-                    self.external_screen_manager.toggle_display_mode()
+                elif self.current_screen == 2:
+                    self.hide_replay()
+                    if self.external_screen_manager.is_mirror:
+                        self.external_screen_manager.toggle_display_mode()
+
+                self.last_replay_time = current_time
 
         if key_sequence == QKeySequence(self.key_bind_manager.record_key) and self.current_screen == 0:
-            self.toggle_recording()
+            if current_time - self.last_record_time >= 2.0:
+                self.toggle_recording()
+
+                self.last_record_time = current_time
 
         if key_sequence == QKeySequence(self.key_bind_manager.toggle_external_screen_key):
             self.external_screen_manager.toggle_display_mode()

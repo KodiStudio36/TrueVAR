@@ -1,7 +1,7 @@
 from PyQt5.QtWidgets import (
     QWidget, QVBoxLayout, QHBoxLayout, QLabel, QPushButton, QLineEdit,
     QComboBox, QTabWidget, QFrame, QDialog, QCheckBox,
-    QStyle, QSizePolicy, QKeySequenceEdit, QFormLayout, QGridLayout, QSpinBox
+    QStyle, QSizePolicy, QKeySequenceEdit, QFormLayout, QGridLayout, QSpinBox, QTextEdit
 )
 import gi
 from PyQt5.QtGui import QPixmap, QIcon, QFont, QImage
@@ -22,6 +22,7 @@ from interface.settings.widgets.video_stream_widget import VideoStreamWidget
 
 from app.injector import Injector
 from app.key_bind_manager import KeyBindManager
+from app.main_manager import MainManager
 from app.camera_manager import CameraManager
 from app.udp_manager import UdpManager
 from app.external_screen_manager import ExternalScreenManager
@@ -35,6 +36,7 @@ class SettingsScreen(QWidget):
         self.udp_manager: UdpManager = Injector.find(UdpManager)
         self.external_screen_manager: ExternalScreenManager = Injector.find(ExternalScreenManager)
         self.obs_manager: OBSManager = Injector.find(OBSManager)
+        self.hub: MainManager = Injector.find(MainManager)
         self.video_widgets = []
         self.is_update = False
         self.init_ui()
@@ -253,16 +255,17 @@ class SettingsScreen(QWidget):
         layout = QVBoxLayout()
         layout.setSpacing(15)
 
+        # --- Top Section: Title & Settings ---
         title = QLabel("Tk-Strike UDP Listener")
         title.setStyleSheet("font-weight: bold; font-size: 16px;")
         layout.addWidget(title)
 
         form_frame = QFrame()
         form_layout = QFormLayout(form_frame)
-
+        
         self.udp_default = QCheckBox()
         self.udp_default.setChecked(self.udp_manager.udp_default)
-        self.udp_default.clicked.connect(lambda x: self.set_udp_as_default(x))
+        self.udp_default.clicked.connect(self.set_udp_as_default)
         form_layout.addRow(QLabel("Set as Default:"), self.udp_default)
         
         self.udp_port_input = QLineEdit()
@@ -270,20 +273,54 @@ class SettingsScreen(QWidget):
         self.udp_port_input.setText(str(self.udp_manager.udp_port))
         self.udp_port_input.editingFinished.connect(self.update_udp_port)
         form_layout.addRow(QLabel("UDP Listener Port:"), self.udp_port_input)
-        
         layout.addWidget(form_frame)
 
         self.start_udp_button = QPushButton("Start UDP Listener")
         self.start_udp_button.clicked.connect(self.toggle_udp_listener)
         layout.addWidget(self.start_udp_button)
-        
-        # Connect to the manager's state signal to update the button text
-        self.udp_manager.listener_state_changed.connect(self.on_udp_listener_state_change)
-        # Set initial button state
-        self.on_udp_listener_state_change(self.udp_manager.thread.isRunning())
 
-        layout.addStretch(1)
+        # --- Bottom Section: UDP Console Log ---
+        layout.addWidget(QLabel("Live UDP Messages:"))
+        self.udp_log_console = QTextEdit()
+        self.udp_log_console.setReadOnly(True)
+        self.udp_log_console.setStyleSheet("""
+            QTextEdit {
+                background-color: #1e1e1e;
+                color: #00ff00;
+                font-family: 'Consolas', 'Monaco', monospace;
+                font-size: 11px;
+                border-radius: 4px;
+            }
+        """)
+        layout.addWidget(self.udp_log_console, 1) # Give it a stretch factor of 1
+
+        # --- Connections ---
+        self.udp_manager.listener_state_changed.connect(self.on_udp_listener_state_change)
+        
+        # IMPORTANT: Connect the worker signal to our new logging method
+        # Assuming udp_manager exposes the worker or you can access it via manager
+        self.hub.listener_log.connect(self.append_udp_log)
+
+        self.on_udp_listener_state_change(self.udp_manager.thread.isRunning())
         self.udp_settings_tab.setLayout(layout)
+
+    # Add this new slot method to MainWindow
+    @pyqtSlot(str)
+    def append_udp_log(self, message):
+        """Appends the received UDP message to the console UI."""
+        self.udp_log_console.append(message)
+        
+        # Auto-scroll to bottom
+        scrollbar = self.udp_log_console.verticalScrollBar()
+        scrollbar.setValue(scrollbar.maximum())
+
+        # Optional: Keep only the last 100 lines to prevent memory issues
+        if self.udp_log_console.document().blockCount() > 100:
+            cursor = self.udp_log_console.textCursor()
+            cursor.movePosition(cursor.Start)
+            cursor.select(cursor.BlockUnderCursor)
+            cursor.removeSelectedText()
+            cursor.deleteChar() # removes the newline
 
     def set_udp_as_default(self, is_default):
         self.udp_manager.udp_default = is_default

@@ -25,6 +25,7 @@ class MainManager(QObject):
     stream_message_broadcast_signal = pyqtSignal()
 
     # --- Udp Signals ---
+    listener_log = pyqtSignal(str)
     listener_stable_signal = pyqtSignal(dict)
     listener_fast_signal = pyqtSignal(dict)
 
