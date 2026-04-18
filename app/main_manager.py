@@ -22,7 +22,7 @@ class MainManager(QObject):
     stop_tournament_signal = pyqtSignal()
 
     other_fight_started_signal = pyqtSignal()
-    stream_message_broadcast_signal = pyqtSignal()
+    stream_message_broadcast_signal = pyqtSignal(str)
 
     # --- Udp Signals ---
     listener_log = pyqtSignal(str)

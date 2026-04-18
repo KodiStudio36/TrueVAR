@@ -698,8 +698,8 @@
         </div>
     </div>
 
-    <div id="widget-ticker" class="active">
-        <div class="ticker-content scrolling" id="ticker-wrapper">
+    <div id="widget-ticker" class="">
+        <div class="ticker-content" id="ticker-wrapper">
             <span class="ticker-text" id="ticker-msg">
                 BREAKING NEWS: MATCH DELAYED DUE TO TECHNICAL DIFFICULTIES...
             </span>
@@ -940,7 +940,7 @@
         socket.on("show_win", () => toggleWidget("widget-winner", true));
         socket.on("hide_win", () => toggleWidget("widget-winner", false));
 
-        socket.on("show_ticker", (data) => { startTicker(data.message, data.count); });
+        socket.on("show_ticker", (data) => { startTicker(data.message, 3); });
         socket.on("hide_ticker", () => { stopTicker(); });
 
         socket.on("reset_widgets", (payload) => {

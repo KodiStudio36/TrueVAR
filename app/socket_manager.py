@@ -26,7 +26,7 @@ class SocketManager(QObject):
 
         self.request_confirmation.connect(self.confirm_connection)
 
-        self.hub.new_fight_signal.connect(self.new_fight)
+        # self.hub.new_fight_signal.connect(self.new_fight)
         self.hub.listener_stable_signal.connect(self.update_fight_data)
         self.hub.start_fight_signal.connect(self.start_fight)
 
@@ -80,11 +80,13 @@ class SocketManager(QObject):
 
         @self.sio.on("other_fight_started")
         def other_fight_started(data):
+            print("aaa", data)
             self.hub.other_fight_started_signal.emit()
 
         @self.sio.on("stream_message_broadcast")
         def stream_message_broadcast(data):
-            self.hub.stream_message_broadcast_signal.emit()
+            print(data)
+            self.hub.stream_message_broadcast_signal.emit(data.get("message"))
 
         @self.sio.event
         def connect_error(e):
@@ -124,9 +126,9 @@ class SocketManager(QObject):
         print(f"[SocketIO] Confirm connection")
         self.emit_authorized("confirm_connection", {"example": "example"})
 
-    def new_fight(self):
-        self.emit_authorized("new_fight", {"data": self.udp_manager.worker.data})
-        print("[SocketIO] New fight emited")
+    # def new_fight(self):
+    #     self.emit_authorized("new_fight", {"data": self.udp_manager.worker.data})
+    #     print("[SocketIO] New fight emited")
 
     def update_fight_data(self):
         self.emit_authorized("update_fight_data", {"data": self.udp_manager.worker.data})

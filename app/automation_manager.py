@@ -30,6 +30,7 @@ class AutomationManager(QObject):
         self.hub.start_round_signal.connect(self.start_round_flow)
         self.hub.start_break_signal.connect(self.post_round_flow)
         self.hub.win_signal.connect(self.post_fight_flow)
+        self.hub.stream_message_broadcast_signal.connect(lambda m: self.message_broadcast_flow(m))
 
     # ------------------------
     # FLOWS
@@ -118,6 +119,11 @@ class AutomationManager(QObject):
         print("Starting post ivr flow")
 
         self.obs.set_main_scene_w_scoreboard()
+
+    async def _message_broadcast_flow(self, data):
+        print("Starting message broadcast flow")
+
+        self.web.show_ticker_widget(data)
 
     async def _troubleshooting_flow(self):
         print("Starting troubleshooting flow")
@@ -210,6 +216,9 @@ class AutomationManager(QObject):
 
     def post_ivr_flow(self):
         self.start_killable_flow(self._post_ivr_flow())
+
+    def message_broadcast_flow(self, data):
+        self.start_async_flow(self._message_broadcast_flow(data))
     
     def troubleshooting_flow(self):
         self.start_nuke_flow(self._troubleshooting_flow())

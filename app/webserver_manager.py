@@ -84,6 +84,10 @@ class WebServerManager(SettingsManager, QObject):
         if self.worker:
             self.worker.hide_win_widget()
 
+    def show_ticker_widget(self, data):
+        if self.worker:
+            self.worker.show_ticker_widget(data)
+
     def reset_widgets(self, data=None):
         if self.worker:
             self.worker.reset_widgets(data)    

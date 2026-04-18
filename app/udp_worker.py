@@ -220,7 +220,6 @@ class UdpWorker(QObject):
                 "hit_level": parts[14],
             })
     
-        self.emit_stable_update()
         self.emit_new_fight()
 
     def on_athletes(self, parts):
@@ -235,13 +234,13 @@ class UdpWorker(QObject):
                 "red_flag3": parts[7],
             })
         
-        self.emit_stable_update()
         self.emit_new_fight()
 
     def on_round(self, parts):
         self.data["round"] = int(parts[1])
 
-        self.emit_stable_update()
+        if self.data["state"] in [FIGHT_STATE, BREAK_STATE]:
+            self.emit_stable_update()
 
     def on_ready(self, parts):
         self.data["state"] = READY_STATE
@@ -257,7 +256,7 @@ class UdpWorker(QObject):
         if self.data["state"] not in [FIGHT_STATE, INIT_STATE]:
             self.data["state"] = FIGHT_STATE
             self.emit_start_fight()
-
+            self.emit_stable_update()
             self.emit_start_round()
         
         self.emit_fast_clk_update()
@@ -266,9 +265,15 @@ class UdpWorker(QObject):
         self.data["blue_points"][self.data["round"] - 1]["points"] = parts[1]
         self.data["red_points"][self.data["round"] - 1]["points"] = parts[3]
 
+        if self.data["state"] in [FIGHT_STATE, BREAK_STATE]:
+            self.emit_stable_update()
+
     def on_penalty(self, parts):
         self.data["blue_points"][self.data["round"] - 1]["penalties"] = parts[1]
         self.data["red_points"][self.data["round"] - 1]["penalties"] = parts[3]
+
+        if self.data["state"] in [FIGHT_STATE, BREAK_STATE]:
+            self.emit_stable_update()
     
     def on_blue_hit(self, parts):
         self.data["blue_points"][self.data["round"] - 1]["hits"] += 1
@@ -303,6 +308,7 @@ class UdpWorker(QObject):
         self.complete_data += 1
         
         if self.complete_data == 2:
+            self.emit_stable_update()
             self.hub.new_fight_signal.emit()
             self.complete_data = 0
 

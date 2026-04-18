@@ -91,6 +91,10 @@ class ServerWorker(QObject):
         if self.socketio and self._is_running:
             self.socketio.emit("hide_win", None)
 
+    def show_ticker_widget(self, data):
+        if self.socketio and self._is_running:
+            self.socketio.emit("show_ticker", {"event": "show", "message": data})
+
     def reset_widgets(self, data):
         if self.socketio and self._is_running:
             self.socketio.emit("reset_widgets", {"event": "reset", "data": data})
