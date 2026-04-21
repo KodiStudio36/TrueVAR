@@ -105,15 +105,25 @@ class AutomationManager(QObject):
 
     async def _start_ivr_flow(self):
         print("Starting start ivr flow")
+        self.obs.set_stinger_transition()
+
+        await asyncio.sleep(2)
         self.web.show_ivr_widget()
+
         await asyncio.sleep(5)
         self.web.hide_ivr_widget()
         self.obs.set_ivr_scene()
+
+        await asyncio.sleep(.1)
+        self.obs.set_move_transition()
 
     async def _start_ivr_closeup_flow(self):
         print("Starting start ivr closeup flow")
 
         self.obs.set_ivr_closeup_scene()
+        
+        await asyncio.sleep(.1)
+        self.obs.set_stinger_transition()
 
     async def _post_ivr_flow(self):
         print("Starting post ivr flow")

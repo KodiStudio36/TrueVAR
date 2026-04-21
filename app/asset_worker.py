@@ -56,7 +56,7 @@ class AssetWorker(QObject):
             current_payload = {
                 "name": str(self.data.get('name', 'N/A')).upper(),
                 "location": str(self.data.get('location', 'N/A')).upper(),
-                "id": str(self.data.get('id', '1'))
+                "id": str(self.data.get('court_num', '1'))
             }
             court_num = f"COURT {current_payload['id']}"
 

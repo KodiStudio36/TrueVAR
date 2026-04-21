@@ -41,10 +41,16 @@ class MainWindow(QMainWindow):
         self.screen_manager.show_replay_signal.connect(self.show_replay)
         self.screen_manager.hide_replay_signal.connect(self.hide_replay)
         self.screen_manager.toggle_recording_signal.connect(self.toggle_recording)
+
         self.screen_manager.start_recording_signal.connect(self.start_recording)
         self.screen_manager.stop_recording_signal.connect(self.stop_recording)
 
-        self.screen_manager.start_fight_signal.connect(self.start_recording)
+        self.screen_manager.start_fight_signal.connect(self.auto_start_recording)
+        self.screen_manager.win_signal.connect(self.auto_delayed_stop_recording)
+
+        self.delayed_stop_timer = QTimer(self)
+        self.delayed_stop_timer.setSingleShot(True)
+        self.delayed_stop_timer.timeout.connect(self.stop_recording)
 
         # Add screens to the stacked widget
         self.stacked_widget.addWidget(self.main_screen)
@@ -87,9 +93,20 @@ class MainWindow(QMainWindow):
         # self.main_screen.update_camera_list()
         self.stacked_widget.setCurrentWidget(self.main_screen)
 
+    def auto_start_recording(self):
+        if self.camera_manager.auto_record:
+            # If a new fight starts while the 15s timer is running, cancel the stop timer
+            if self.delayed_stop_timer.isActive():
+                self.delayed_stop_timer.stop()
+            self.start_recording()
+
+    def auto_delayed_stop_recording(self):
+        if self.camera_manager.auto_record:
+            # Start the 15-second (15000 ms) delay timer
+            self.delayed_stop_timer.start(20000)
+
     def keyPressEvent(self, event):
         key_sequence = QKeySequence(event.modifiers() | event.key())
-
         current_time = time()
 
         if key_sequence == QKeySequence("F11"):
@@ -116,10 +133,13 @@ class MainWindow(QMainWindow):
                 self.last_replay_time = current_time
 
         if key_sequence == QKeySequence(self.key_bind_manager.record_key) and self.current_screen == 0:
-            if current_time - self.last_record_time >= 2.0:
-                self.toggle_recording()
+            if not self.camera_manager.auto_record:
+                if current_time - self.last_record_time >= 2.0:
+                    self.toggle_recording()
 
-                self.last_record_time = current_time
+                    self.last_record_time = current_time
+            else:
+                self.show_toast_message("Manual recording disabled (Auto-Record is ON)")
 
         if key_sequence == QKeySequence(self.key_bind_manager.toggle_external_screen_key):
             self.external_screen_manager.toggle_display_mode()
@@ -202,6 +222,10 @@ class MainWindow(QMainWindow):
             self.camera_manager.start_cameras()
 
     def stop_recording(self):
+        # Ensure we cancel any pending timer if stop_recording is called manually
+        if self.delayed_stop_timer.isActive():
+            self.delayed_stop_timer.stop()
+
         if self.camera_manager.is_recording:
             self.camera_manager.stop_cameras()
             self.camera_manager.save_for_ai()

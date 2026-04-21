@@ -36,6 +36,9 @@ class OBSManager(SettingsManager, QObject):
     ivr_closeup_scene = Setting("IVR Closeup Scene")
     troubleshooting_scene = Setting("Troubleshooting Scene")
 
+    move_transition = Setting("Move")
+    stinger_transition = Setting("TrueVAR Stinger")
+
     def __init__(self):
         SettingsManager.__init__(self, obs_settings_file)
         QObject.__init__(self)
@@ -103,6 +106,8 @@ class OBSManager(SettingsManager, QObject):
                 self.set_stream_key(stream_key)
 
             self.set_starting_scene()
+            time.sleep(.1)
+            self.set_move_transition()
 
                 # Attempt to connect after a short delay to let OBS start
                 # In a real app, you might want a retry loop in a separate thread
@@ -155,6 +160,23 @@ class OBSManager(SettingsManager, QObject):
         except Exception as e:
             print(f"Error setting stream key: {e}")
             self.error_occurred.emit(f"Failed to set stream key: {e}")
+
+    def refresh_cameras(self):
+        if self.is_obs_running():
+            source = self.client.call(requests.GetSceneItemList(sceneName="Main View  - Tool")).getSceneItems()[0]
+            self.client.call(requests.SetSceneItemEnabled(
+                sceneName="Main View  - Tool", 
+                sceneItemId=source["sceneItemId"], 
+                sceneItemEnabled=False
+            ))
+
+            time.sleep(0.1) 
+            
+            self.client.call(requests.SetSceneItemEnabled(
+                sceneName="Main View  - Tool", 
+                sceneItemId=source["sceneItemId"],
+                sceneItemEnabled=True
+            ))
 
     def disconnect_obs(self):
         if self.client:
@@ -213,6 +235,12 @@ class OBSManager(SettingsManager, QObject):
         except Exception as e:
             # If the above fails, it's likely a library attribute error
             print(f"Request failed. Check if your library supports v5: {e}")
+
+    def set_move_transition(self):
+        self.set_transition(self.move_transition)
+
+    def set_stinger_transition(self):
+        self.set_transition(self.stinger_transition)
 
     def start_streaming(self):
         if not self.is_connected: self.connect_to_obs()

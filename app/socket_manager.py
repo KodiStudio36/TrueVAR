@@ -1,5 +1,6 @@
 import socketio
 from PyQt5.QtCore import QObject, pyqtSignal, QTimer
+from app import tournament_manager
 from app.main_manager import MainManager
 from app.udp_manager import UdpManager
 from app.injector import singleton, Injector
@@ -20,7 +21,12 @@ class SocketManager(QObject):
         self.socket_url = socketio_url
         self.license_key = None  # Stored here for authorized emits
         
-        self.sio = socketio.Client(reconnection=True, reconnection_attempts=5)
+        self.sio = socketio.Client(
+            reconnection=True, 
+            reconnection_attempts=0,
+            reconnection_delay=10,
+            reconnection_delay_max=10
+        )
         self._setup_handlers()
         self._pending_confirm = False
 
@@ -90,7 +96,7 @@ class SocketManager(QObject):
 
         @self.sio.event
         def connect_error(e):
-            print(f"[SocketIO] Connection failed: {e}")
+            print(f"[SocketIO] Connection failed")
 
     def connect(self, token, license_key):
         """Initializes connection with the specific auth token."""

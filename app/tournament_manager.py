@@ -15,7 +15,8 @@ class TournamentManager(QObject):
         self.location = ""
         self.start_date = ""
         self.courts = 0
-        self.stream_key = ""
+        self.stream_key = None
+        self.court_num = None
         
         # Threading
         self._thread = None
@@ -38,10 +39,11 @@ class TournamentManager(QObject):
         self.start_date = data.get('startDate')
         self.courts = data.get('courts', 1)
         self.stream_key = data.get('stream_key', None)
+        self.court_num = data.get('court_num', 1)
         
         # 2. Logic: Should we generate assets?
         # Check if 'stream' is in data or if global streaming is enabled
-        if self.stream_key: # Defaulting to True for now
+        if True:#self.stream_key: # Defaulting to True for now
             self._start_asset_generation(data)
 
     def _start_asset_generation(self, data):

@@ -325,7 +325,6 @@ class UdpWorker(QObject):
 
     def emit_win(self):
         self.hub.win_signal.emit()
-        self.hub.stop_recording_signal.emit()
         self.data["state"] = INIT_STATE
     
     def reset_data(self):

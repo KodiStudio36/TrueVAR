@@ -16,7 +16,8 @@ external_screen_settings_file = settings_path + "/external_screen_settings.json"
 manage_external_screen_script = scripts_path + "/manage_display.sh"
 launch_obs_script = scripts_path + "/launch_obs.sh"
 
-server_url = "http://192.168.177.199:5000/"
+# server_url = "http://192.168.177.200:5000/"
+server_url = "http://0.0.0.0:5000/"
 api_url = server_url + "api/ivr/"
 socketio_url = server_url
 

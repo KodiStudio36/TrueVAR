@@ -1,5 +1,7 @@
 # app/camera_manager.py
-from PyQt5.QtCore import pyqtSignal, QObject
+from ipaddress import ip_address
+
+from PyQt5.QtCore import pyqtSignal, QObject, QTimer
 import json
 import os
 import glob
@@ -12,13 +14,13 @@ gi.require_version("GstVideo", "1.0")
 from gi.repository import Gst, GstVideo
 
 from config import records_path, camera_settings_file, ai_path
-from app.injector import singleton
+from app.injector import singleton, Injector
+from app.obs_manager import OBSManager
 from app.settings_manager import SettingsManager, Setting
 
 @singleton
 class CameraManager(SettingsManager, QObject):
     is_recording_stream = pyqtSignal(bool)
-    is_stream_stream = pyqtSignal(bool)
     # Signal to tell ExternalScreenManager that pipeline restarted so it can move the window
     pipeline_reloaded = pyqtSignal()
 
@@ -28,16 +30,21 @@ class CameraManager(SettingsManager, QObject):
     res_height = Setting(720)
     debug = Setting(True)
     court = Setting(1)
+    
+    # REPLACED camera_count with camera_ips
+    camera_ips = Setting(["192.168.0.11", "192.168.0.12", "192.168.0.13"]) 
+    
     camera_idx = Setting(0)
     delete_records = Setting(True)
-    camera_count = Setting(3)
     network_ip = Setting("192.168.0.")
     live_camera_idx = Setting(1)
-    live_key = Setting("")
+
+    auto_record = Setting(False)
 
     def __init__(self):
         SettingsManager.__init__(self, camera_settings_file)
         QObject.__init__(self)
+        self.obs = Injector.find(OBSManager)
         
         self.is_recording = False
         self.is_stream = False
@@ -58,15 +65,50 @@ class CameraManager(SettingsManager, QObject):
         self.start_shmsink()
 
     @property
+    def camera_count(self):
+        """Dynamically return the number of cameras based on the IP list."""
+        return len(self.camera_ips)
+
+    @property
     def res_width(self):
         return self.res_height // 9 * 16
 
     def add_camera(self):
-        self.camera_count += 1
+        """Calculates the initial IP like before, but saves it to the list."""
+        ips = self.camera_ips.copy()
+        new_ip = f"{self.network_ip}{self.court}{len(ips) + 1}"
+        ips.append(new_ip)
+        self.camera_ips = ips
         
-    def remove_camera(self):
-        if self.camera_count > 0:
-            self.camera_count -= 1
+    def remove_camera(self, cam_id=None):
+        """Removes a specific camera based on its index (1-based)."""
+        ips = self.camera_ips.copy()
+        if cam_id is None:
+            # Fallback to removing the last one if no ID provided
+            if len(ips) > 0:
+                ips.pop()
+        else:
+            # cam_id is 1-based (Camera 1, Camera 2, etc.)
+            if 1 <= cam_id <= len(ips):
+                ips.pop(cam_id - 1)
+                
+        self.camera_ips = ips
+
+    def update_camera_ip(self, idx, new_ip):
+        """Updates the IP address for a specific camera."""
+        if 1 <= idx <= len(self.camera_ips):
+            ips = self.camera_ips.copy()
+            ips[idx - 1] = new_ip
+            self.camera_ips = ips
+
+    def set_court_and_recalculate(self, court_num):
+        """Updates the court and resets all camera IPs to follow the new court number."""
+        self.court = court_num
+        new_ips = []
+        for i in range(len(self.camera_ips)):
+            # idx is 1-based for the IP generation logic
+            new_ips.append(f"{self.network_ip}{self.court}{i+1}")
+        self.camera_ips = new_ips
 
     def handle_message(self, bus, message):
         msg_type = message.type
@@ -170,6 +212,8 @@ class CameraManager(SettingsManager, QObject):
             self.shm_pipeline.set_state(Gst.State.PLAYING)
             self.error_while_shm = False
 
+            QTimer.singleShot(500, self.obs.refresh_cameras)
+
         except Exception as e:
             print(f"Error starting Master pipeline: {e}")
             self.error_while_shm = True
@@ -233,40 +277,6 @@ class CameraManager(SettingsManager, QObject):
             self.is_recording = False
             self.is_recording_stream.emit(self.is_recording)
 
-    # def start_stream(self):
-    #     """Starts the Streaming Pipeline (RTSP Direct + Scoreboard SHM)."""
-        
-    #     # --- Main Stream Source: Changed from get_shmsink to get_camera ---
-    #     stream_source = f"{"videotestsrc" if self.debug else self.get_camera(self.live_camera_idx)}"
-        
-    #     # The main pipeline starts with the RTSP source
-    #     pipe = (
-    #         f"{stream_source} ! vapostproc ! video/x-raw,width=1280,height=720,framerate=30/1,format=NV12,interlace-mode=progressive ! vapostproc ! "
-    #         f"{self.get_shmsink(0)} ! video/x-raw,width=1280,height=720,framerate={self.fps}/1,format=NV12,interlace-mode=progressive ! vapostproc ! video/x-raw,width={self.res_width // 4},height={self.res_height // 4} ! comp1."
-    #     )
-
-    #     # The compositor logic is a bit messy in your original. Cleaned up and ordered for clarity:
-    #     pipeline_str = (
-    #         f"{stream_source} ! vapostproc ! video/x-raw,width=1280,height=720,framerate=30/1,format=NV12,interlace-mode=progressive ! vapostproc ! "
-    #         "queue ! compositor name=comp1 sink_0::xpos=0 sink_0::ypos=0 sink_1::xpos=10 sink_1::ypos=10 ! video/x-raw,width=1280,height=720 ! x264enc bitrate=2000 tune=zerolatency key-int-max=60 ! "
-    #         f'video/x-h264,profile=main ! flvmux streamable=true name=mux ! rtmpsink location="rtmp://a.rtmp.youtube.com/live2/{self.live_key}" '
-    #         "audiotestsrc wave=silence ! mux. "
-    #         # Scoreboard Overlay: Always SHM
-    #         f"{self.get_shmsink(0)} ! video/x-raw,width=1280,height=720,framerate={self.fps}/1,format=NV12,interlace-mode=progressive ! vapostproc ! video/x-raw,width={self.res_width // 4},height={self.res_height // 4} ! comp1."
-    #     )
-        
-    #     print("Streaming Pipeline:", pipeline_str)
-    #     self.stream_pipeline = Gst.parse_launch(pipeline_str)
-    #     self.stream_pipeline.set_state(Gst.State.PLAYING)
-    #     self.is_stream = True
-    #     self.is_stream_stream.emit(self.is_stream)
-
-    # def stop_stream(self):
-    #     if self.stream_pipeline:
-    #         self.stream_pipeline.set_state(Gst.State.NULL)
-    #         self.is_stream = False
-    #         self.is_stream_stream.emit(self.is_stream)
-
     def stop(self):
         self.stop_shmsink()
         if self.is_recording:
@@ -300,8 +310,9 @@ class CameraManager(SettingsManager, QObject):
     
     def get_camera(self, idx):
         # Uses self.network_ip, self.court (now Settings)
-        print(f"rtspsrc location=rtsp://admin:TaekwondoVAR@{self.network_ip}{self.court}{idx}:554 latency=800 ! rtph264depay ! h264parse ! vah264dec")
-        return f"rtspsrc location=rtsp://admin:TaekwondoVAR@{self.network_ip}{self.court}{idx}:554 latency=800 ! rtph264depay ! h264parse ! vah264dec"
+        ip_address = self.camera_ips[idx - 1]
+        print(f"rtspsrc location=rtsp://admin:TaekwondoVAR@{ip_address}:554 latency=800 ! rtph264depay ! h264parse ! vah264dec")
+        return f"rtspsrc location=rtsp://admin:TaekwondoVAR@{ip_address}:554 latency=800 ! rtph264depay ! h264parse ! vah264dec"
 
     def get_shmsink(self, idx):
         # Only used for idx=0 now

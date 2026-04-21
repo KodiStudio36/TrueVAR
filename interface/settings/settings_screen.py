@@ -1,7 +1,7 @@
 from PyQt5.QtWidgets import (
     QWidget, QVBoxLayout, QHBoxLayout, QLabel, QPushButton, QLineEdit,
     QComboBox, QTabWidget, QFrame, QDialog, QCheckBox,
-    QStyle, QSizePolicy, QKeySequenceEdit, QFormLayout, QGridLayout, QSpinBox, QTextEdit
+    QStyle, QSizePolicy, QKeySequenceEdit, QFormLayout, QGridLayout, QSpinBox, QTextEdit, QScrollArea
 )
 import gi
 from PyQt5.QtGui import QPixmap, QIcon, QFont, QImage
@@ -347,14 +347,6 @@ class SettingsScreen(QWidget):
     def on_stream(self, is_stream):
         self.start_stream_button.setText("Stop Stream" if is_stream else "Start Stream")
 
-    def toggle_stream(self, idx, key):
-        if self.camera_manager.is_stream:
-            self.camera_manager.stop_stream() 
-        else:
-            self.set_live(key)
-            self.camera_manager.start_stream()
-
-
     def init_key_binding_tab(self):
         self.key_bind_layout = QFormLayout()
 
@@ -381,18 +373,35 @@ class SettingsScreen(QWidget):
         widget.clearFocus()
 
     def init_camera_settings_tab(self):
-        layout = QVBoxLayout()
+        # 1. Main layout for the tab itself
+        tab_layout = QVBoxLayout(self.camera_settings_tab)
+        tab_layout.setContentsMargins(0, 0, 0, 0)
+
+        # 2. Create Scroll Area
+        scroll_area = QScrollArea()
+        scroll_area.setWidgetResizable(True)
+        scroll_area.setFrameShape(QFrame.NoFrame)
+        
+        # 3. Create a container widget for all the content
+        container = QWidget()
+        # AlignTop is the secret sauce—it prevents widgets from stretching to fill height
+        layout = QVBoxLayout(container)
+        layout.setAlignment(Qt.AlignTop) 
+        layout.setSpacing(20)
+
+        # --- TOP SETTINGS SECTION ---
+        start_frame = QFrame()
+        start_frame.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Maximum)
+        form_layout = QFormLayout(start_frame)
+        form_layout.setSpacing(10)
 
         self.toggle = QCheckBox()
         self.toggle.setChecked(self.camera_manager.is_scoreboard)
         self.toggle.clicked.connect(lambda x: self.set_scoreboard(x))
 
-        start_frame = QFrame()
-        start_frame.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Maximum)
-        form_layout = QFormLayout(start_frame)  # Form layout for label-field alignment
-        form_layout.setSpacing(10)
-        form_layout.setHorizontalSpacing(50)
-        form_layout.setLabelAlignment(Qt.AlignLeft)  # Ensure labels align to the left
+        auto_record_toggle = QCheckBox()
+        auto_record_toggle.setChecked(self.camera_manager.auto_record)
+        auto_record_toggle.clicked.connect(lambda x: self.set_auto_record(x))
 
         self.network_ip_input = MyLineEdit()
         self.network_ip_input.setPlaceholderText("x.x.x.x")
@@ -407,12 +416,6 @@ class SettingsScreen(QWidget):
         debug_toggle.setChecked(self.camera_manager.debug)
         debug_toggle.clicked.connect(lambda x: self.set_debug(x))
 
-        res_combo = QComboBox()
-        res_combo.addItems(["480", "720", "1080"])
-        res_combo.setCurrentText(str(self.camera_manager.res_height))
-        res_combo.setSizePolicy(QSizePolicy.Maximum, QSizePolicy.Maximum)
-        res_combo.currentTextChanged.connect(lambda num: self.set_resolution(int(num)))
-
         cam_layout_h = QHBoxLayout()
         cam_layout_h.setSpacing(10)
 
@@ -424,8 +427,8 @@ class SettingsScreen(QWidget):
 
         refresh_button = QPushButton()
         refresh_button.setIcon(self.style().standardIcon(QStyle.SP_BrowserReload))
-        refresh_button.setFixedHeight(self.cam_combo.sizeHint().height())  # match height
-        refresh_button.setFixedWidth(self.cam_combo.sizeHint().height())  # match height
+        refresh_button.setFixedHeight(self.cam_combo.sizeHint().height())
+        refresh_button.setFixedWidth(self.cam_combo.sizeHint().height())
         refresh_button.clicked.connect(self.refresh_camera_list)
 
         cam_layout_h.addWidget(self.cam_combo)
@@ -434,83 +437,70 @@ class SettingsScreen(QWidget):
         court_combo = QComboBox()
         court_combo.addItems([f"{i}" for i in range(1, 26)])
         court_combo.setCurrentText(str(self.camera_manager.court))
-        court_combo.setSizePolicy(QSizePolicy.Maximum, QSizePolicy.Maximum)
         court_combo.currentTextChanged.connect(lambda num: self.set_court(int(num)))
 
         form_layout.addRow(QLabel("Network ip address:"), self.network_ip_input)
         form_layout.addRow(QLabel("Select Camera:"), cam_layout_h)
         form_layout.addRow(QLabel("Select Court:"), court_combo)
         form_layout.addRow(QLabel("Debug Mode:"), debug_toggle)
-        form_layout.addRow(QLabel("Resolution:"), res_combo)
         form_layout.addRow(QLabel("Relese Records:"), delete_toggle)
+        form_layout.addRow(QLabel("Automatic Recording:"), auto_record_toggle)
 
         layout.addWidget(start_frame)
 
-        # Grid layout for camera previews
-        grid_layout = QGridLayout()
-        grid_layout.setSpacing(10)
-
-        columns = 5  # Number of columns in the grid
-
-        # Add each camera to the grid
-        for idx in range(self.camera_manager.camera_count+1):
-            row = idx // columns
-            col = idx % columns
-
+        # --- NEW VERTICAL LAYOUT LOGIC ---
+        for idx in range(self.camera_manager.camera_count + 1):
             cam_frame = QFrame()
-            cam_frame.setSizePolicy(QSizePolicy.Maximum, QSizePolicy.Maximum)
-            cam_layout = QVBoxLayout(cam_frame)
+            cam_frame.setFrameShape(QFrame.StyledPanel)
+            cam_frame.setFixedHeight(180) # Keep height consistent
+            cam_row_layout = QHBoxLayout(cam_frame)
 
-            cam_name = f"Camera {idx}"
-
-            if idx == 0:
-                cam_name = "Scoreboard"
-            
-            elif idx == 1:
-                cam_name = "Primary Camera"
-
-            # Header layout with camera name (bold) and remove button
-            header_layout = QHBoxLayout()
-            name_label = QLabel(cam_name)
-            header_layout.addWidget(name_label, alignment=Qt.AlignLeft)
-
-            if idx == 0:
-                header_layout.addWidget(self.toggle, alignment=Qt.AlignRight)
-            
-            elif idx == self.camera_manager.camera_count:
-                remove_button = QPushButton()
-                remove_button.setIcon(self.style().standardIcon(QStyle.SP_TitleBarCloseButton))
-                remove_button.setFixedHeight(13)
-                remove_button.setFlat(True)
-                remove_button.clicked.connect(lambda _, cam_id=idx: self.remove_camera(cam_id))
-
-                header_layout.addWidget(remove_button, alignment=Qt.AlignRight)
-
-            cam_layout.addLayout(header_layout)
-                
-            # Construct the final pipeline string for the preview
-            preview_label = VideoStreamWidget(f"{self.camera_manager.get_shmsink(idx)} ! video/x-raw,width={"1280" if idx == 0 else self.camera_manager.res_width},height={"720" if idx == 0 else self.camera_manager.res_height},framerate={self.camera_manager.fps}/1,format=NV12 ! videoconvert ! videoscale ! video/x-raw,format=RGB,width=272,height=153 ! queue ! appsink name=sink emit-signals=True sync=True drop=False", 272, 153)
-
+            # Left side: Video Stream
+            stream_pipe = f"{self.camera_manager.get_shmsink(idx)} ! video/x-raw,width={'1280' if idx == 0 else self.camera_manager.res_width},height={'720' if idx == 0 else self.camera_manager.res_height},framerate={self.camera_manager.fps}/1,format=NV12 ! videoconvert ! videoscale ! video/x-raw,format=RGB,width=272,height=153 ! queue ! appsink name=sink emit-signals=True sync=True drop=False"
+            preview_label = VideoStreamWidget(stream_pipe, 272, 153)
             self.video_widgets.append(preview_label)
-            cam_layout.addWidget(preview_label)
-            cam_frame.setLayout(cam_layout)
+            cam_row_layout.addWidget(preview_label)
 
-            # Add to grid
-            grid_layout.addWidget(cam_frame, row, col)
+            # Right side: Controls
+            details_layout = QVBoxLayout()
+            details_layout.setAlignment(Qt.AlignTop)
+            
+            cam_name = "Scoreboard" if idx == 0 else (f"Camera {idx}")
+            details_layout.addWidget(QLabel(f"<b>{cam_name}</b>"))
 
-        add_button = QPushButton("Add Camera")
-        add_button.setFixedHeight(200)
-        add_button.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Maximum)
+            if idx == 0:
+                details_layout.addWidget(self.toggle)
+            else:
+                ip_input = MyLineEdit()
+                ip_input.setText(self.camera_manager.camera_ips[idx - 1])
+                ip_input.editingFinished.connect(lambda i=idx, inp=ip_input: self.update_camera_ip(i, inp.text()))
+                
+                details_layout.addWidget(QLabel("IP Address:"))
+                details_layout.addWidget(ip_input)
+
+                remove_button = QPushButton("Remove Camera")
+                remove_button.setIcon(self.style().standardIcon(QStyle.SP_TitleBarCloseButton))
+                remove_button.clicked.connect(lambda _, cam_id=idx: self.remove_camera(cam_id))
+                details_layout.addWidget(remove_button)
+
+            cam_row_layout.addLayout(details_layout)
+            layout.addWidget(cam_frame)
+
+        # Add Camera Button
+        add_button = QPushButton("+ Add New Camera")
+        add_button.setFixedHeight(50)
         add_button.clicked.connect(self.open_add_camera_dialog)
-        grid_layout.addWidget(add_button, (self.camera_manager.camera_count+1) // columns, (self.camera_manager.camera_count+1) % columns)
+        layout.addWidget(add_button)
 
-        layout.addLayout(grid_layout)
+        # 4. Finalizing the ScrollView
+        scroll_area.setWidget(container)
+        tab_layout.addWidget(scroll_area)
 
-        # "Add Camera" button at the bottom
-        space = QLabel("")
-        layout.addWidget(space, alignment=Qt.AlignCenter)
-
-        self.camera_settings_tab.setLayout(layout)
+    # --- ADD THIS HELPER METHOD ---
+    def update_camera_ip(self, idx, new_ip):
+        self.camera_manager.update_camera_ip(idx, new_ip)
+        self.camera_manager.reload_shmsink()
+        self.update_camera_list()
 
     def open_add_camera_dialog(self):
         #dialog = AddCameraDialog(self.camera_manager, self)
@@ -519,6 +509,16 @@ class SettingsScreen(QWidget):
         self.camera_manager.add_camera()
         self.camera_manager.reload_shmsink()
         self.update_camera_list()
+
+    def set_court(self, court: int):
+        """Refactored to trigger the IP recalculation."""
+        self.camera_manager.set_court_and_recalculate(court)
+        self.camera_manager.reload_shmsink()
+        self.update_camera_list()
+
+    def set_auto_record(self, auto_record: bool):
+        self.camera_manager.auto_record = auto_record
+        print(f"Auto record set to: {auto_record}")
 
     def get_connected_cameras(self):
         all_camera_idx = []
@@ -536,7 +536,7 @@ class SettingsScreen(QWidget):
 
     def remove_camera(self, cam_id):
         #self.camera_manager.remove_camera(cam_id)
-        self.camera_manager.remove_camera()
+        self.camera_manager.remove_camera(cam_id)
         self.camera_manager.reload_shmsink()
         self.update_camera_list()
 
@@ -557,28 +557,10 @@ class SettingsScreen(QWidget):
         self.camera_manager.delete_records = delete_records
         # self.camera_manager.save_cameras()
 
-    def set_live(self, key):
-        self.camera_manager.live_key = key
-        # self.camera_manager.save_cameras()
-
     def set_scoreboard(self, is_scoreboard):
         self.camera_manager.is_scoreboard = is_scoreboard
         # self.camera_manager.save_cameras()
         print(is_scoreboard)
-
-    def set_resolution(self, resolution: int):
-        self.camera_manager.res_height = resolution
-        self.camera_manager.res_width = resolution // 9 * 16
-        # self.camera_manager.save_cameras()
-        self.camera_manager.reload_shmsink()
-        self.update_camera_list()
-        print(f"{resolution // 9 * 16}:{resolution}")
-
-    def set_court(self, court: int):
-        self.camera_manager.court = court
-        # self.camera_manager.save_cameras()
-        self.camera_manager.reload_shmsink()
-        self.update_camera_list()
 
     def set_camera_idx(self, idx: int):
         self.camera_manager.camera_idx = idx
