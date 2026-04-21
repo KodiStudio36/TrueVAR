@@ -60,19 +60,11 @@
     ],
     "transitions": [
         {
-            "name": "TrueVAR Logo Stinger 3",
+            "name": "TrueVAR Stinger",
             "id": "obs_stinger_transition",
             "settings": {
-                "path": "/home/kodi/Downloads/logo10-50.webm",
-                "transition_point": 350
-            }
-        },
-        {
-            "name": "TrueVAR Logo Stinger 2",
-            "id": "obs_stinger_transition",
-            "settings": {
-                "path": "/home/kodi/Downloads/text10-50.webm",
-                "transition_point": 350
+                "transition_point": 350,
+                "path": "/home/kodi/Documents/programs/var/TrueVAR/obs/truevar-stinger.webm"
             }
         },
         {
@@ -94,19 +86,11 @@
                 "curve_in": 0.0,
                 "switch_percentage": 50
             }
-        },
-        {
-            "name": "TrueVAR Stinger",
-            "id": "obs_stinger_transition",
-            "settings": {
-                "path": "/home/kodi/Downloads/logo-text10-50.webm",
-                "transition_point": 350
-            }
         }
     ],
     "saved_projectors": [],
     "canvases": [],
-    "current_transition": "Move",
+    "current_transition": "TrueVAR Stinger",
     "transition_duration": 650,
     "preview_locked": false,
     "scaling_enabled": false,
@@ -180,62 +164,7 @@
                 "custom_size": false,
                 "items": [
                     {
-                        "name": "Audio Input Capture (PulseAudio)",
-                        "source_uuid": "a47a257b-09a6-4ab3-b0f1-6d549293e97f",
-                        "visible": true,
-                        "locked": false,
-                        "rot": 0.0,
-                        "scale_ref": {
-                            "x": 1920.0,
-                            "y": 1080.0
-                        },
-                        "align": 5,
-                        "bounds_type": 0,
-                        "bounds_align": 0,
-                        "bounds_crop": false,
-                        "crop_left": 0,
-                        "crop_top": 0,
-                        "crop_right": 0,
-                        "crop_bottom": 0,
-                        "id": 1,
-                        "group_item_backup": false,
-                        "pos": {
-                            "x": 0.0,
-                            "y": 0.0
-                        },
-                        "pos_rel": {
-                            "x": -1.7777777910232544,
-                            "y": -1.0
-                        },
-                        "scale": {
-                            "x": 0.6666666865348816,
-                            "y": 0.6666666865348816
-                        },
-                        "scale_rel": {
-                            "x": 1.0,
-                            "y": 1.0
-                        },
-                        "bounds": {
-                            "x": 0.0,
-                            "y": 0.0
-                        },
-                        "bounds_rel": {
-                            "x": 0.0,
-                            "y": 0.0
-                        },
-                        "scale_filter": "disable",
-                        "blend_method": "default",
-                        "blend_type": "normal",
-                        "show_transition": {
-                            "duration": 0
-                        },
-                        "hide_transition": {
-                            "duration": 0
-                        },
-                        "private_settings": {}
-                    },
-                    {
-                        "name": "Audio Input Capture (PulseAudio) 2",
+                        "name": "Microphone",
                         "source_uuid": "5ff20b5c-1fad-4c63-9e00-edb85084373f",
                         "visible": true,
                         "locked": false,
@@ -288,6 +217,61 @@
                             "duration": 0
                         },
                         "private_settings": {}
+                    },
+                    {
+                        "name": "Scoreboard audio",
+                        "source_uuid": "a47a257b-09a6-4ab3-b0f1-6d549293e97f",
+                        "visible": true,
+                        "locked": false,
+                        "rot": 0.0,
+                        "scale_ref": {
+                            "x": 1920.0,
+                            "y": 1080.0
+                        },
+                        "align": 5,
+                        "bounds_type": 0,
+                        "bounds_align": 0,
+                        "bounds_crop": false,
+                        "crop_left": 0,
+                        "crop_top": 0,
+                        "crop_right": 0,
+                        "crop_bottom": 0,
+                        "id": 1,
+                        "group_item_backup": false,
+                        "pos": {
+                            "x": 0.0,
+                            "y": 0.0
+                        },
+                        "pos_rel": {
+                            "x": -1.7777777910232544,
+                            "y": -1.0
+                        },
+                        "scale": {
+                            "x": 0.6666666865348816,
+                            "y": 0.6666666865348816
+                        },
+                        "scale_rel": {
+                            "x": 1.0,
+                            "y": 1.0
+                        },
+                        "bounds": {
+                            "x": 0.0,
+                            "y": 0.0
+                        },
+                        "bounds_rel": {
+                            "x": 0.0,
+                            "y": 0.0
+                        },
+                        "scale_filter": "disable",
+                        "blend_method": "default",
+                        "blend_type": "normal",
+                        "show_transition": {
+                            "duration": 0
+                        },
+                        "hide_transition": {
+                            "duration": 0
+                        },
+                        "private_settings": {}
                     }
                 ]
             },
@@ -304,77 +288,15 @@
             "push-to-talk-delay": 0,
             "hotkeys": {
                 "OBSBasic.SelectScene": [],
-                "libobs.show_scene_item.1": [],
-                "libobs.hide_scene_item.1": [],
                 "libobs.show_scene_item.5": [],
-                "libobs.hide_scene_item.5": []
+                "libobs.hide_scene_item.5": [],
+                "libobs.show_scene_item.1": [],
+                "libobs.hide_scene_item.1": []
             },
             "deinterlace_mode": 0,
             "deinterlace_field_order": 0,
             "monitoring_type": 0,
             "canvas_uuid": "6c69626f-6273-4c00-9d88-c5136d61696e",
-            "private_settings": {}
-        },
-        {
-            "prev_ver": 536870916,
-            "name": "Audio Input Capture (PulseAudio)",
-            "uuid": "a47a257b-09a6-4ab3-b0f1-6d549293e97f",
-            "id": "pulse_input_capture",
-            "versioned_id": "pulse_input_capture",
-            "settings": {
-                "device_id": "alsa_input.usb-MACROSILICON_USB_Video-02.analog-stereo"
-            },
-            "mixers": 255,
-            "sync": 0,
-            "flags": 0,
-            "volume": 0.3134102523326874,
-            "balance": 0.5,
-            "enabled": true,
-            "muted": false,
-            "push-to-mute": false,
-            "push-to-mute-delay": 0,
-            "push-to-talk": false,
-            "push-to-talk-delay": 0,
-            "hotkeys": {
-                "libobs.mute": [],
-                "libobs.unmute": [],
-                "libobs.push-to-mute": [],
-                "libobs.push-to-talk": []
-            },
-            "deinterlace_mode": 0,
-            "deinterlace_field_order": 0,
-            "monitoring_type": 0,
-            "private_settings": {}
-        },
-        {
-            "prev_ver": 536870916,
-            "name": "Audio Input Capture (PulseAudio) 2",
-            "uuid": "5ff20b5c-1fad-4c63-9e00-edb85084373f",
-            "id": "pulse_input_capture",
-            "versioned_id": "pulse_input_capture",
-            "settings": {
-                "device_id": "alsa_input.usb-KTMicro_KT_USB_Audio_2024-05-20-0000-0000-0000--00.mono-fallback"
-            },
-            "mixers": 255,
-            "sync": 0,
-            "flags": 0,
-            "volume": 0.1281130462884903,
-            "balance": 0.5,
-            "enabled": true,
-            "muted": false,
-            "push-to-mute": false,
-            "push-to-mute-delay": 0,
-            "push-to-talk": false,
-            "push-to-talk-delay": 0,
-            "hotkeys": {
-                "libobs.mute": [],
-                "libobs.unmute": [],
-                "libobs.push-to-mute": [],
-                "libobs.push-to-talk": []
-            },
-            "deinterlace_mode": 0,
-            "deinterlace_field_order": 0,
-            "monitoring_type": 0,
             "private_settings": {}
         },
         {
@@ -465,37 +387,6 @@
         },
         {
             "prev_ver": 536870916,
-            "name": "GStreamer Source",
-            "uuid": "a8f340c4-c171-47d6-ab16-4291ace57396",
-            "id": "gstreamer-source",
-            "versioned_id": "gstreamer-source",
-            "settings": {
-                "pipeline": "shmsrc socket-path=/tmp/camera0_shm_socket do-timestamp=true is-live=true ! video/x-raw,width=1280,height=720,framerate=30/1,format=NV12,interlace-mode=progressive ! video."
-            },
-            "mixers": 255,
-            "sync": 0,
-            "flags": 0,
-            "volume": 0.0,
-            "balance": 0.5,
-            "enabled": true,
-            "muted": true,
-            "push-to-mute": false,
-            "push-to-mute-delay": 0,
-            "push-to-talk": false,
-            "push-to-talk-delay": 0,
-            "hotkeys": {
-                "libobs.mute": [],
-                "libobs.unmute": [],
-                "libobs.push-to-mute": [],
-                "libobs.push-to-talk": []
-            },
-            "deinterlace_mode": 0,
-            "deinterlace_field_order": 0,
-            "monitoring_type": 0,
-            "private_settings": {}
-        },
-        {
-            "prev_ver": 536870916,
             "name": "IVR Closeup Scene",
             "uuid": "3463e486-d0fc-4701-b5d9-1cd3f91f4776",
             "id": "scene",
@@ -504,61 +395,6 @@
                 "id_counter": 7,
                 "custom_size": false,
                 "items": [
-                    {
-                        "name": "GStreamer Source",
-                        "source_uuid": "a8f340c4-c171-47d6-ab16-4291ace57396",
-                        "visible": true,
-                        "locked": false,
-                        "rot": 0.0,
-                        "scale_ref": {
-                            "x": 1280.0,
-                            "y": 720.0
-                        },
-                        "align": 5,
-                        "bounds_type": 0,
-                        "bounds_align": 0,
-                        "bounds_crop": false,
-                        "crop_left": 0,
-                        "crop_top": 0,
-                        "crop_right": 0,
-                        "crop_bottom": 0,
-                        "id": 5,
-                        "group_item_backup": false,
-                        "pos": {
-                            "x": -305.0,
-                            "y": 21.0
-                        },
-                        "pos_rel": {
-                            "x": -2.625,
-                            "y": -0.9416666626930237
-                        },
-                        "scale": {
-                            "x": 0.23046875,
-                            "y": 0.23055554926395416
-                        },
-                        "scale_rel": {
-                            "x": 0.23046875,
-                            "y": 0.23055554926395416
-                        },
-                        "bounds": {
-                            "x": 0.0,
-                            "y": 0.0
-                        },
-                        "bounds_rel": {
-                            "x": 0.0,
-                            "y": 0.0
-                        },
-                        "scale_filter": "disable",
-                        "blend_method": "default",
-                        "blend_type": "normal",
-                        "show_transition": {
-                            "duration": 0
-                        },
-                        "hide_transition": {
-                            "duration": 0
-                        },
-                        "private_settings": {}
-                    },
                     {
                         "name": "Background",
                         "source_uuid": "c8a042b7-e636-4e0b-9c1b-d854b496dc00",
@@ -594,61 +430,6 @@
                         "scale_rel": {
                             "x": 0.6666666865348816,
                             "y": 0.6666666865348816
-                        },
-                        "bounds": {
-                            "x": 0.0,
-                            "y": 0.0
-                        },
-                        "bounds_rel": {
-                            "x": 0.0,
-                            "y": 0.0
-                        },
-                        "scale_filter": "disable",
-                        "blend_method": "default",
-                        "blend_type": "normal",
-                        "show_transition": {
-                            "duration": 0
-                        },
-                        "hide_transition": {
-                            "duration": 0
-                        },
-                        "private_settings": {}
-                    },
-                    {
-                        "name": "Main View  - Tool",
-                        "source_uuid": "79c2a451-c15b-426c-8a64-dac158f67cd3",
-                        "visible": true,
-                        "locked": false,
-                        "rot": 0.0,
-                        "scale_ref": {
-                            "x": 1280.0,
-                            "y": 720.0
-                        },
-                        "align": 5,
-                        "bounds_type": 0,
-                        "bounds_align": 0,
-                        "bounds_crop": false,
-                        "crop_left": 0,
-                        "crop_top": 0,
-                        "crop_right": 0,
-                        "crop_bottom": 0,
-                        "id": 6,
-                        "group_item_backup": false,
-                        "pos": {
-                            "x": 30.0,
-                            "y": 140.0
-                        },
-                        "pos_rel": {
-                            "x": -1.6944444179534912,
-                            "y": -0.6111111044883728
-                        },
-                        "scale": {
-                            "x": 0.2679687440395355,
-                            "y": 0.2680555582046509
-                        },
-                        "scale_rel": {
-                            "x": 0.2679687440395355,
-                            "y": 0.2680555582046509
                         },
                         "bounds": {
                             "x": 0.0,
@@ -849,12 +630,8 @@
             "push-to-talk-delay": 0,
             "hotkeys": {
                 "OBSBasic.SelectScene": [],
-                "libobs.show_scene_item.5": [],
-                "libobs.hide_scene_item.5": [],
                 "libobs.show_scene_item.3": [],
                 "libobs.hide_scene_item.3": [],
-                "libobs.show_scene_item.6": [],
-                "libobs.hide_scene_item.6": [],
                 "libobs.show_scene_item.2": [],
                 "libobs.hide_scene_item.2": [],
                 "libobs.show_scene_item.7": [],
@@ -1102,61 +879,6 @@
                         "private_settings": {}
                     },
                     {
-                        "name": "GStreamer Source",
-                        "source_uuid": "a8f340c4-c171-47d6-ab16-4291ace57396",
-                        "visible": true,
-                        "locked": false,
-                        "rot": 0.0,
-                        "scale_ref": {
-                            "x": 1280.0,
-                            "y": 720.0
-                        },
-                        "align": 5,
-                        "bounds_type": 0,
-                        "bounds_align": 0,
-                        "bounds_crop": false,
-                        "crop_left": 0,
-                        "crop_top": 0,
-                        "crop_right": 0,
-                        "crop_bottom": 0,
-                        "id": 11,
-                        "group_item_backup": false,
-                        "pos": {
-                            "x": -305.0,
-                            "y": 21.0
-                        },
-                        "pos_rel": {
-                            "x": -2.625,
-                            "y": -0.9416666626930237
-                        },
-                        "scale": {
-                            "x": 0.23046875,
-                            "y": 0.23055554926395416
-                        },
-                        "scale_rel": {
-                            "x": 0.23046875,
-                            "y": 0.23055554926395416
-                        },
-                        "bounds": {
-                            "x": 0.0,
-                            "y": 0.0
-                        },
-                        "bounds_rel": {
-                            "x": 0.0,
-                            "y": 0.0
-                        },
-                        "scale_filter": "disable",
-                        "blend_method": "default",
-                        "blend_type": "normal",
-                        "show_transition": {
-                            "duration": 0
-                        },
-                        "hide_transition": {
-                            "duration": 0
-                        },
-                        "private_settings": {}
-                    },
-                    {
                         "name": "TrueVAR Webserver",
                         "source_uuid": "f3c21e14-3932-4a9c-9991-dad28e170f55",
                         "visible": true,
@@ -1289,8 +1011,6 @@
                 "libobs.hide_scene_item.9": [],
                 "libobs.show_scene_item.10": [],
                 "libobs.hide_scene_item.10": [],
-                "libobs.show_scene_item.11": [],
-                "libobs.hide_scene_item.11": [],
                 "libobs.show_scene_item.12": [],
                 "libobs.hide_scene_item.12": [],
                 "libobs.show_scene_item.5": [],
@@ -1457,61 +1177,6 @@
                         "private_settings": {}
                     },
                     {
-                        "name": "Display Capture (XSHM) 2",
-                        "source_uuid": "da43f369-a45e-4147-8e93-c8872d18655b",
-                        "visible": true,
-                        "locked": false,
-                        "rot": 0.0,
-                        "scale_ref": {
-                            "x": 1280.0,
-                            "y": 720.0
-                        },
-                        "align": 5,
-                        "bounds_type": 0,
-                        "bounds_align": 0,
-                        "bounds_crop": false,
-                        "crop_left": 0,
-                        "crop_top": 0,
-                        "crop_right": 0,
-                        "crop_bottom": 0,
-                        "id": 12,
-                        "group_item_backup": false,
-                        "pos": {
-                            "x": 1281.0,
-                            "y": 139.0
-                        },
-                        "pos_rel": {
-                            "x": 1.7805556058883667,
-                            "y": -0.6138888597488403
-                        },
-                        "scale": {
-                            "x": 0.4480381906032562,
-                            "y": 0.4482758641242981
-                        },
-                        "scale_rel": {
-                            "x": 0.4480381906032562,
-                            "y": 0.4482758641242981
-                        },
-                        "bounds": {
-                            "x": 0.0,
-                            "y": 0.0
-                        },
-                        "bounds_rel": {
-                            "x": 0.0,
-                            "y": 0.0
-                        },
-                        "scale_filter": "disable",
-                        "blend_method": "default",
-                        "blend_type": "normal",
-                        "show_transition": {
-                            "duration": 0
-                        },
-                        "hide_transition": {
-                            "duration": 0
-                        },
-                        "private_settings": {}
-                    },
-                    {
                         "name": "Main View \\w scoreboard - Tool",
                         "source_uuid": "269247ee-6228-4fa0-9fbc-0b9d247c9e63",
                         "visible": true,
@@ -1567,7 +1232,7 @@
                         "private_settings": {}
                     },
                     {
-                        "name": "GStreamer Source",
+                        "name": "Scoreboard Camera",
                         "source_uuid": "a8f340c4-c171-47d6-ab16-4291ace57396",
                         "visible": true,
                         "locked": false,
@@ -1750,8 +1415,6 @@
                 "libobs.hide_scene_item.7": [],
                 "libobs.show_scene_item.11": [],
                 "libobs.hide_scene_item.11": [],
-                "libobs.show_scene_item.12": [],
-                "libobs.hide_scene_item.12": [],
                 "libobs.show_scene_item.5": [],
                 "libobs.hide_scene_item.5": [],
                 "libobs.show_scene_item.14": [],
@@ -1891,61 +1554,6 @@
                         "private_settings": {}
                     },
                     {
-                        "name": "Display Capture (XSHM) 2",
-                        "source_uuid": "da43f369-a45e-4147-8e93-c8872d18655b",
-                        "visible": true,
-                        "locked": false,
-                        "rot": 0.0,
-                        "scale_ref": {
-                            "x": 1280.0,
-                            "y": 720.0
-                        },
-                        "align": 5,
-                        "bounds_type": 0,
-                        "bounds_align": 0,
-                        "bounds_crop": false,
-                        "crop_left": 0,
-                        "crop_top": 0,
-                        "crop_right": 0,
-                        "crop_bottom": 0,
-                        "id": 3,
-                        "group_item_backup": false,
-                        "pos": {
-                            "x": 1281.0,
-                            "y": 139.0
-                        },
-                        "pos_rel": {
-                            "x": 1.7805556058883667,
-                            "y": -0.6138888597488403
-                        },
-                        "scale": {
-                            "x": 0.4480381906032562,
-                            "y": 0.4482758641242981
-                        },
-                        "scale_rel": {
-                            "x": 0.4480381906032562,
-                            "y": 0.4482758641242981
-                        },
-                        "bounds": {
-                            "x": 0.0,
-                            "y": 0.0
-                        },
-                        "bounds_rel": {
-                            "x": 0.0,
-                            "y": 0.0
-                        },
-                        "scale_filter": "disable",
-                        "blend_method": "default",
-                        "blend_type": "normal",
-                        "show_transition": {
-                            "duration": 0
-                        },
-                        "hide_transition": {
-                            "duration": 0
-                        },
-                        "private_settings": {}
-                    },
-                    {
                         "name": "Main View \\w scoreboard - Tool",
                         "source_uuid": "269247ee-6228-4fa0-9fbc-0b9d247c9e63",
                         "visible": true,
@@ -2056,7 +1664,7 @@
                         "private_settings": {}
                     },
                     {
-                        "name": "GStreamer Source",
+                        "name": "Scoreboard Camera",
                         "source_uuid": "a8f340c4-c171-47d6-ab16-4291ace57396",
                         "visible": true,
                         "locked": false,
@@ -2184,8 +1792,6 @@
                 "libobs.hide_scene_item.1": [],
                 "libobs.show_scene_item.2": [],
                 "libobs.hide_scene_item.2": [],
-                "libobs.show_scene_item.3": [],
-                "libobs.hide_scene_item.3": [],
                 "libobs.show_scene_item.4": [],
                 "libobs.hide_scene_item.4": [],
                 "libobs.show_scene_item.5": [],
@@ -2441,6 +2047,37 @@
                 "transition": "",
                 "transition_duration": 300
             }
+        },
+        {
+            "prev_ver": 536870916,
+            "name": "Microphone",
+            "uuid": "5ff20b5c-1fad-4c63-9e00-edb85084373f",
+            "id": "pulse_input_capture",
+            "versioned_id": "pulse_input_capture",
+            "settings": {
+                "device_id": "alsa_input.usb-KTMicro_KT_USB_Audio_2024-05-20-0000-0000-0000--00.mono-fallback"
+            },
+            "mixers": 255,
+            "sync": 0,
+            "flags": 0,
+            "volume": 0.1281130462884903,
+            "balance": 0.5,
+            "enabled": true,
+            "muted": false,
+            "push-to-mute": false,
+            "push-to-mute-delay": 0,
+            "push-to-talk": false,
+            "push-to-talk-delay": 0,
+            "hotkeys": {
+                "libobs.mute": [],
+                "libobs.unmute": [],
+                "libobs.push-to-mute": [],
+                "libobs.push-to-talk": []
+            },
+            "deinterlace_mode": 0,
+            "deinterlace_field_order": 0,
+            "monitoring_type": 0,
+            "private_settings": {}
         },
         {
             "prev_ver": 536870916,
@@ -2704,6 +2341,68 @@
         },
         {
             "prev_ver": 536870916,
+            "name": "Scoreboard audio",
+            "uuid": "a47a257b-09a6-4ab3-b0f1-6d549293e97f",
+            "id": "pulse_input_capture",
+            "versioned_id": "pulse_input_capture",
+            "settings": {
+                "device_id": "alsa_input.usb-MACROSILICON_USB_Video-02.analog-stereo"
+            },
+            "mixers": 255,
+            "sync": 1500000000,
+            "flags": 0,
+            "volume": 0.3134102523326874,
+            "balance": 0.5,
+            "enabled": true,
+            "muted": false,
+            "push-to-mute": false,
+            "push-to-mute-delay": 0,
+            "push-to-talk": false,
+            "push-to-talk-delay": 0,
+            "hotkeys": {
+                "libobs.mute": [],
+                "libobs.unmute": [],
+                "libobs.push-to-mute": [],
+                "libobs.push-to-talk": []
+            },
+            "deinterlace_mode": 0,
+            "deinterlace_field_order": 0,
+            "monitoring_type": 0,
+            "private_settings": {}
+        },
+        {
+            "prev_ver": 536870916,
+            "name": "Scoreboard Camera",
+            "uuid": "a8f340c4-c171-47d6-ab16-4291ace57396",
+            "id": "gstreamer-source",
+            "versioned_id": "gstreamer-source",
+            "settings": {
+                "pipeline": "shmsrc socket-path=/tmp/camera0_shm_socket do-timestamp=true is-live=true ! video/x-raw,width=1280,height=720,framerate=30/1,format=NV12,interlace-mode=progressive ! video."
+            },
+            "mixers": 255,
+            "sync": 0,
+            "flags": 0,
+            "volume": 0.0,
+            "balance": 0.5,
+            "enabled": true,
+            "muted": true,
+            "push-to-mute": false,
+            "push-to-mute-delay": 0,
+            "push-to-talk": false,
+            "push-to-talk-delay": 0,
+            "hotkeys": {
+                "libobs.mute": [],
+                "libobs.unmute": [],
+                "libobs.push-to-mute": [],
+                "libobs.push-to-talk": []
+            },
+            "deinterlace_mode": 0,
+            "deinterlace_field_order": 0,
+            "monitoring_type": 0,
+            "private_settings": {}
+        },
+        {
+            "prev_ver": 536870916,
             "name": "Start Soon Scene",
             "uuid": "11cbcb8f-11d8-4d4d-99e4-583a630f9cdd",
             "id": "scene",
@@ -2933,61 +2632,6 @@
                         "private_settings": {}
                     },
                     {
-                        "name": "GStreamer Source",
-                        "source_uuid": "a8f340c4-c171-47d6-ab16-4291ace57396",
-                        "visible": true,
-                        "locked": false,
-                        "rot": 0.0,
-                        "scale_ref": {
-                            "x": 1280.0,
-                            "y": 720.0
-                        },
-                        "align": 5,
-                        "bounds_type": 0,
-                        "bounds_align": 0,
-                        "bounds_crop": false,
-                        "crop_left": 0,
-                        "crop_top": 0,
-                        "crop_right": 0,
-                        "crop_bottom": 0,
-                        "id": 14,
-                        "group_item_backup": false,
-                        "pos": {
-                            "x": -295.0,
-                            "y": 21.0
-                        },
-                        "pos_rel": {
-                            "x": -2.597222328186035,
-                            "y": -0.9416666626930237
-                        },
-                        "scale": {
-                            "x": 0.23046875,
-                            "y": 0.23055554926395416
-                        },
-                        "scale_rel": {
-                            "x": 0.23046875,
-                            "y": 0.23055554926395416
-                        },
-                        "bounds": {
-                            "x": 0.0,
-                            "y": 0.0
-                        },
-                        "bounds_rel": {
-                            "x": 0.0,
-                            "y": 0.0
-                        },
-                        "scale_filter": "disable",
-                        "blend_method": "default",
-                        "blend_type": "normal",
-                        "show_transition": {
-                            "duration": 0
-                        },
-                        "hide_transition": {
-                            "duration": 0
-                        },
-                        "private_settings": {}
-                    },
-                    {
                         "name": "Wattermark",
                         "source_uuid": "9a165760-7a30-415b-9644-41c912f73823",
                         "visible": true,
@@ -3065,8 +2709,6 @@
                 "libobs.hide_scene_item.16": [],
                 "libobs.show_scene_item.11": [],
                 "libobs.hide_scene_item.11": [],
-                "libobs.show_scene_item.14": [],
-                "libobs.hide_scene_item.14": [],
                 "libobs.show_scene_item.13": [],
                 "libobs.hide_scene_item.13": []
             },
