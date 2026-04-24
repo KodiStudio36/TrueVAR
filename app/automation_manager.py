@@ -107,28 +107,31 @@ class AutomationManager(QObject):
         print("Starting start ivr flow")
         self.obs.set_stinger_transition()
 
-        await asyncio.sleep(2)
+        await asyncio.sleep(2) # This a is constant
         self.web.show_ivr_widget()
 
         await asyncio.sleep(5)
         self.web.hide_ivr_widget()
         self.obs.set_ivr_scene()
 
-        await asyncio.sleep(.1)
-        self.obs.set_move_transition()
+        await asyncio.sleep(3)
+        self.obs.set_stinger_transition()
 
     async def _start_ivr_closeup_flow(self):
         print("Starting start ivr closeup flow")
-
+        self.obs.set_move_transition()
         self.obs.set_ivr_closeup_scene()
-        
-        await asyncio.sleep(.1)
+
+        await asyncio.sleep(3)
         self.obs.set_stinger_transition()
 
     async def _post_ivr_flow(self):
         print("Starting post ivr flow")
-
+        self.web.reset_widgets(["widget-ivr"])
         self.obs.set_main_scene_w_scoreboard()
+
+        await asyncio.sleep(3)
+        self.obs.set_move_transition()
 
     async def _message_broadcast_flow(self, data):
         print("Starting message broadcast flow")
@@ -138,6 +141,9 @@ class AutomationManager(QObject):
     async def _troubleshooting_flow(self):
         print("Starting troubleshooting flow")
         self.web.reset_widgets()
+
+        self.obs.set_stinger_transition()
+        await asyncio.sleep(.5)
 
         self.obs.set_troubleshooting_scene()
 

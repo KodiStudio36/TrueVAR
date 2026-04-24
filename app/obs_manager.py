@@ -105,9 +105,9 @@ class OBSManager(SettingsManager, QObject):
             if stream_key:
                 self.set_stream_key(stream_key)
 
-            self.set_starting_scene()
-            time.sleep(.1)
             self.set_move_transition()
+            time.sleep(.3)
+            self.set_starting_scene()
 
                 # Attempt to connect after a short delay to let OBS start
                 # In a real app, you might want a retry loop in a separate thread
