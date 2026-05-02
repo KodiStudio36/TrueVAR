@@ -2,21 +2,13 @@ from PyQt5.QtCore import QObject, QThread
 from app.asset_worker import AssetWorker
 from app.injector import singleton, Injector
 from app.main_manager import MainManager
+from app.discipline_factory import DisciplineFactory
 
 @singleton
 class TournamentManager(QObject):
     def __init__(self):
         super().__init__()
         self.hub = Injector.find(MainManager)
-        
-        # State Storage
-        self.tournament_id = None
-        self.name = ""
-        self.location = ""
-        self.start_date = ""
-        self.courts = 0
-        self.stream_key = None
-        self.court_num = None
         
         # Threading
         self._thread = None
@@ -26,10 +18,6 @@ class TournamentManager(QObject):
         self.hub.on_tournament_data_signal.connect(self.update_data)
 
     def update_data(self, data: dict):
-        """
-        Expects: {'id': 3, 'name': 'myska', 'startDate': '2026-02-24', 
-                 'startTime': '03:33:00', 'location': 'vf', 'courts': 2}
-        """
         print(f"[Tournament] Received new data for: {data.get('name')}")
         
         # 1. Update Internal State
@@ -40,6 +28,7 @@ class TournamentManager(QObject):
         self.courts = data.get('courts', 1)
         self.stream_key = data.get('stream_key', None)
         self.court_num = data.get('court_num', 1)
+        self.discipline = data.get("discipline", "kyorugi")
         
         # 2. Logic: Should we generate assets?
         # Check if 'stream' is in data or if global streaming is enabled
@@ -82,7 +71,18 @@ class TournamentManager(QObject):
 
     def _on_assets_ready(self):
         print("[Tournament] Assets generated and ready for OBS.")
-        self.hub.start_obs_signal.emit(self.stream_key)
+
+        # 1. Build discipline system
+        listener, automation = DisciplineFactory.create(self.discipline)
+
+        self._listener = listener
+        self._automation = automation
+
+        # 3. Start listener ONLY NOW
+        self._listener.start()
+
+        # 4. Continue normal flow
+        self.hub.start_obs_signal.emit(self.discipline, self.stream_key)
 
     def get_summary(self):
         """Helper for UI components."""

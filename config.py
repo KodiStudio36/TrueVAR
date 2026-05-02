@@ -9,15 +9,15 @@ camera_settings_file = settings_path + "/camera_settings.json"
 obs_settings_file = settings_path + "/obs_settings.json"
 key_bind_settings_file = settings_path + "/key_bind_settings.json"
 webserver_settings_file = settings_path + "/webserver_settings.json"
-udp_settings_file = settings_path + "/udp_settings.json"
+kyorugi_daedo_settings_file = settings_path + "/kyorugi_daedo_settings.json"
 licence_settings_file = settings_path + "/license.bin"
 external_screen_settings_file = settings_path + "/external_screen_settings.json"
 
 manage_external_screen_script = scripts_path + "/manage_display.sh"
 launch_obs_script = scripts_path + "/launch_obs.sh"
 
-server_url = "http://192.168.177.200:5000/"
-# server_url = "http://0.0.0.0:5000/"
+# server_url = "http://192.168.177.200:5000/"
+server_url = "http://0.0.0.0:5000/"
 api_url = server_url + "api/ivr/"
 socketio_url = server_url
 

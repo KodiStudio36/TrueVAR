@@ -2,7 +2,6 @@ import socketio
 from PyQt5.QtCore import QObject, pyqtSignal, QTimer
 from app import tournament_manager
 from app.main_manager import MainManager
-from app.udp_manager import UdpManager
 from app.injector import singleton, Injector
 from config import socketio_url
 
@@ -17,7 +16,6 @@ class SocketManager(QObject):
     def __init__(self):
         super().__init__()
         self.hub = Injector.find(MainManager)
-        self.udp_manager = Injector.find(UdpManager)
         self.socket_url = socketio_url
         self.license_key = None  # Stored here for authorized emits
         
@@ -32,9 +30,8 @@ class SocketManager(QObject):
 
         self.request_confirmation.connect(self.confirm_connection)
 
-        # self.hub.new_fight_signal.connect(self.new_fight)
-        self.hub.listener_stable_signal.connect(self.update_fight_data)
-        self.hub.start_fight_signal.connect(self.start_fight)
+        # self.hub.listener_stable_signal.connect(self.update_fight_data)
+        # self.hub.start_fight_signal.connect(self.start_fight)
 
     def _setup_handlers(self):
         @self.sio.event
@@ -132,17 +129,14 @@ class SocketManager(QObject):
         print(f"[SocketIO] Confirm connection")
         self.emit_authorized("confirm_connection", {"example": "example"})
 
-    # def new_fight(self):
-    #     self.emit_authorized("new_fight", {"data": self.udp_manager.worker.data})
-    #     print("[SocketIO] New fight emited")
+    # TODO: here bitch
+    # def update_fight_data(self):
+    #     self.emit_authorized("update_fight_data", {"data": self.udp_manager.worker.data})
+    #     print("[SocketIO] Data Update Emited")
 
-    def update_fight_data(self):
-        self.emit_authorized("update_fight_data", {"data": self.udp_manager.worker.data})
-        print("[SocketIO] Data Update Emited")
-
-    def start_fight(self):
-        self.emit_authorized("start_fight", {})
-        print("[SocketIO] Start match emited")
+    # def start_fight(self):
+    #     self.emit_authorized("start_fight", {})
+    #     print("[SocketIO] Start match emited")
 
     def disconnect(self):
         self.sio.disconnect()

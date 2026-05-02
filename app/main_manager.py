@@ -15,7 +15,7 @@ class MainManager(QObject):
 
     # --- Server Stream Controls ---
     on_tournament_data_signal = pyqtSignal(dict)
-    start_obs_signal = pyqtSignal(str)
+    start_obs_signal = pyqtSignal(str, str)
     start_livestream_signal = pyqtSignal()
     stop_livestream_signal = pyqtSignal()
     start_tournament_signal = pyqtSignal()
@@ -35,6 +35,12 @@ class MainManager(QObject):
     start_round_signal = pyqtSignal()
     start_break_signal = pyqtSignal()
     win_signal = pyqtSignal()
+
+    # --- Ivr Signals ---
+    on_troubleshoot_signal = pyqtSignal()
+    start_ivr_signal = pyqtSignal()
+    start_ivr_closeup_signal = pyqtSignal()
+    stop_ivr_signal = pyqtSignal()
 
     def __init__(self):
         super().__init__()

@@ -22,12 +22,10 @@ class OBSManager(SettingsManager, QObject):
     # --- Settings ---
     obs_host = Setting("localhost")
     obs_port = Setting(4455)
-    obs_password = Setting("password") # Set this in your settings file or UI
+    obs_password = Setting("samko211")
 
-    # Scene Collection Names (Must match OBS exactly)
-    basic_collection_name = Setting("TrueVAR Basic Livestream")
-    pro_collection_name = Setting("TrueVAR Pro Livestream")
-    olympic_collection_name = Setting("TrueVAR Olympic Livestream")
+    kyorugi_collection_name = Setting("TrueVAR Kyorugi")
+    poomsae_collection_name = Setting("TrueVAR Poomsae")
 
     start_soon_scene = Setting("Start Soon Scene")
     main_scene = Setting("Main Scene")
@@ -48,7 +46,7 @@ class OBSManager(SettingsManager, QObject):
         self.is_connected = False
         self.collection = None
 
-        self.hub.start_obs_signal.connect(lambda stream_key: self.launch_obs("pro", stream_key))
+        self.hub.start_obs_signal.connect(self.launch_obs)
         self.hub.start_livestream_signal.connect(self.start_streaming)
         self.hub.stop_livestream_signal.connect(self.stop_streaming)
 
@@ -62,57 +60,49 @@ class OBSManager(SettingsManager, QObject):
             # pgrep returns a non-zero exit code if no process is found
             return False
 
-    def launch_obs(self, mode="basic", stream_key=None):
+    def launch_obs(self, mode="kyorugi", stream_key=None):
         """
         Launches OBS Studio.
         :param mode: 'basic' or 'pro' to select the initial scene collection via CLI.
         """
 
-        web_manager = Injector.find(WebServerManager)
+        # TODO: Move to Tournament Manager
+        # web_manager = Injector.find(WebServerManager)
         
-        if mode == "pro" or mode == "olympic":
-            # Start the webserver for overlays
-            if web_manager:
-                print("Pro mode detected: Starting WebServer...")
-                web_manager.start_server()
-        else:
-            # Optional: Stop server if switching back to basic to save resources
-            if web_manager:
-                web_manager.stop_server()
+        # if mode == "pro" or mode == "olympic":
+        #     # Start the webserver for overlays
+        #     if web_manager:
+        #         print("Pro mode detected: Starting WebServer...")
+        #         web_manager.start_server()
+        # else:
+        #     # Optional: Stop server if switching back to basic to save resources
+        #     if web_manager:
+        #         web_manager.stop_server()
 
         # Determine collection based on mode
-        if mode == "basic":
-            self.collection = self.basic_collection_name
+        if mode == "Kyorugi DAEDO":
+            self.collection = self.kyorugi_collection_name
         
-        elif mode == "pro":
-            self.collection = self.pro_collection_name
+        elif mode == "Poomsae FitoFan":
+            self.collection = self.poomsae_collection_name
 
-        elif mode == "olympic":
-            self.collection = self.olympic_collection_name
-
-
-        if self.is_obs_running():
-            print("OBS is already running. Skipping launch script and connecting...")
-        else:
+        if not self.is_obs_running():
             print(f"OBS not detected. Launching with collection: {self.collection}")
-            # try:
-                # OBS requires the working directory to be its own bin folder usually
             subprocess.run([launch_obs_script, self.collection], check=True)
             print(f"Launching OBS with collection: {self.collection}")
 
-            self.connect_to_obs()
+        self.connect_to_obs()
 
-            if stream_key:
-                self.set_stream_key(stream_key)
+        print("ououououououou")
 
-            self.set_move_transition()
-            time.sleep(.3)
-            self.set_starting_scene()
+        if stream_key:
+            self.set_stream_key(stream_key)
 
-                # Attempt to connect after a short delay to let OBS start
-                # In a real app, you might want a retry loop in a separate thread
-            # except Exception as e:
-            #     self.error_occurred.emit(str(e))
+        print("nououououououou")
+
+        self.set_starting_scene()
+
+        print("jujujujujujuj")
 
     def connect_to_obs(self):
         """Establishes WebSocket connection to OBS."""
@@ -162,7 +152,7 @@ class OBSManager(SettingsManager, QObject):
             self.error_occurred.emit(f"Failed to set stream key: {e}")
 
     def refresh_cameras(self):
-        if self.is_obs_running():
+        if self.is_obs_running() and self.client:
             source = self.client.call(requests.GetSceneItemList(sceneName="Main View  - Tool")).getSceneItems()[0]
             self.client.call(requests.SetSceneItemEnabled(
                 sceneName="Main View  - Tool", 
@@ -200,25 +190,18 @@ class OBSManager(SettingsManager, QObject):
             print(f"Error switching scene: {e}")
 
     def set_starting_scene(self):
-        if self.collection == self.basic_collection_name:
-            self.set_scene(self.main_scene)
-
-        elif self.collection == self.pro_collection_name or self.collection == self.olympic_collection_name:
             self.set_scene(self.start_soon_scene)
 
     def set_main_scene(self):
         self.set_scene(self.main_scene)
 
     def set_main_scene_w_scoreboard(self):
-        if self.collection == self.pro_collection_name or self.collection == self.olympic_collection_name:
             self.set_scene(self.main_scene_w_scoreboard)
 
     def set_ivr_scene(self):
-        if self.collection == self.pro_collection_name or self.collection == self.olympic_collection_name:
             self.set_scene(self.ivr_scene)
 
     def set_ivr_closeup_scene(self):
-        if self.collection == self.pro_collection_name or self.collection == self.olympic_collection_name:
             self.set_scene(self.ivr_closeup_scene)
 
     def set_troubleshooting_scene(self):

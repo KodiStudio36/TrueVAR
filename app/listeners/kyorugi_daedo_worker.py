@@ -1,4 +1,4 @@
-# app/udp_worker.py
+# app/kyorugi_daedo_worker.py
 from multiprocessing.pool import INIT
 import socket
 from traceback import print_tb
@@ -13,7 +13,7 @@ FIGHT_STATE = "fight"
 BREAK_STATE = "brk"
 KYE_SHI_STATE = "kye_shi"
 
-class UdpWorker(QObject):
+class KyorugiDaedoWorker(QObject):
     """
     Listens for and parses UDP packets from Tk-Strike in a dedicated thread.
     This now contains the full, correct parsing logic.

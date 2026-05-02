@@ -8,7 +8,6 @@ from interface.dialogs.loading_dialog import StartupLoaderDialog  # <-- New Impo
 from app.license_manager import LicenseManager
 from app.socket_manager import SocketManager
 from app.injector import Injector
-from app.udp_manager import UdpManager
 from config import records_path, settings_path 
 
 from qasync import QEventLoop as AsyncioPyQtLoop 
@@ -77,11 +76,6 @@ def main():
     status_text = " (OFFLINE)" if is_offline_mode else " (ONLINE)"
     main_window.setWindowTitle(f"TrueVAR {status_text}")
     main_window.show()
-
-    # 5. Background Services
-    udp_manager: UdpManager = Injector.find(UdpManager)
-    if udp_manager.udp_default and not udp_manager.thread.isRunning():
-        udp_manager.start_listener()
 
     with event_loop:
         event_loop.run_forever()

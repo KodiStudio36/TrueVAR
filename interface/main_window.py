@@ -10,7 +10,7 @@ from time import time
 from app.injector import Injector
 from app.external_screen_manager import ExternalScreenManager
 from app.key_bind_manager import KeyBindManager
-from app.automation_manager import AutomationManager
+from app.main_manager import MainManager
 from app.camera_manager import CameraManager
 from app.main_manager import MainManager
 
@@ -19,7 +19,7 @@ class MainWindow(QMainWindow):
         super().__init__()
 
         self.key_bind_manager: KeyBindManager = Injector.find(KeyBindManager)
-        self.automation_manager: AutomationManager = Injector.find(AutomationManager)
+        self.hub: MainManager = Injector.find(MainManager)
         self.camera_manager: CameraManager = Injector.find(CameraManager)
         self.external_screen_manager: ExternalScreenManager = Injector.find(ExternalScreenManager)
 
@@ -145,7 +145,7 @@ class MainWindow(QMainWindow):
             self.external_screen_manager.toggle_display_mode()
 
         if key_sequence == QKeySequence(self.key_bind_manager.set_troubleshooting_scene):
-            self.automation_manager.troubleshooting_flow()
+            self.hub.on_troubleshoot_signal.emit()
                 
         if key_sequence == QKeySequence(self.key_bind_manager.next_camera_key) and self.current_screen == 2:
             self.replay_screen.next_page()
@@ -189,7 +189,7 @@ class MainWindow(QMainWindow):
             self.current_screen = 2
 
             # pro webserver implementation
-            self.automation_manager.start_ivr_flow()
+            self.hub.start_ivr_signal.emit()
         else:
             self.show_toast_message("Video Replay can't be open without recording")
 
@@ -200,7 +200,7 @@ class MainWindow(QMainWindow):
         self.current_screen = 0
 
         # pro webserver implementation
-        self.automation_manager.post_ivr_flow()
+        self.hub.stop_ivr_signal.emit()
 
     def toggle_recording(self):
         if not self.camera_manager.is_recording:
@@ -243,7 +243,7 @@ class MainWindow(QMainWindow):
         self.screen_indicator_label.setVisible(is_mirror)
         # Repositioning is handled in resizeEvent
         if is_mirror and self.current_screen == 2:
-            self.automation_manager.start_ivr_closeup_flow()
+            self.hub.start_ivr_closeup_signal.emit()
 
     # --- NEW: Override resizeEvent to reposition the indicator ---
     def resizeEvent(self, event):
