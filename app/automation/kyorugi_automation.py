@@ -70,7 +70,7 @@ class KyorugiAutomation(BaseAutomation):
 
         self.obs.set_main_scene()
 
-        await asyncio.sleep(2)
+        await asyncio.sleep(4)
 
         self.web.show_round_results_widget()
 

@@ -3,8 +3,7 @@
 
 cd /home/truevar/Documents/TrueVAR || exit 1
 
-xrandr --output HDMI-1 --mode 1920x1080 --same-as DP-1
-xrandr --output HDMI-2 --mode 1920x1080 --same-as DP-1
+xrandr --output DP-1 --auto --primary --output HDMI-2 --auto --right-of DP-1
 
 # Check if GitHub is reachable
 if ping -c 1 github.com &> /dev/null; then
