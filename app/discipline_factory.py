@@ -15,7 +15,7 @@ class DisciplineFactory:
             return KyorugiDaedoListener(), KyorugiAutomation()
 
         elif discipline == "poomsae fitofan":
-            return DummyListener(), DummyListener()
+            return DummyListener(), DummyAutomation()
 
         else:
             raise ValueError(f"Unknown discipline: {discipline}")

@@ -10,7 +10,7 @@ class DummyAutomation(BaseAutomation):
         self.hub.start_livestream_signal.connect(self.pre_tournament_flow)
         self.hub.start_tournament_signal.connect(self.tournament_flow)
 
-        self.hub.on_troubleshoot_signal.connect(self.troubleshooting_flow())
+        self.hub.on_troubleshoot_signal.connect(self.troubleshooting_flow)
 
     async def _pre_tournament_flow(self):
         print("Starting pre tournament flow")
