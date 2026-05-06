@@ -18,10 +18,10 @@ class KyorugiAutomation(BaseAutomation):
 
         self.hub.stream_message_broadcast_signal.connect(lambda m: self.message_broadcast_flow(m))
 
-        self.hub.on_troubleshoot_signal.connect(self.troubleshooting_flow())
-        self.hub.start_ivr_signal.connect(self.start_ivr_flow())
-        self.hub.start_ivr_closeup_signal.connect(self.start_ivr_closeup_flow())
-        self.hub.stop_ivr_signal.connect(self.post_ivr_flow())
+        self.hub.on_troubleshoot_signal.connect(self.troubleshooting_flow)
+        self.hub.start_ivr_signal.connect(self.start_ivr_flow)
+        self.hub.start_ivr_closeup_signal.connect(self.start_ivr_closeup_flow)
+        self.hub.stop_ivr_signal.connect(self.post_ivr_flow)
 
     async def _pre_tournament_flow(self):
         print("Starting pre tournament flow")
