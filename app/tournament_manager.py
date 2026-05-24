@@ -3,6 +3,7 @@ from app.asset_worker import AssetWorker
 from app.injector import singleton, Injector
 from app.main_manager import MainManager
 from app.discipline_factory import DisciplineFactory
+from app.webserver_manager import WebServerManager
 
 @singleton
 class TournamentManager(QObject):
@@ -80,6 +81,12 @@ class TournamentManager(QObject):
 
         # 3. Start listener ONLY NOW
         self._listener.start()
+
+        web_manager = Injector.find(WebServerManager)
+        
+        if web_manager:
+            print("Pro mode detected: Starting WebServer...")
+            web_manager.start_server()
 
         # 4. Continue normal flow
         self.hub.start_obs_signal.emit(self.discipline, self.stream_key)

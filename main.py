@@ -29,6 +29,9 @@ def main():
 
     license_manager.connection_ready.connect(socket_manager.connect)
 
+    wait_loop = None
+    received_tournament_data = False
+
     def handle_tournaments(tournaments_list):
         # If tournaments_list is a list of objects like [{"name": "A", "courts": 4}, ...]
         # we convert it to a dict: {"A": 4, "B": 2}
@@ -40,7 +43,12 @@ def main():
             socket_manager.select_tournament(choice_name, choice_court)
 
     def handle_final_data(_):
-        wait_loop.quit() 
+        nonlocal received_tournament_data
+
+        received_tournament_data = True
+
+        if wait_loop:
+            wait_loop.quit()
 
     socket_manager.tournaments_received.connect(handle_tournaments)
     socket_manager.tournament_data_received.connect(handle_final_data)
@@ -67,9 +75,9 @@ def main():
         # ONLINE MODE
         wait_loop = QtNativeLoop()
         # socket_manager.connect() is triggered by license_manager.connection_ready
-        if not hasattr(socket_manager, 'tournament_data') or socket_manager.tournament_data is None:
+        if not received_tournament_data:
             print("Waiting for server response...")
-            wait_loop.exec_() 
+            wait_loop.exec_()
 
     # 4. Proceed to Main Window
     main_window = MainWindow()

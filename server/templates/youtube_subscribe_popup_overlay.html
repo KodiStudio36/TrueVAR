@@ -1,0 +1,354 @@
+<style>
+  :root {
+    --bg-row: #DDECF0;
+    --bg-label: #043640;
+    --bg-sketch-block: #02102A;
+    --text-primary: #083344;
+    --text-light: #A1C6CC;
+    --text-white: #ffffff;
+    --text-muted: #8da1b5;
+    --grad-header: linear-gradient(100deg, #02102A 85%, #0B6B67 85.2%);
+    --color-yt-red: #FF0000;
+    --color-yt-dark: #cc0000;
+  }
+
+  * {
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0;
+    font-family: 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+  }
+
+  .preview-bg {
+    min-height: 420px;
+    background: linear-gradient(135deg, #1a2a35 0%, #0d1c26 100%);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 2rem;
+    border-radius: 8px;
+    position: relative;
+    overflow: hidden;
+  }
+
+  .preview-bg::before {
+    content: '▶ LIVE';
+    position: absolute;
+    top: 12px;
+    left: 14px;
+    background: var(--color-yt-red);
+    color: #fff;
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 1.5px;
+    padding: 3px 8px;
+    border-radius: 3px;
+  }
+
+  .preview-bg::after {
+    content: '🎥 OBS Preview';
+    position: absolute;
+    top: 12px;
+    right: 14px;
+    color: rgba(255, 255, 255, 0.25);
+    font-size: 11px;
+    letter-spacing: 1px;
+  }
+
+  .yt-widget {
+    width: 320px;
+    animation: slideUp 0.5s cubic-bezier(0.18, 0.89, 0.32, 1.28) both;
+  }
+
+  @keyframes slideUp {
+    from {
+      transform: translateY(40px);
+      opacity: 0;
+    }
+
+    to {
+      transform: translateY(0);
+      opacity: 1;
+    }
+  }
+
+  .yt-header-label {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    background-color: var(--bg-label);
+    color: var(--text-light);
+    font-size: 0.78rem;
+    text-transform: uppercase;
+    letter-spacing: 1.5px;
+    padding: 5px 10px;
+    margin-bottom: 2px;
+  }
+
+  .yt-header-label .yt-dot {
+    width: 7px;
+    height: 7px;
+    background: var(--color-yt-red);
+    border-radius: 50%;
+    display: inline-block;
+    animation: pulse 1.4s ease-in-out infinite;
+  }
+
+  @keyframes pulse {
+
+    0%,
+    100% {
+      opacity: 1;
+      transform: scale(1);
+    }
+
+    50% {
+      opacity: 0.5;
+      transform: scale(0.85);
+    }
+  }
+
+  .yt-header-grid {
+    display: grid;
+    grid-template-columns: 12px 1fr;
+    gap: 2px;
+    margin-bottom: 2px;
+  }
+
+  .yt-color-bar {
+    background: var(--color-yt-red);
+  }
+
+  .yt-header-content {
+    background: var(--grad-header);
+    display: flex;
+    align-items: center;
+    padding: 10px 14px;
+    gap: 10px;
+  }
+
+  .yt-logo-block {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+  }
+
+  .yt-logo-svg {
+    width: 32px;
+    height: 22px;
+  }
+
+  .yt-header-text {
+    flex: 1;
+  }
+
+  .yt-channel-name {
+    color: var(--text-white);
+    font-size: 15px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.8px;
+    line-height: 1.1;
+  }
+
+  .yt-channel-sub {
+    color: var(--text-light);
+    font-size: 11px;
+    letter-spacing: 0.5px;
+    margin-top: 1px;
+  }
+
+  .yt-body {
+    background-color: var(--bg-row);
+    padding: 12px 14px 14px;
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 10px;
+  }
+
+  .yt-message {
+    color: var(--text-primary);
+    font-size: 13.5px;
+    font-weight: 500;
+    line-height: 1.4;
+    text-align: center;
+    padding: 0 4px;
+  }
+
+  .yt-stats-row {
+    display: grid;
+    grid-template-columns: 1fr 1px 1fr;
+    gap: 0;
+    background: rgba(4, 54, 64, 0.08);
+    border-radius: 3px;
+    overflow: hidden;
+  }
+
+  .yt-stat {
+    text-align: center;
+    padding: 6px 8px;
+  }
+
+  .yt-stat-num {
+    color: var(--text-primary);
+    font-size: 16px;
+    font-weight: 700;
+    letter-spacing: 0.5px;
+  }
+
+  .yt-stat-label {
+    color: #638B95;
+    font-size: 10px;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+  }
+
+  .yt-stat-divider {
+    background: rgba(4, 54, 64, 0.15);
+  }
+
+  .yt-subscribe-btn {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 9px;
+    background-color: var(--color-yt-red);
+    color: #fff;
+    border: none;
+    border-radius: 2px;
+    padding: 10px 0;
+    font-size: 14px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 1.5px;
+    cursor: pointer;
+    width: 100%;
+    transition: background 0.15s, transform 0.1s;
+    position: relative;
+    overflow: hidden;
+  }
+
+  .yt-subscribe-btn:hover {
+    background-color: var(--color-yt-dark);
+    transform: scale(1.01);
+  }
+
+  .yt-subscribe-btn:active {
+    transform: scale(0.98);
+  }
+
+  .yt-subscribe-btn svg {
+    flex-shrink: 0;
+  }
+
+  .yt-bell-note {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    color: #638B95;
+    font-size: 11px;
+    letter-spacing: 0.5px;
+  }
+
+  .yt-bell-note svg {
+    opacity: 0.7;
+  }
+
+  .controls {
+    display: flex;
+    gap: 8px;
+    justify-content: center;
+    margin-top: 1.5rem;
+  }
+
+  .ctrl-btn {
+    background: rgba(255, 255, 255, 0.08);
+    border: 0.5px solid rgba(255, 255, 255, 0.2);
+    color: rgba(255, 255, 255, 0.7);
+    padding: 6px 16px;
+    font-size: 12px;
+    letter-spacing: 1px;
+    text-transform: uppercase;
+    border-radius: 2px;
+    cursor: pointer;
+    transition: all 0.15s;
+  }
+
+  .ctrl-btn:hover {
+    background: rgba(255, 255, 255, 0.15);
+    color: #fff;
+  }
+</style>
+
+
+
+<!-- <div class="preview-bg">
+  <div>
+    <div class="yt-widget" id="ytWidget">
+       <div class="yt-header-label">
+        <span class="yt-dot"></span>
+        Support the stream
+      </div> -->
+
+
+
+<!-- <div class="yt-body">
+        <div class="yt-message">Enjoying the event? Subscribe to catch every future broadcast!</div>
+        <div class="yt-stats-row">
+          <div class="yt-stat">
+            <div class="yt-stat-num">12.4K</div>
+            <div class="yt-stat-label">Subscribers</div>
+          </div>
+          <div class="yt-stat-divider"></div>
+          <div class="yt-stat">
+            <div class="yt-stat-num">847</div>
+            <div class="yt-stat-label">Watching now</div>
+          </div>
+        </div>
+        <button class="yt-subscribe-btn" onclick="handleSubscribe(this)">
+          <svg width="20" height="14" viewBox="0 0 90 63" fill="white"><path d="M88.1 9.9C87.1 6.3 84.3 3.5 80.7 2.5C73.6 0.6 45 0.6 45 0.6C45 0.6 16.4 0.6 9.3 2.5C5.7 3.5 2.9 6.3 1.9 9.9C0 17 0 31.5 0 31.5C0 31.5 0 46 1.9 53.1C2.9 56.7 5.7 59.5 9.3 60.5C16.4 62.4 45 62.4 45 62.4C45 62.4 73.6 62.4 80.7 60.5C84.3 59.5 87.1 56.7 88.1 53.1C90 46 90 31.5 90 31.5C90 31.5 90 17 88.1 9.9Z"/><path d="M36 45L59.4 31.5L36 18V45Z" fill="#FF0000"/></svg>
+          Subscribe
+        </button>
+        <div class="yt-bell-note">
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#638B95" stroke-width="2"><path d="M18 8A6 6 0 006 8c0 7-3 9-3 9h18s-3-2-3-9M13.73 21a2 2 0 01-3.46 0"/></svg>
+          Hit the bell to never miss a match
+        </div>
+      </div>
+    </div> -->
+
+<!-- <div class="controls">
+        <button class="ctrl-btn" onclick="replayAnim()">Replay animation</button>
+        <button class="ctrl-btn" onclick="toggleWidget()">Toggle show/hide</button>
+      </div> -->
+<!-- </div> -->
+<!-- </div> -->
+
+<!-- <script>
+    let visible = true;
+    function toggleWidget() {
+      const w = document.getElementById('ytWidget');
+      visible = !visible;
+      w.style.opacity = visible ? '1' : '0';
+      w.style.transform = visible ? 'translateY(0)' : 'translateY(30px)';
+      w.style.transition = 'opacity 0.4s, transform 0.4s cubic-bezier(0.18,0.89,0.32,1.28)';
+    }
+    function replayAnim() {
+      const w = document.getElementById('ytWidget');
+      w.style.animation = 'none';
+      void w.offsetWidth;
+      w.style.animation = 'slideUp 0.5s cubic-bezier(0.18,0.89,0.32,1.28) both';
+      visible = true;
+      w.style.opacity = '1';
+    }
+    function handleSubscribe(btn) {
+      btn.innerHTML = '✓ Subscribed!';
+      btn.style.background = '#043640';
+      btn.style.letterSpacing = '1px';
+      setTimeout(() => {
+        btn.innerHTML = '<svg width="20" height="14" viewBox="0 0 90 63" fill="white"><path d="M88.1 9.9C87.1 6.3 84.3 3.5 80.7 2.5C73.6 0.6 45 0.6 45 0.6C45 0.6 16.4 0.6 9.3 2.5C5.7 3.5 2.9 6.3 1.9 9.9C0 17 0 31.5 0 31.5C0 31.5 0 46 1.9 53.1C2.9 56.7 5.7 59.5 9.3 60.5C16.4 62.4 45 62.4 45 62.4C45 62.4 73.6 62.4 80.7 60.5C84.3 59.5 87.1 56.7 88.1 53.1C90 46 90 31.5 90 31.5C90 31.5 90 17 88.1 9.9Z"/><path d="M36 45L59.4 31.5L36 18V45Z" fill="#FF0000"/></svg> Subscribe';
+        btn.style.background = '#FF0000';
+      }, 2000);
+    }
+  </script> -->

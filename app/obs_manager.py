@@ -10,8 +10,6 @@ from app.main_manager import MainManager
 from app.settings_manager import SettingsManager, Setting
 from config import obs_settings_file, launch_obs_script
 
-from app.webserver_manager import WebServerManager
-
 @singleton
 class OBSManager(SettingsManager, QObject):
     connected = pyqtSignal(bool)
@@ -65,19 +63,6 @@ class OBSManager(SettingsManager, QObject):
         Launches OBS Studio.
         :param mode: 'basic' or 'pro' to select the initial scene collection via CLI.
         """
-
-        # TODO: Move to Tournament Manager
-        # web_manager = Injector.find(WebServerManager)
-        
-        # if mode == "pro" or mode == "olympic":
-        #     # Start the webserver for overlays
-        #     if web_manager:
-        #         print("Pro mode detected: Starting WebServer...")
-        #         web_manager.start_server()
-        # else:
-        #     # Optional: Stop server if switching back to basic to save resources
-        #     if web_manager:
-        #         web_manager.stop_server()
 
         # Determine collection based on mode
         if mode == "Kyorugi DAEDO":

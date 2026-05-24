@@ -44,6 +44,8 @@ class KyorugiDaedoWorker(QObject):
             "wg1": self.on_penalty,
             "hl1": self.on_blue_hit,
             "hl2": self.on_red_hit,
+            "pt1": self.on_blue_scores,
+            "pt2": self.on_red_scores,
             "brk": self.on_break,
             "win": self.on_win,
         }
@@ -280,6 +282,22 @@ class KyorugiDaedoWorker(QObject):
     
     def on_red_hit(self, parts):
         self.data["red_points"][self.data["round"] - 1]["hits"] += 1
+
+    def on_blue_scores(self, parts):
+        if parts[1] == "1": self.data["blue_points"][self.data["round"] - 1]["punch"] += 1
+        elif parts[1] in ["2", "4"]: self.data["blue_points"][self.data["round"] - 1]["trunk"] += 1
+        elif parts[1] in ["3", "6"]: self.data["blue_points"][self.data["round"] - 1]["head"] += 1
+
+        if parts[1] == "4": self.data["blue_points"][self.data["round"] - 1]["rotation_trunk"] += 1
+        elif parts[1] == "6": self.data["blue_points"][self.data["round"] - 1]["rotation_head"] += 1
+
+    def on_red_scores(self, parts):
+        if parts[1] == "1": self.data["red_points"][self.data["round"] - 1]["punch"] += 1
+        elif parts[1] in ["2", "4"]: self.data["red_points"][self.data["round"] - 1]["trunk"] += 1
+        elif parts[1] in ["3", "6"]: self.data["red_points"][self.data["round"] - 1]["head"] += 1
+
+        if parts[1] == "4": self.data["red_points"][self.data["round"] - 1]["rotation_trunk"] += 1
+        elif parts[1] == "6": self.data["red_points"][self.data["round"] - 1]["rotation_head"] += 1
 
     def on_break(self, parts):
         self.data["clk"] = parts[1][1:]

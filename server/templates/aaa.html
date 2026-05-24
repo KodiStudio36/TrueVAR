@@ -251,7 +251,7 @@
             width: 200px;
             height: 30px;
             right: 0px;
-            bottom: 0px;
+            bottom: 1px;
         }
 
         .legend-box {
@@ -264,6 +264,64 @@
             color: var(--text-white);
             font-size: 19px;
             font-weight: 600;
+        }
+
+        /* =========================================
+        5. ICON MASK SYSTEM
+        ========================================= */
+        .icon {
+            display: inline-block;
+            width: 22px;
+            /* Adjust size to fit nicely in your 38px boxes */
+            height: 22px;
+
+            /* 1. This variable dictates the color of your white PNG! */
+            background-color: var(--text-white);
+
+            /* 2. Standard mask setup */
+            -webkit-mask-repeat: no-repeat;
+            mask-repeat: no-repeat;
+            -webkit-mask-size: contain;
+            mask-size: contain;
+            -webkit-mask-position: center;
+            mask-position: center;
+        }
+
+        /* 3. Link your individual PNG files here */
+        .icon-points {
+            -webkit-mask-image: url('icons/points.png');
+            mask-image: url('icons/points.png');
+        }
+
+        .icon-trunk {
+            width: 20px;
+            height: 20px;
+            -webkit-mask-image: url('../static/vest-icon.png');
+            mask-image: url('../static/vest-icon.png');
+        }
+
+        .icon-head {
+            width: 21px;
+            height: 21px;
+            -webkit-mask-image: url('../static/helm-icon.png');
+            mask-image: url('../static/helm-icon.png');
+        }
+
+        .icon-punch {
+            width: 20px;
+            height: 20px;
+            -webkit-mask-image: url('../static/punch-icon.png');
+            mask-image: url('../static/punch-icon.png');
+        }
+
+        /* Example of changing a specific icon's color independently */
+        .icon-penalty {
+            width: 21px;
+            height: 21px;
+            background-color: #ffcc00;
+            /* Makes just the penalty icon yellow/gold */
+            -webkit-mask-image: url('../static/penalty-icon.png');
+            mask-image: url('../static/penalty-icon.png');
         }
 
         .scoreboard-content .header-round {
@@ -445,7 +503,7 @@
             width: auto;
             min-width: 380px;
             display: grid;
-            grid-template-columns: 8px 1fr;
+            grid-template-columns: 12px 1fr;
             /* Thin accent line */
             gap: 2px;
         }
@@ -517,13 +575,238 @@
         .scrolling {
             animation: ticker-scroll var(--ticker-speed) linear;
         }
+
+        .yt-widget {
+            position: absolute;
+            bottom: 140px;
+            right: 0;
+            width: 320px;
+            transform: translateX(6px);
+            opacity: 1;
+            transition:
+                transform 0.5s cubic-bezier(0.18, 0.9, 0.3, 1.1),
+                opacity 0.4s ease;
+
+            pointer-events: auto;
+        }
+
+        .yt-widget.hidden {
+            display: block !important;
+            transform: translateX(100%);
+            opacity: 0;
+            pointer-events: none;
+        }
+
+        .yt-header-grid {
+            display: grid;
+            grid-template-columns: 12px 1fr;
+            gap: 2px;
+            margin-bottom: 2px;
+        }
+
+        .yt-color-bar {
+            background: var(--color-red);
+        }
+
+        .yt-header-content {
+            background: var(--grad-header);
+            display: flex;
+            align-items: center;
+            padding: 10px 14px;
+            gap: 10px;
+        }
+
+        .yt-logo-block {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex-shrink: 0;
+        }
+
+        .yt-logo-svg {
+            width: 32px;
+            height: 20px;
+        }
+
+        .yt-header-text {
+            flex: 1;
+        }
+
+        .yt-channel-name {
+            color: var(--text-white);
+            font-size: 19px;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.8px;
+            line-height: 1.1;
+        }
+
+        .yt-channel-sub {
+            color: var(--text-light);
+            font-size: 11px;
+            letter-spacing: 0.5px;
+            margin-top: 1px;
+        }
+
+        .vr-container {
+            position: absolute;
+            display: inline-flex;
+            height: 60px;
+            /* box-shadow: 0 4px 15px rgba(0, 0, 0, 0.5); */
+            user-select: none;
+            gap: 2px;
+
+            bottom: 70px;
+            left: 50%;
+            transform: translate(-50%, 0%);
+        }
+
+        .vr-badge {
+            position: relative;
+            background-color: #FFA000;
+            width: 65px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .badge-text {
+            color: #FFFFFF;
+            font-size: 24px;
+            font-weight: 700;
+        }
+
+        .vr-content {
+            display: flex;
+            flex-direction: column;
+            min-width: 280px;
+            gap: 2px;
+        }
+
+        .content-header {
+            background-color: var(--bg-sketch-block);
+            color: #FFFFFF;
+            font-size: 19px;
+            font-weight: 700;
+            padding: 2px 16px 0 16px;
+            height: 42px;
+            display: flex;
+            align-items: center;
+        }
+
+        .content-sub {
+            position: relative;
+            background-color: var(--bg-row);
+            font-size: 15px;
+            font-weight: 500;
+            letter-spacing: 0.5px;
+            padding: 0 16px;
+            height: 28px;
+            display: flex;
+            align-items: center;
+        }
+
+        /* Keep display:none from firing during animation */
+        .vr-container.vr-animating {
+            display: inline-flex !important;
+        }
+
+        /* Add overflow:hidden to your existing .vr-content rule */
+        .vr-content {
+            overflow: hidden;
+            /* ...rest of your existing props */
+        }
+
+        @keyframes vr-rise {
+            0% {
+                transform: translate(0%, 140px);
+                opacity: 0;
+            }
+
+            20% {
+                transform: translate(0%, 0);
+                opacity: 1;
+            }
+
+            100% {
+                transform: translate(-50%, 0);
+                opacity: 1;
+            }
+        }
+
+        @keyframes vr-content-expand {
+            from {
+                max-width: 0;
+            }
+
+            to {
+                max-width: 400px;
+            }
+        }
+
+        @keyframes vr-header-slide {
+            from {
+                opacity: 0;
+                transform: translateX(-16px);
+            }
+
+            to {
+                opacity: 1;
+                transform: translateX(0);
+            }
+        }
+
+        @keyframes vr-sub-slide {
+            from {
+                opacity: 0;
+                transform: translateX(-16px);
+            }
+
+            to {
+                opacity: 1;
+                transform: translateX(0);
+            }
+        }
+
+        @keyframes vr-fade-out {
+            from {
+                opacity: 1;
+                transform: translate(-50%, 0);
+            }
+
+            to {
+                opacity: 0;
+                transform: translate(-50%, 16px);
+            }
+        }
+
+        .vr-container.vr-entering {
+            animation: vr-rise 1s cubic-bezier(0.22, 1, 0.36, 1) forwards;
+        }
+
+        .vr-container.vr-entering .vr-content {
+            animation: vr-content-expand 0.45s cubic-bezier(0.22, 1, 0.36, 1) 0.42s both;
+            max-width: 0;
+        }
+
+        .vr-container.vr-entering .content-header {
+            animation: vr-header-slide 0.35s ease-out 0.60s both;
+        }
+
+        .vr-container.vr-entering .content-sub {
+            animation: vr-sub-slide 0.35s ease-out 0.72s both;
+        }
+
+        .vr-container.vr-exiting {
+            animation: vr-fade-out 0.35s ease forwards;
+        }
     </style>
 </head>
 
 <body>
 
     <!-- Show Next Fight -->
-    <div class="top-left hidden" id="widget-scoreboard-system">
+    <div class="top-left" id="widget-scoreboard-system">
         <div class="scoreboard-content">
 
             <div class="header-grid">
@@ -584,7 +867,7 @@
     </div>
 
     <!-- Fighter Introduction -->
-    <div class="widget-center hidden" id="widget-fighter-bars">
+    <div class="widget-center" id="widget-fighter-bars">
         <div class="fighter-bars-layout">
             <div class="fighter-bar">
                 <div class="color-bar bg-blue"></div>
@@ -607,7 +890,7 @@
     </div>
 
     <!-- Round Results -->
-    <div class="widget-container round-results hidden" id="widget-round-results">
+    <div class="widget-container round-results" id="widget-round-results">
         <div class="header-label" id="rr-header">Result Round 3</div>
 
         <div class="header-grid">
@@ -616,11 +899,11 @@
                 <div class="header-seed" id="rr-title">Quarterfinals</div>
                 <div class="header-legend">
                     <i></i>
-                    <div class="legend-box">P</div>
-                    <div class="legend-box">T</div>
-                    <div class="legend-box">H</div>
-                    <div class="legend-box">P</div>
-                    <div class="legend-box">P</div>
+                    <div class="legend-box" title="Points"><span class="icon icon-points"></span></div>
+                    <div class="legend-box" title="Trunk"><span class="icon icon-trunk"></span></div>
+                    <div class="legend-box" title="Head"><span class="icon icon-head"></span></div>
+                    <div class="legend-box" title="Punch"><span class="icon icon-punch"></span></div>
+                    <div class="legend-box" title="Penalty"><span class="icon icon-penalty"></span></div>
                 </div>
             </div>
         </div>
@@ -672,7 +955,7 @@
     </div>
 
     <!-- Show Winner -->
-    <div class="widget-container hidden" id="widget-winner">
+    <div class="widget-container" id="widget-winner">
         <div class="header-label" id="win-header">101 Man's -58kg</div>
 
         <div class="header-grid">
@@ -706,12 +989,84 @@
         </div>
     </div>
 
-    <div class="widget-full hidden" id="widget-ivr">
+    <div class="widget-full hidden">
         <div class="color-bar bg-green"></div>
         <div class="data-row">Instant Video Replay</div>
     </div>
 
+    <div class="vr-container hidden" id="widget-ivr">
+
+        <div class="vr-badge">
+            <span class="badge-text">VR</span>
+        </div>
+
+        <div class="vr-content">
+            <div class="content-header">
+                VIDEO REPLAY REQUESTED
+            </div>
+            <div class="content-sub">
+                PENDING OFFICIAL DECISION
+            </div>
+        </div>
+
+    </div>
+
+    <div class="yt-widget hidden" id="widget-yt">
+        <div class="yt-header-grid">
+            <div class="yt-color-bar"></div>
+            <div class="yt-header-content">
+                <div class="yt-logo-block">
+                    <svg class="yt-logo-svg" viewBox="0 0 90 63" fill="none" xmlns="http://www.w3.org/2000/svg">
+                        <path
+                            d="M88.1 9.9C87.1 6.3 84.3 3.5 80.7 2.5C73.6 0.6 45 0.6 45 0.6C45 0.6 16.4 0.6 9.3 2.5C5.7 3.5 2.9 6.3 1.9 9.9C0 17 0 31.5 0 31.5C0 31.5 0 46 1.9 53.1C2.9 56.7 5.7 59.5 9.3 60.5C16.4 62.4 45 62.4 45 62.4C45 62.4 73.6 62.4 80.7 60.5C84.3 59.5 87.1 56.7 88.1 53.1C90 46 90 31.5 90 31.5C90 31.5 90 17 88.1 9.9Z"
+                            fill="#FF0000" />
+                        <path d="M36 45L59.4 31.5L36 18V45Z" fill="white" />
+                    </svg>
+                </div>
+                <div class="yt-header-text">
+                    <div class="yt-channel-name">Like & Subscribe</div>
+                    <!-- <div class="yt-channel-sub">youtube.com/@yourchannel</div> -->
+                </div>
+            </div>
+        </div>
+    </div>
+
     <script>
+        const vr = document.querySelector('#widget-ivr');
+        let vrBusy = false;
+
+        function showVR() {
+            if (vrBusy || !vr.classList.contains('hidden')) return;
+            vrBusy = true;
+            vr.classList.remove('hidden', 'vr-exiting');
+            vr.classList.add('vr-animating', 'vr-entering');
+            void vr.offsetWidth; // force reflow
+            setTimeout(() => {
+                vr.classList.remove('vr-entering', 'vr-animating');
+                vrBusy = false;
+            }, 1200);
+        }
+
+        function hideVR() {
+            if (vrBusy || vr.classList.contains('hidden')) return;
+            vrBusy = true;
+            vr.classList.remove('vr-entering');
+            vr.classList.add('vr-animating', 'vr-exiting');
+            setTimeout(() => {
+                vr.classList.remove('vr-exiting', 'vr-animating');
+                vr.classList.add('hidden');
+                vrBusy = false;
+            }, 380);
+        }
+
+        function showYT() {
+            toggleWidget("widget-yt", true)
+        }
+
+        function hideYT() {
+            toggleWidget("widget-yt", false)
+        }
+
         // --- Core Widget Management ---
         function toggleWidget(widgetId, show) {
             const widget = document.getElementById(widgetId);
@@ -849,7 +1204,7 @@
             const data = payload.data;
             if (!data) {
                 toggleWidget("widget-scoreboard-system", false)
-                toggleWidget("widget-ivr", false)
+                hideVR()
                 toggleWidget("widget-round-results", false)
                 toggleWidget("widget-winner", false)
                 toggleWidget("widget-fighter-bars")
@@ -928,8 +1283,8 @@
         socket.on("show_next_round", () => toggleWidget("widget-scoreboard-system", true));
         socket.on("hide_next_round", () => toggleWidget("widget-scoreboard-system", false));
 
-        socket.on("show_ivr", () => toggleWidget("widget-ivr", true));
-        socket.on("hide_ivr", () => toggleWidget("widget-ivr", false));
+        socket.on("show_ivr", () => showVR());
+        socket.on("hide_ivr", () => hideVR());
 
         socket.on("show_fighter_bars", () => toggleWidget("widget-fighter-bars", true));
         socket.on("hide_fighter_bars", () => toggleWidget("widget-fighter-bars", false));
