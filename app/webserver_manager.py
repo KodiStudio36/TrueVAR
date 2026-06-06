@@ -44,6 +44,14 @@ class WebServerManager(SettingsManager, QObject):
         self.hub = Injector.find(MainManager)
         self.hub.listener_stable_signal.connect(self.listener_update)
 
+    def show_clock_widget(self):
+        if self.worker:
+            self.worker.show_clock_widget()
+
+    def hide_clock_widget(self):
+        if self.worker:
+            self.worker.hide_clock_widget()
+
     def show_next_round_widget(self):
         if self.worker:
             self.worker.show_next_round_widget()
@@ -83,6 +91,14 @@ class WebServerManager(SettingsManager, QObject):
     def hide_win_widget(self):
         if self.worker:
             self.worker.hide_win_widget()
+
+    def show_yt_widget(self):
+        if self.worker:
+            self.worker.show_yt_widget()
+
+    def hide_yt_widget(self):
+        if self.worker:
+            self.worker.hide_yt_widget()
 
     def show_ticker_widget(self, data):
         if self.worker:

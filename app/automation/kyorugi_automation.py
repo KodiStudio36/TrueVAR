@@ -23,16 +23,37 @@ class KyorugiAutomation(BaseAutomation):
         self.hub.start_ivr_closeup_signal.connect(self.start_ivr_closeup_flow)
         self.hub.stop_ivr_signal.connect(self.post_ivr_flow)
 
+        self.youtube_loop_task = None
+
     async def _pre_tournament_flow(self):
         print("Starting pre tournament flow")
         self.obs.set_starting_scene()
         self.obs.set_move_transition()
 
+    async def _youtube_loop_manager(self, interval_mins):
+        """Background loop that waits and then repeatedly calls the subscribe flow."""
+        interval_seconds = interval_mins * 60
+        
+        try:
+            while True:
+                await asyncio.sleep(interval_seconds)
+                
+                print("Triggering periodic YouTube subscribe flow...")
+                self.youtube_subscribe_flow()
+                
+        except asyncio.CancelledError:
+            print("YouTube loop manager task was cancelled.")
+
     async def _pre_pre_fight_flow(self):
         print("Starting pre pre fight flow")
         self.web.reset_widgets(["widget-winner", "widget-round-results"])
-
         self.obs.set_main_scene()
+
+        if self.youtube_loop_task and not self.youtube_loop_task.done():
+            self.youtube_loop_task.cancel()
+
+        X_MINUTES = 10
+        self.youtube_loop_task = asyncio.create_task(self._youtube_loop_manager(X_MINUTES))
 
     async def _pre_fight_flow(self):
         print("Starting pre fight flow")
@@ -135,6 +156,12 @@ class KyorugiAutomation(BaseAutomation):
 
         self.obs.set_troubleshooting_scene()
 
+    async def _youtube_subscribe_flow(self):
+        self.web.show_yt_widget()
+        await asyncio.sleep(10)
+
+        self.web.hide_yt_widget()
+
     # --------------------------------------------------------------------------------------------------- #
 
     def pre_tournament_flow(self):
@@ -169,6 +196,10 @@ class KyorugiAutomation(BaseAutomation):
 
     def message_broadcast_flow(self, data):
         self.start_async_flow(self._message_broadcast_flow(data))
-    
+
     def troubleshooting_flow(self):
         self.start_nuke_flow(self._troubleshooting_flow())
+
+    def youtube_subscribe_flow(self):
+        self.start_async_flow(self._youtube_subscribe_flow())
+    

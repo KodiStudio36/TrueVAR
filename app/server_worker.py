@@ -51,6 +51,14 @@ class ServerWorker(QObject):
         if self.socketio and self._is_running:
             self.socketio.emit("listener_update", data)
 
+    def show_clock_widget(self):
+        if self.socketio and self._is_running:
+            self.socketio.emit("show_clock", None)
+
+    def hide_clock_widget(self):
+        if self.socketio and self._is_running:
+            self.socketio.emit("hide_clock", None)
+
     def show_next_round_widget(self):
         if self.socketio and self._is_running:
             self.socketio.emit("show_next_round", None)
@@ -91,6 +99,14 @@ class ServerWorker(QObject):
         if self.socketio and self._is_running:
             self.socketio.emit("hide_win", None)
 
+    def show_yt_widget(self):
+        if self.socketio and self._is_running:
+            self.socketio.emit("show_yt", None)
+
+    def hide_yt_widget(self):
+        if self.socketio and self._is_running:
+            self.socketio.emit("hide_yt", None)
+
     def show_ticker_widget(self, data):
         if self.socketio and self._is_running:
             self.socketio.emit("show_ticker", {"event": "show", "message": data})
@@ -106,7 +122,7 @@ class ServerWorker(QObject):
 
         @self.flask_app.route("/scoreboard")
         def scoreboard():
-            return render_template("aaa.html")
+            return render_template("kyorugi.html")
 
         # @self.flask_app.route("/scoreboard")
         # def scoreboard():

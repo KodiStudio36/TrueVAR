@@ -1,0 +1,777 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Livestream Match Results Graphic</title>
+    <script src="https://cdn.socket.io/4.5.4/socket.io.min.js"></script>
+
+    <style>
+        /* =========================================
+           1. DESIGN SYSTEM (Variables)
+           ========================================= */
+        :root {
+            /* Colors */
+            --bg-row: #DDECF0;
+            --bg-label: #043640;
+            --bg-sketch-block: #02102A;
+            /* Dark background for sketch style blocks */
+            --bg-sketch-timeout: #800000;
+            /* Dark red for timeout block */
+
+            --text-primary: #083344;
+            --text-light: #A1C6CC;
+            --text-white: #ffffff;
+            --text-muted: #8da1b5;
+            --text-seed: #638B95;
+            --text-round: #124B5A;
+
+            /* Accents */
+            --color-blue: #006eff;
+            --color-red: #ff0000;
+            --color-green: #043640;
+
+            /* Gradients & Borders */
+            --grad-header: linear-gradient(100deg, #02102A 85%, #0B6B67 85.2%);
+            --grad-round-results: linear-gradient(180deg, #02102A 70%, #0B6B67 100%);
+            --border-flag: 1px solid rgba(0, 0, 0, 0.1);
+
+            /* Layout */
+            --default-offset: 2vw;
+            --bottom-offset: var(--default-offset);
+            --top-offset: var(--default-offset);
+            --left-offset: var(--default-offset);
+            --side-padding: 16vw;
+
+            --ticker-height: 40px;
+            --ticker-bg: linear-gradient(to top, rgba(0, 0, 0, .7) 0%, rgba(0, 0, 0, 0.0) 100%);
+            --ticker-speed: 15s;
+        }
+
+        /* =========================================
+           2. BASE STYLES & UTILITIES
+           ========================================= */
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            font-family: 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+        }
+
+        body {
+            background-color: transparent;
+            /* For OBS */
+            height: 100vh;
+            overflow: hidden;
+        }
+
+        .hidden {
+            display: none !important;
+        }
+
+        /* Color Bar Utilities */
+        .color-bar {
+            height: 100%;
+        }
+
+        .bg-blue {
+            background-color: var(--color-blue);
+        }
+
+        .bg-red {
+            background-color: var(--color-red);
+        }
+
+        .bg-green {
+            background-color: var(--color-green);
+        }
+
+        /* Flag Styles */
+        .flag-lg {
+            height: 46px;
+            width: 70px;
+            object-fit: cover;
+            margin-right: 15px;
+            border: var(--border-flag);
+            background: white;
+        }
+
+        .flag-sm {
+            width: 32px;
+            height: 22px;
+            object-fit: cover;
+            border: var(--border-flag);
+        }
+
+        /* =========================================
+           3. GENERIC WIDGET LAYOUTS
+           ========================================= */
+
+        /* Container for bottom-centered widgets (Match Results) */
+        .widget-container {
+            position: absolute;
+            bottom: var(--bottom-offset);
+            width: 100vw;
+            max-width: 1300px;
+            left: 50%;
+            transform: translate(-50%, 0%);
+            padding: 0 var(--side-padding);
+        }
+
+        .widget-center {
+            position: absolute;
+            bottom: var(--bottom-offset);
+            width: 100vw;
+            left: 50%;
+            transform: translate(-50%, 0%);
+        }
+
+        /* Generic top-left absolute positioning (e.g., Scoreboard, IVR) */
+        .top-left {
+            position: absolute;
+            top: var(--top-offset);
+            left: var(--left-offset);
+            width: auto;
+            /* max-width: 100vw; */
+        }
+
+        /* Full width footer-style widget (original IVR) */
+        .widget-full {
+            position: absolute;
+            bottom: var(--bottom-offset);
+            left: var(--left-offset);
+            width: 96vw;
+            height: 36px;
+            display: grid;
+            grid-template-columns: 14px auto 1fr;
+            gap: 2px;
+        }
+
+        /* =========================================
+           4. WIDGET COMPONENTS
+           ========================================= */
+
+        /* The header title above widgets */
+        .header-label {
+            display: inline-flex;
+            align-items: center;
+            background-color: var(--bg-label);
+            color: var(--text-light);
+            font-size: 1rem;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            padding: 6px 10px;
+            margin-bottom: 2px;
+        }
+
+        /* Standard Main Header Grid (Color bar + gradient info block) */
+        .header-grid {
+            position: relative;
+            height: 62px;
+        }
+
+        .header-grid.with-color {
+            display: grid;
+            grid-template-columns: 16px 1fr;
+            gap: 2px;
+        }
+
+        .scoreboard-content .header-grid {
+            display: grid;
+            height: 36px;
+            grid-template-columns: auto auto 1fr;
+        }
+
+        .round-results .header-grid {
+            position: relative;
+            height: calc(62px + 16px);
+        }
+
+        /* Gradient Info Block content */
+        .header-content {
+            height: 100%;
+            display: flex;
+            align-items: center;
+            background: var(--grad-header);
+            color: var(--text-white);
+            padding: 8px 15px;
+            position: relative;
+        }
+
+        .round-results .header-content {
+            flex-direction: column;
+            align-items: start;
+            background: var(--bg-sketch-block);
+            color: var(--text-white);
+            padding: 12px 15px;
+            position: relative;
+        }
+
+        /* Existing component header detail classes */
+        .header-country {
+            font-size: 26px;
+            margin-right: 12px;
+            font-weight: 400;
+        }
+
+        .header-name {
+            font-size: 28px;
+            font-weight: 500;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        .header-seed {
+            font-size: 20px;
+            color: var(--text-muted);
+            margin-left: 8px;
+            margin-top: 7px;
+            flex-grow: 1;
+        }
+
+        .round-results .header-seed {
+            font-size: 20px;
+            color: var(--text-muted);
+            margin-left: 0px;
+            margin-top: -2px;
+            flex-grow: 1;
+        }
+
+        .header-logo {
+            height: 44px;
+            width: 50px;
+        }
+
+        .header-legend {
+            position: absolute;
+            display: grid;
+            grid-template-columns: 1fr 38px 38px 38px 38px 38px;
+            gap: 2px;
+            width: 200px;
+            height: 30px;
+            right: 0px;
+            bottom: 1px;
+        }
+
+        .legend-box {
+            position: relative;
+            display: flex;
+            height: 100%;
+            width: 38px;
+            align-items: center;
+            justify-content: center;
+            color: var(--text-white);
+            font-size: 19px;
+            font-weight: 600;
+        }
+
+        /* =========================================
+        5. ICON MASK SYSTEM
+        ========================================= */
+        .icon {
+            display: inline-block;
+            width: 22px;
+            /* Adjust size to fit nicely in your 38px boxes */
+            height: 22px;
+
+            /* 1. This variable dictates the color of your white PNG! */
+            background-color: var(--text-white);
+
+            /* 2. Standard mask setup */
+            -webkit-mask-repeat: no-repeat;
+            mask-repeat: no-repeat;
+            -webkit-mask-size: contain;
+            mask-size: contain;
+            -webkit-mask-position: center;
+            mask-position: center;
+        }
+
+        /* 3. Link your individual PNG files here */
+        .icon-points {
+            -webkit-mask-image: url('icons/points.png');
+            mask-image: url('icons/points.png');
+        }
+
+        .icon-trunk {
+            width: 20px;
+            height: 20px;
+            -webkit-mask-image: url('../static/vest-icon.png');
+            mask-image: url('../static/vest-icon.png');
+        }
+
+        .icon-head {
+            width: 21px;
+            height: 21px;
+            -webkit-mask-image: url('../static/helm-icon.png');
+            mask-image: url('../static/helm-icon.png');
+        }
+
+        .icon-punch {
+            width: 20px;
+            height: 20px;
+            -webkit-mask-image: url('../static/punch-icon.png');
+            mask-image: url('../static/punch-icon.png');
+        }
+
+        /* Example of changing a specific icon's color independently */
+        .icon-penalty {
+            width: 21px;
+            height: 21px;
+            background-color: #ffcc00;
+            /* Makes just the penalty icon yellow/gold */
+            -webkit-mask-image: url('../static/penalty-icon.png');
+            mask-image: url('../static/penalty-icon.png');
+        }
+
+        .scoreboard-content .header-round {
+            font-size: 19px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background-color: var(--bg-label);
+            color: var(--text-white);
+            padding: 0px 10px;
+            font-weight: bold;
+        }
+
+        .scoreboard-content .header-text {
+            font-size: 19px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background-color: var(--bg-row);
+            color: var(--text-primary);
+            padding: 0px 10px;
+            font-weight: bold;
+        }
+
+        /* A universal data row layout */
+        .data-row {
+            position: relative;
+            height: 38px;
+            background-color: var(--bg-row);
+            align-items: center;
+            padding: 8px 16px;
+            color: var(--text-primary);
+            font-size: 19px;
+            font-weight: 600;
+        }
+
+        /* Specific grid structure within a data row (Results) */
+        .result-grid {
+            display: grid;
+            grid-template-columns: 34px auto 1fr auto auto auto;
+            gap: 16px;
+        }
+
+        .name-grid {
+            display: grid;
+            grid-template-columns: auto auto auto;
+            gap: 16px;
+            padding: 8px 12px;
+        }
+
+        .round-grid {
+            display: grid;
+            grid-template-columns: 34px auto 1fr auto auto auto;
+            gap: 16px;
+        }
+
+        .point-box {
+            position: relative;
+            display: block;
+            height: 38px;
+            width: 38px;
+            background-color: var(--bg-row);
+            align-items: center;
+            justify-content: center;
+            color: var(--text-primary);
+            font-size: 19px;
+            font-weight: 600;
+        }
+
+        .point-box.penalty {
+            background-color: #fff47e;
+        }
+
+        .point-box.winner {
+            background-color: var(--bg-label);
+            color: var(--text-white);
+        }
+
+        .point-box .main {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+        }
+
+        .point-box.composed .main {
+            position: absolute;
+            top: 50%;
+            left: 40%;
+            transform: translate(-50%, -50%);
+        }
+
+        .point-box .small {
+            font-size: 16px;
+            position: absolute;
+            top: 65%;
+            left: 70%;
+            transform: translate(-50%, -50%);
+        }
+
+        .data-row .main {
+            position: absolute;
+            top: 50%;
+            right: 19px;
+            text-align: end;
+            transform: translate(0%, -50%);
+        }
+
+        .data-row .small {
+            font-size: 16px;
+            position: absolute;
+            top: 65%;
+            right: 9px;
+            transform: translate(0%, -50%);
+        }
+
+        /* Wrapper that adds a color bar to a data row */
+        .row-wrapper.scoreboard {
+            position: relative;
+            width: 100%;
+            display: grid;
+            grid-template-columns: 12px 1fr auto auto;
+            gap: 2px;
+            margin-top: 2px;
+            z-index: 10;
+        }
+
+        .row-wrapper.with-color {
+            width: 100%;
+            display: grid;
+            grid-template-columns: 12px 1fr;
+            gap: 2px;
+            margin-top: 2px;
+        }
+
+        .row-wrapper.standard {
+            display: flex;
+            margin-top: 2px;
+            gap: 2px;
+        }
+
+        .clock-round-row {
+            position: relative;
+            z-index: 5;
+
+            transform: translateY(0);
+            opacity: 1;
+
+            transition:
+                transform 0.5s ease,
+                opacity .8s cubic-bezier(1, 1.3, 0.1, 1);
+
+            will-change: transform, opacity;
+        }
+
+        .clock-round-row.hidden-up {
+            transform: translateY(-38px);
+            opacity: 0;
+            pointer-events: none;
+        }
+
+        .clock-round-row.show-from-top {
+            transform: translateY(-38px);
+            opacity: 0;
+        }
+
+        /* Specific data element classes within a row */
+        .res-country {
+            font-weight: 500;
+        }
+
+        .res-name {
+            text-transform: uppercase;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            /* padding-right: 15px; */
+        }
+
+        .res-round {
+            font-weight: 500;
+            color: var(--text-round);
+        }
+
+        .res-score {
+            text-align: center;
+            letter-spacing: 1px;
+        }
+
+        .res-outcome {
+            text-align: right;
+            font-weight: bold;
+        }
+
+        .res-seed {
+            font-size: 13px;
+            color: var(--text-seed);
+        }
+    </style>
+</head>
+
+<body>
+
+    <!-- Show Next Fight -->
+    <div class="top-left" id="widget-scoreboard-system">
+        <div class="scoreboard-content">
+
+            <div class="header-grid">
+                <div class="header-round">113</div>
+                <div class="header-text">Taeguk 2. Jang</div>
+            </div>
+
+            <div class="row-wrapper scoreboard">
+                <div class="color-bar bg-green"></div>
+                <div class="data-row">
+                    <div class="res-name" id="score-blue-name">Park Taejoon</div>
+                </div>
+                <div class="data-row">
+                    <div class="res-name" id="score-blue-score-1">9.3</div>
+                </div>
+                <div class="data-row" id="score-blue-score-2-opacity">
+                    <div class="res-name" id="score-blue-score-2">2.1</div>
+                </div>
+            </div>
+
+            <div class="row-wrapper standard clock-round-row" id="clock-round-row">
+                <div class="data-row">
+                    <div class="res-name" id="score-clock">1:30</div>
+                </div>
+                <div class="header-round" id="score-round">1st</div>
+
+            </div>
+
+        </div>
+    </div>
+
+    <script>
+
+        /* =========================================
+   CLOCK COUNTDOWN SYSTEM
+   ========================================= */
+
+        let countdownInterval = null;
+        let autoHideTimeout = null;
+
+        /**
+         * Starts countdown timer
+         * @param {number} seconds - starting seconds
+         */
+        function startClockCountdown(seconds) {
+            stopClockCountdown();
+
+            const clockEl = document.getElementById("score-clock");
+
+            let remaining = seconds;
+
+            updateClockDisplay(remaining);
+
+            // auto hide after 4.5s
+            autoHideTimeout = setTimeout(() => {
+                hideClockRow();
+            }, 4500);
+
+            countdownInterval = setInterval(() => {
+                remaining--;
+
+                if (remaining == seconds - 6) {
+                    stopClockCountdown();
+                    return;
+                }
+
+                updateClockDisplay(remaining);
+            }, 1000);
+        }
+
+        /**
+         * Stops countdown + auto hide
+         */
+        function stopClockCountdown() {
+            if (countdownInterval) {
+                clearInterval(countdownInterval);
+                countdownInterval = null;
+            }
+
+            if (autoHideTimeout) {
+                clearTimeout(autoHideTimeout);
+                autoHideTimeout = null;
+            }
+        }
+
+        /**
+         * Updates MM:SS clock
+         */
+        function updateClockDisplay(totalSeconds) {
+            const minutes = Math.floor(totalSeconds / 60);
+            const seconds = totalSeconds % 60;
+
+            const formatted =
+                `${minutes}:${seconds.toString().padStart(2, '0')}`;
+
+            updateText("score-clock", formatted);
+        }
+
+        /**
+         * Hides the whole row with upward animation
+         */
+        function hideClockRow() {
+            const row = document.getElementById("clock-round-row");
+
+            row.classList.add("hidden-up");
+        }
+
+        /**
+         * Shows the row by animating from top to bottom
+         */
+        function showClockRow() {
+            const row = document.getElementById("clock-round-row");
+
+            // reset hidden state
+            row.classList.remove("hidden-up");
+
+            // force initial animation state
+            row.classList.add("show-from-top");
+
+            // force reflow
+            void row.offsetWidth;
+
+            requestAnimationFrame(() => {
+                row.classList.remove("show-from-top");
+            });
+        }
+
+        function setRound(idx) {
+            const score2 = document.getElementById("score-blue-score-2-opacity");
+            if (idx == 1) {
+                score2.style.opacity = 0;
+                updateText("score-round", "1st")
+            } else if (idx == 2) {
+                score2.style.opacity = 1;
+                updateText("score-round", "2nd")
+            }
+        }
+
+        // --- Core Widget Management ---
+        function toggleWidget(widgetId, show) {
+            const widget = document.getElementById(widgetId);
+            if (widget) {
+                show ? widget.classList.remove("hidden") : widget.classList.add("hidden");
+            }
+        }
+
+        // --- DOM Manipulation Helpers ---
+        // Safely updates text content if the element exists
+        function updateText(elementId, text) {
+            const el = document.getElementById(elementId);
+            if (el && text !== undefined && text !== null) {
+                el.innerText = text;
+            }
+        }
+
+        // Safely updates image sources (for flags)
+        function updateImage(elementId, flagCode) {
+            const el = document.getElementById(elementId);
+            // Assuming flagCode is an alpha2 code like "kr" or "sk"
+            if (el && flagCode && flagCode !== "un") {
+                el.src = `https://flagcdn.com/w80/${flagCode}.png`;
+            }
+        }
+
+        function updateColor(elementId, color) {
+            const el = document.getElementById(elementId);
+            // Assuming flagCode is an alpha2 code like "kr" or "sk"
+            if (color == "blue") {
+                el.classList.remove("bg-red")
+                el.classList.add("bg-blue")
+            } else if (color == "red") {
+                el.classList.remove("bg-blue")
+                el.classList.add("bg-red")
+            }
+        }
+
+        // --- Specific Widget Updaters ---
+        // Break your updates into logical blocks so it's easy to read and maintain
+        function updateScoreboard(data) {
+            updateText("score-blue-name", data.competitor_name);
+            updateText("score-blue-score-1", data.rounds[0].final_score);
+            updateText("score-blue-score-2", data.rounds[1].final_score);
+            setRound(data.current_round)
+            updateText("score-clock", data.clk)
+        }
+
+        // --- Main Data Dispatcher ---
+        function handleDataUpdate(payload) {
+            // In Python, you emit: {"event": "update", "data": self.data}
+            // So we need to access payload.data
+            const data = payload.data;
+            if (!data) return;
+
+            console.log("here")
+            console.log(data)
+
+            // Call individual updaters
+            updateScoreboard(data);
+
+            console.log("UI Updated with match ID:", data.id);
+        }
+
+        function resetWidgets(payload) {
+            console.log(payload)
+            const data = payload.data;
+            if (!data) {
+                toggleWidget("widget-scoreboard-system", false)
+            } else {
+                data.forEach(element => {
+                    toggleWidget(element, false)
+                });
+            }
+
+        }
+
+        let tickerCount = 0;
+        let maxTickerRounds = 3;
+
+        // --- Socket Connection & Listeners ---
+        const socket = io("ws://localhost:8000");
+
+        socket.on("connect", () => {
+            console.log("WebSocket Connected");
+        });
+
+        // Display Listeners
+        socket.on("show_scoreboard", () => toggleWidget("widget-scoreboard-system", true));
+        socket.on("hide_scoreboard", () => toggleWidget("widget-scoreboard-system", false));
+
+        socket.on("show_clock", () => showClockRow());
+        socket.on("hide_clock", () => startClockCountdown(89));
+
+        socket.on("reset_widgets", (payload) => {
+            if (payload.event === "reset") {
+                resetWidgets(payload);
+            }
+        });
+
+        // Data Listener
+        socket.on("listener_update", (payload) => {
+            if (payload.event === "update") {
+                handleDataUpdate(payload);
+            }
+        });
+    </script>
+</body>
+
+</html>
